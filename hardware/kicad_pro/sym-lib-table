@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "RearLight")(type "KiCad")(uri "${KICAD9_SYMBOL_DIR}/RearLight.kicad_sym")(options "")(descr ""))
+)

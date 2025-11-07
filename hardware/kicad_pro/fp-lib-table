@@ -1,0 +1,5 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "Liard_BL653_ 453-00039_Custom")(type "KiCad")(uri "${KICAD9_FOOTPRINT_DIR}/Liard_BL653_ 453-00039_Custom.pretty")(options "")(descr ""))
+  (lib (name "RearLight")(type "KiCad")(uri "${KICAD9_FOOTPRINT_DIR}RearLight.pretty")(options "")(descr ""))
+)
