@@ -208,7 +208,7 @@
 		(uuid "663ce3ad-98cf-4191-85f7-4a9b1cd6ca5f")
 	)
 	(embedded_fonts no)
-	(model "OPT3001DNPR.stp"
+	(model "${KIPRJMOD}/../kicad_3d_models/OPT3001DNPR.stp"
 		(offset
 			(xyz 0 0 0)
 		)
@@ -216,18 +216,7 @@
 			(xyz 1 1 1)
 		)
 		(rotate
-			(xyz 0 0 0)
-		)
-	)
-	(model "C:/Users/matdi/Downloads/LIB_OPT3001DNPR/OPT3001DNPR/3D/OPT3001DNPR.stp"
-		(offset
-			(xyz 0 0 0)
-		)
-		(scale
-			(xyz 1 1 1)
-		)
-		(rotate
-			(xyz 0 0 0)
+			(xyz -0 -0 -0)
 		)
 	)
 )

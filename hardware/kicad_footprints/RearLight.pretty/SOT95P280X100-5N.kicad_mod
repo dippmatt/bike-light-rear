@@ -235,18 +235,7 @@
 		(uuid "94f18a11-bea2-42b9-8210-82bbcc097d89")
 	)
 	(embedded_fonts no)
-	(model "PAM2804AAB010.stp"
-		(offset
-			(xyz 0 0 0)
-		)
-		(scale
-			(xyz 1 1 1)
-		)
-		(rotate
-			(xyz 0 0 0)
-		)
-	)
-	(model "C:/Users/matdi/Downloads/LIB_PAM2804AAB010/PAM2804AAB010/3D/PAM2804AAB010.stp"
+	(model "${KIPRJMOD}/../kicad_3d_models/PAM2804AAB010.stp"
 		(offset
 			(xyz 0 0 0)
 		)

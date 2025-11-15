@@ -1,4 +1,4 @@
-26772603085134852
+26784948481644397
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -53676,6 +53676,13 @@ USB C Type-C Receptacle SMD USB 2.0 16P 16C USB4105-15-A USB4105-15-A-060 USB410
 20
 17
 Connector_USB
+USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal_wide_slot
+USB 2.0 Type C Receptacle, GCT, 16P, top mounted, horizontal, 5A: https://gct.co/files/drawings/usb4105.pdf
+USB C Type-C Receptacle SMD USB 2.0 16P 16C USB4105-15-A USB4105-15-A-060 USB4105-15-A-120 USB4105-GF-A USB4105-GF-A-060 USB4105-GF-A-120
+0
+20
+17
+Connector_USB
 USB_C_Receptacle_GCT_USB4110
 USB 2.0 Type C Receptacle, GCT, 16P, top mounted, horizontal, 5A, https://gct.co/files/drawings/usb4110.pdf
 USB 2.0 C Type-C Receptacle SMD 16P 16C USB4110-GF-A
@@ -94962,19 +94969,40 @@ WiFi IEEE802.11 b/g/n
 44
 44
 RearLight
-BGA25C40P5X5_207X207X52N
-<b>WLCSP 2.075x2.075</b><br>
+BAT_1096
+
 
 0
-25
-25
+2
+2
 RearLight
-JE2835AFRN0001A0000N0000001
-JE2835AFR-N-0001A0000-N0000001-1
-LED
+BAT_1096_holes_slim
+
+
 0
 2
 2
+RearLight
+GCT_USB4105GFA060
+
+
+0
+16
+16
+RearLight
+LTRBRASF016B6CC3E600R18
+1010 (2525 Metric)
+LED (Multiple)
+0
+6
+6
+RearLight
+QFN50P400X400X90-25N-D
+NPM1100-QDAA-R*
+Integrated Circuit
+0
+25
+25
 RearLight
 SON65P200X200X65-7N-D
 DNP0006A
@@ -94996,6 +95024,27 @@ Integrated Circuit
 0
 5
 5
+RearLight
+SW_TS-1088-AR02016
+
+
+0
+2
+2
+RearLight
+USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal_wide_slot
+USB 2.0 Type C Receptacle, GCT, 16P, top mounted, horizontal, 5A: https://gct.co/files/drawings/usb4105.pdf
+USB C Type-C Receptacle SMD USB 2.0 16P 16C USB4105-15-A USB4105-15-A-060 USB4105-15-A-120 USB4105-GF-A USB4105-GF-A-060 USB4105-GF-A-120
+0
+20
+17
+RearLight
+XPEWHTL1000000E01
+XLamp® XP-E LED
+LED
+0
+3
+3
 Relay_SMD
 Relay_2P2T_10x6mm_TE_IMxxG
 Signal Relay, 10x6mm, 2 Form C, Gull Wings, https://www.te.com/commerce/DocumentDelivery/DDEController?Action=showdoc&DocId=Data+Sheet%7F108-98001%7FZ.1%7Fpdf%7FEnglish%7FENG_DS_108-98001_Z.1.pdf

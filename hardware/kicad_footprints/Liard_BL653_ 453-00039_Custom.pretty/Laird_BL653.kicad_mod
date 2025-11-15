@@ -693,7 +693,7 @@
 		)
 	)
 	(embedded_fonts no)
-	(model "${KICAD9_3DMODEL_DIR}/RF_Module.3dshapes/Laird_BL653.step"
+	(model "//wsl.localhost/Ubuntu/home/matthias/Documents/bike-light-rear/hardware/kicad_3d_models/BL653 453-00039_3D Model with label.STEP"
 		(offset
 			(xyz 0 0 0)
 		)
@@ -701,18 +701,7 @@
 			(xyz 1 1 1)
 		)
 		(rotate
-			(xyz 0 0 0)
-		)
-	)
-	(model "/home/matthias/Documents/kicad/documentation/MCU_Ezurio-Bluetooth_Modul/BL653 453-00039_3D Model with label.STEP"
-		(offset
-			(xyz 0 0 0)
-		)
-		(scale
-			(xyz 1 1 1)
-		)
-		(rotate
-			(xyz 90 180 90)
+			(xyz -90 -0 -90)
 		)
 	)
 )
