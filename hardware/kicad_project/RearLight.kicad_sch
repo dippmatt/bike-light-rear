@@ -1452,6 +1452,189 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Device:LED"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 1.016)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "D"
+				(at 0 2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "LED"
+				(at 0 -2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Light emitting diode"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Sim.Pins" "1=K 2=A"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "LED diode"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "LED* LED_SMD:* LED_THT:*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "LED_0_1"
+				(polyline
+					(pts
+						(xy -3.048 -0.762) (xy -4.572 -2.286) (xy -3.81 -2.286) (xy -4.572 -2.286) (xy -4.572 -1.524)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.778 -0.762) (xy -3.302 -2.286) (xy -2.54 -2.286) (xy -3.302 -2.286) (xy -3.302 -1.524)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 0) (xy 1.27 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 -1.27) (xy -1.27 1.27)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 -1.27) (xy 1.27 1.27) (xy -1.27 0) (xy 1.27 -1.27)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "LED_1_1"
+				(pin passive line
+					(at -3.81 0 0)
+					(length 2.54)
+					(name "K"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 3.81 0 180)
+					(length 2.54)
+					(name "A"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "Device:R"
 			(pin_numbers
 				(hide yes)
@@ -3895,230 +4078,6 @@
 					)
 					(fill
 						(type background)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
-		(symbol "RearLight:LTRB_RASF.01-6B6C-C3E6-0-0-R18"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "LED"
-				(at 26.67 5.08 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left top)
-				)
-			)
-			(property "Value" "LTRB_RASF.01"
-				(at 26.67 2.54 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left top)
-				)
-			)
-			(property "Footprint" "RearLight:LTRBRASF016B6CC3E600R18"
-				(at 31.75 -94.92 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left top)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "https://look.ams-osram.com/m/2d62a008e17fb3a1/original/LTRB-RASF-01.pdf"
-				(at 31.75 -194.92 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left top)
-					(hide yes)
-				)
-			)
-			(property "Description" "Red, Green, Blue (RGB) indicator LED, 621nm Red, 530nm Green, 465nm Blue LED Indication - Discrete 2.75V Red, 2.4V Green, 2.8V Blue 1010 (2525 Metric)"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Height" "0.55"
-				(at 31.75 -394.92 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left top)
-					(hide yes)
-				)
-			)
-			(property "Manufacturer Part Number" "LTRB_RASF.01-6B6C-C3E6-0-0-R18"
-				(at 31.75 -494.92 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left top)
-					(hide yes)
-				)
-			)
-			(property "Mouser Price/Stock" ""
-				(at 31.75 -594.92 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left top)
-					(hide yes)
-				)
-			)
-			(property "Manufacturer_Name" "ams OSRAM"
-				(at 31.75 -694.92 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left top)
-					(hide yes)
-				)
-			)
-			(property "Manufacturer_Part_Number" "LTRB RASF.01-6B6C-C3E6-0-0-R18"
-				(at 31.75 -794.92 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left top)
-					(hide yes)
-				)
-			)
-			(symbol "LTRB_RASF.01-6B6C-C3E6-0-0-R18_1_1"
-				(rectangle
-					(start 0 0)
-					(end 25.4 -10.16)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-				(pin passive line
-					(at -5.08 -2.54 0)
-					(length 5.08)
-					(name "A_GREEN"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -5.08 0)
-					(length 5.08)
-					(name "A_RED"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -7.62 0)
-					(length 5.08)
-					(name "A_BLUE"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 30.48 -2.54 180)
-					(length 5.08)
-					(name "K_GREEN"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "6"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 30.48 -5.08 180)
-					(length 5.08)
-					(name "K_RED"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "5"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 30.48 -7.62 180)
-					(length 5.08)
-					(name "K_BLUE"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
 					)
 				)
 			)
@@ -7198,7 +7157,7 @@
 		(uuid "34eb99bd-1a62-42ab-8934-542f90d066ac")
 	)
 	(no_connect
-		(at 165.2246 121.92)
+		(at 165.1 121.92)
 		(uuid "36a81b0c-15b8-4648-8d48-2401682cf07b")
 	)
 	(no_connect
@@ -7330,6 +7289,10 @@
 		(uuid "eab29daa-418c-4e51-b1ba-aa1cfafc165f")
 	)
 	(no_connect
+		(at 119.38 55.88)
+		(uuid "efe8e5a5-1efd-42f0-8403-b3f45beba94f")
+	)
+	(no_connect
 		(at 119.38 78.74)
 		(uuid "f8de6396-944b-40ca-a9e6-af3487cd8d07")
 	)
@@ -7439,7 +7402,7 @@
 	)
 	(wire
 		(pts
-			(xy 59.69 123.19) (xy 62.23 123.19)
+			(xy 59.69 123.19) (xy 74.93 123.19)
 		)
 		(stroke
 			(width 0)
@@ -7609,16 +7572,6 @@
 	)
 	(wire
 		(pts
-			(xy 107.95 24.13) (xy 107.95 22.86)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "15b537d2-b997-415a-be40-7b9adee38b90")
-	)
-	(wire
-		(pts
 			(xy 115.57 160.02) (xy 115.57 161.29)
 		)
 		(stroke
@@ -7716,6 +7669,26 @@
 			(type default)
 		)
 		(uuid "1c8d083d-502e-404d-adf6-d9358f71a164")
+	)
+	(wire
+		(pts
+			(xy 110.49 22.86) (xy 110.49 24.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1c9fe603-0dd4-481f-a299-9b26934b7b50")
+	)
+	(wire
+		(pts
+			(xy 82.55 123.19) (xy 101.6 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1d336321-2a27-4354-a4ac-dcf97720ab66")
 	)
 	(wire
 		(pts
@@ -7919,16 +7892,6 @@
 	)
 	(wire
 		(pts
-			(xy 116.84 24.13) (xy 107.95 24.13)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2e24a142-d300-4cf9-8562-f12e2b352bd1")
-	)
-	(wire
-		(pts
 			(xy 149.86 124.46) (xy 149.86 129.54)
 		)
 		(stroke
@@ -7936,6 +7899,16 @@
 			(type default)
 		)
 		(uuid "2f3e97a6-e18c-4e02-8e5f-d324d2185b13")
+	)
+	(wire
+		(pts
+			(xy 52.07 128.27) (xy 43.18 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2f795154-ca2a-4d9b-9491-e45f7530a38a")
 	)
 	(wire
 		(pts
@@ -8009,6 +7982,16 @@
 	)
 	(wire
 		(pts
+			(xy 59.69 128.27) (xy 74.93 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "355d5a67-b1e5-4aab-908c-d0a67a40cc32")
+	)
+	(wire
+		(pts
 			(xy 138.43 182.88) (xy 139.7 182.88)
 		)
 		(stroke
@@ -8056,6 +8039,16 @@
 			(type default)
 		)
 		(uuid "3cdffbf9-5c9d-4c3c-a648-71a51f807a13")
+	)
+	(wire
+		(pts
+			(xy 82.55 128.27) (xy 101.6 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3e4380dd-0b0b-434a-acb3-8c8db6f131b6")
 	)
 	(wire
 		(pts
@@ -8159,16 +8152,6 @@
 	)
 	(wire
 		(pts
-			(xy 97.79 123.19) (xy 101.6 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4548d79b-22fe-451a-8e51-12c5c912c8c8")
-	)
-	(wire
-		(pts
 			(xy -44.45 38.1) (xy -44.45 39.37)
 		)
 		(stroke
@@ -8209,13 +8192,13 @@
 	)
 	(wire
 		(pts
-			(xy 97.79 25.4) (xy 97.79 22.86)
+			(xy 110.49 24.13) (xy 116.84 24.13)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "4dc02ec6-9da9-4e67-ac12-c552c0ae193e")
+		(uuid "4b1172af-3d5d-4b38-a490-ac6d616c4826")
 	)
 	(wire
 		(pts
@@ -8226,16 +8209,6 @@
 			(type default)
 		)
 		(uuid "4e26719d-2811-418d-ac35-c206d295fc0c")
-	)
-	(wire
-		(pts
-			(xy 97.79 125.73) (xy 101.6 125.73)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "507fa25f-fc34-4e02-af9c-e2908dc639fc")
 	)
 	(wire
 		(pts
@@ -8519,16 +8492,6 @@
 	)
 	(wire
 		(pts
-			(xy 43.18 128.27) (xy 62.23 128.27)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "695787f5-0df7-4ae1-b53f-8a781d5988b3")
-	)
-	(wire
-		(pts
 			(xy 53.34 25.4) (xy 60.96 25.4)
 		)
 		(stroke
@@ -8669,16 +8632,6 @@
 	)
 	(wire
 		(pts
-			(xy 52.07 125.73) (xy 45.72 125.73)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "785a6f0a-896f-48a9-a5f3-8a0db2abfa8b")
-	)
-	(wire
-		(pts
 			(xy 29.21 82.55) (xy 29.21 85.09)
 		)
 		(stroke
@@ -8686,16 +8639,6 @@
 			(type default)
 		)
 		(uuid "78a5cbfb-0763-4565-87ef-75be7cef3536")
-	)
-	(wire
-		(pts
-			(xy 59.69 125.73) (xy 62.23 125.73)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "79069fc0-dcde-4a16-a10a-384876c69d2e")
 	)
 	(wire
 		(pts
@@ -8796,16 +8739,6 @@
 			(type default)
 		)
 		(uuid "7f182df6-5ede-42d7-ad4c-23367708477d")
-	)
-	(wire
-		(pts
-			(xy 119.38 55.88) (xy 115.57 55.88)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7f724db3-8eff-4a9a-a2db-3633c3b93e3a")
 	)
 	(wire
 		(pts
@@ -8999,7 +8932,7 @@
 	)
 	(wire
 		(pts
-			(xy 43.18 128.27) (xy 43.18 118.11)
+			(xy 43.18 118.11) (xy 43.18 128.27)
 		)
 		(stroke
 			(width 0)
@@ -9016,16 +8949,6 @@
 			(type default)
 		)
 		(uuid "90da763d-9f29-43fc-8e99-cb45066b4752")
-	)
-	(wire
-		(pts
-			(xy 45.72 125.73) (xy 45.72 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "910d1dd1-d615-45b0-b6a0-14b3dc00bfc0")
 	)
 	(wire
 		(pts
@@ -9236,16 +9159,6 @@
 			(type default)
 		)
 		(uuid "a9887516-9919-440a-8533-197a5858c0dd")
-	)
-	(wire
-		(pts
-			(xy 115.57 25.4) (xy 97.79 25.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "aa6f287a-c90e-4b27-b853-7d201586d22c")
 	)
 	(wire
 		(pts
@@ -9979,16 +9892,6 @@
 	)
 	(wire
 		(pts
-			(xy 97.79 128.27) (xy 101.6 128.27)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f0c952e3-085e-4b72-a208-d0530dc0d4ff")
-	)
-	(wire
-		(pts
 			(xy 182.88 83.82) (xy 234.95 83.82)
 		)
 		(stroke
@@ -10066,16 +9969,6 @@
 			(type default)
 		)
 		(uuid "f5fbd932-1c8a-4e67-8f33-d92274ba7ad5")
-	)
-	(wire
-		(pts
-			(xy 115.57 55.88) (xy 115.57 25.4)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fad35284-f7f6-44ad-9219-8d9b39c9a2d7")
 	)
 	(wire
 		(pts
@@ -10621,9 +10514,9 @@
 		(at 71.12 52.07 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "1149e226-4b6d-4af3-90b2-ca1bec9480b7")
 		(property "Reference" "U2"
 			(at 72.7711 44.45 0)
@@ -10902,7 +10795,7 @@
 		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "2326b1f6-32bf-4b94-a07d-c35763c86feb")
 		(property "Reference" "FID3"
@@ -10963,6 +10856,119 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "FID3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:LED")
+		(at 78.74 123.19 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "24929154-08c2-44ca-bbb4-bfae672b2c90")
+		(property "Reference" "D1"
+			(at 80.3275 115.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "LED_R"
+			(at 80.3275 118.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "LED_SMD:LED_0603_1608Metric"
+			(at 78.74 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://www.lcsc.com/datasheet/C2286.pdf"
+			(at 78.74 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "20mA 300mcd 615nm~630nm Red 2.4V 40mW 0603 LED Indication - Discrete RoHS"
+			(at 78.74 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Pins" "1=K 2=A"
+			(at 78.74 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C2286"
+			(at 78.74 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer Number" "KT-0603R"
+			(at 78.74 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "manf#" "KT-0603R"
+			(at 78.74 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 1" "https://www.lcsc.com/product-detail/C2286.html"
+			(at 78.74 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "8013dcdd-43d0-46f8-acd0-627a31c331a3")
+		)
+		(pin "2"
+			(uuid "83c786a9-d903-4c3a-9207-18ec8a98327e")
+		)
+		(instances
+			(project ""
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "D1")
 					(unit 1)
 				)
 			)
@@ -11124,7 +11130,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
 			(at 150.622 173.99 90)
 			(effects
 				(font
@@ -11348,7 +11354,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "2be9d7af-0c40-45d4-a210-3b0dee88fcba")
 		(property "Reference" "J1"
@@ -11592,7 +11598,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+		(property "Footprint" "RearLight:R_0603_1608Metric_NO_SILK"
 			(at 231.648 74.93 90)
 			(effects
 				(font
@@ -11713,7 +11719,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
 			(at 61.722 73.66 90)
 			(effects
 				(font
@@ -11814,9 +11820,9 @@
 		(at -111.76 31.75 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "3640189b-0d01-4fc9-a828-a609d4f822f0")
 		(property "Reference" "U7"
@@ -12088,6 +12094,127 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 55.88 128.27 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "3af4379d-905b-4dc9-877a-7bdcf4cf0f14")
+		(property "Reference" "R16"
+			(at 53.848 125.73 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "49R9"
+			(at 59.182 125.73 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
+			(at 55.88 130.048 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8579705916650295296"
+			(at 55.88 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "-55℃~+155℃ 49.9Ω 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS"
+			(at 55.88 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 55.88 128.27 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "manf#" "0402WGF499JTCE"
+			(at 55.88 128.27 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 1" "https://jlcpcb.com/partdetail/25863-0402WGF499JTCE/C25120"
+			(at 55.88 128.27 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 2" ""
+			(at 55.88 128.27 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C25120"
+			(at 55.88 128.27 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer Part Number" "0402WGF499JTCE"
+			(at 55.88 128.27 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "cafe3715-e5b8-42ec-8ee6-772b37909f8b")
+		)
+		(pin "1"
+			(uuid "6c3f48f1-e2c1-46aa-85b1-54a8218f155f")
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "R16")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:C")
 		(at 191.77 128.27 0)
 		(mirror y)
@@ -12213,7 +12340,7 @@
 	)
 	(symbol
 		(lib_id "power:+3V3")
-		(at 107.95 22.86 0)
+		(at 118.11 22.86 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -12221,7 +12348,7 @@
 		(dnp no)
 		(uuid "3d8739c1-d33d-48ca-bc27-9a2998c961d3")
 		(property "Reference" "#PWR048"
-			(at 107.95 26.67 0)
+			(at 118.11 26.67 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12230,7 +12357,7 @@
 			)
 		)
 		(property "Value" "RGB_R"
-			(at 103.124 17.78 0)
+			(at 113.284 17.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12239,7 +12366,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 107.95 22.86 0)
+			(at 118.11 22.86 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12248,7 +12375,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 107.95 22.86 0)
+			(at 118.11 22.86 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12257,7 +12384,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3V3\""
-			(at 107.95 22.86 0)
+			(at 118.11 22.86 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12368,7 +12495,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
 			(at 228.092 24.13 90)
 			(effects
 				(font
@@ -12769,72 +12896,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:+3V3")
-		(at 101.6 125.73 270)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "45321fb0-0cef-4a00-b821-4d837d4ef047")
-		(property "Reference" "#PWR045"
-			(at 97.79 125.73 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "RGB_R"
-			(at 105.664 125.73 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 101.6 125.73 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 101.6 125.73 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+3V3\""
-			(at 101.6 125.73 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "733abb92-d82c-40b0-8b84-09d07eb765a8")
-		)
-		(instances
-			(project "RearLight"
-				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "#PWR045")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:R")
 		(at 67.31 25.4 90)
 		(unit 1)
@@ -12859,7 +12920,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+		(property "Footprint" "RearLight:R_0603_1608Metric_NO_SILK"
 			(at 67.31 27.178 90)
 			(effects
 				(font
@@ -13293,7 +13354,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
 			(at 210.312 24.13 90)
 			(effects
 				(font
@@ -13480,7 +13541,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
 			(at 106.172 41.91 90)
 			(effects
 				(font
@@ -13582,8 +13643,8 @@
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
-		(on_board yes)
-		(dnp no)
+		(on_board no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "642630bb-0abb-4d9b-90bc-c20415d40096")
 		(property "Reference" "H2"
@@ -13733,7 +13794,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+		(property "Footprint" "RearLight:R_0603_1608Metric_NO_SILK"
 			(at -128.778 81.28 90)
 			(effects
 				(font
@@ -13835,8 +13896,8 @@
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
-		(on_board yes)
-		(dnp no)
+		(on_board no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "66a6f491-12ee-472f-9bcf-8e967c708757")
 		(property "Reference" "H3"
@@ -13964,9 +14025,9 @@
 		(at 109.22 162.56 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "6af8dfbf-d2a3-4fbe-8d5c-e83f9fb09172")
 		(property "Reference" "BT1"
 			(at 102.108 162.56 90)
@@ -14273,7 +14334,7 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer Part Number" ""
+		(property "Manufacturer Part Number" "OPT3001DNPR"
 			(at 260.35 31.75 0)
 			(effects
 				(font
@@ -14539,8 +14600,8 @@
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
-		(on_board yes)
-		(dnp no)
+		(on_board no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "7753ffc5-f43c-4840-9ee5-77da5e8fe0a2")
 		(property "Reference" "H1"
@@ -14780,72 +14841,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:+3V3")
-		(at 97.79 22.86 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "7f35ba5a-1b97-4dc9-a813-ecbcd9c185cf")
-		(property "Reference" "#PWR047"
-			(at 97.79 26.67 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "RGB_B"
-			(at 92.964 17.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 97.79 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 97.79 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+3V3\""
-			(at 97.79 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "5cc87bfa-b559-45d7-9591-40d7d5bad5ad")
-		)
-		(instances
-			(project "RearLight"
-				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "#PWR047")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:GND")
 		(at -121.92 27.94 0)
 		(unit 1)
@@ -15012,6 +15007,118 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:LED")
+		(at 78.74 128.27 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "81e52cb1-b62d-4f5c-9d74-c39e2372fb0d")
+		(property "Reference" "D2"
+			(at 80.01 131.572 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "LED_Y"
+			(at 80.264 133.604 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "LED_SMD:LED_0805_2012Metric"
+			(at 78.74 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://www.lcsc.com/datasheet/C2296.pdf"
+			(at 78.74 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "175mcd 584nm~594nm Yellow 1.8V~2.4V 40mW 0805 LED Indication - Discrete RoHS"
+			(at 78.74 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Sim.Pins" "1=K 2=A"
+			(at 78.74 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C2296"
+			(at 78.74 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer Number" "KT-0805Y"
+			(at 78.74 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "manf#" "KT-0805Y"
+			(at 78.74 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 1" "https://www.lcsc.com/product-detail/C2296.html"
+			(at 78.74 128.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "27089efa-2a4d-4955-b9d7-c204d14b2b8b")
+		)
+		(pin "2"
+			(uuid "260c62c3-4739-409c-aeab-826475314942")
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "D2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 73.66 36.83 0)
 		(unit 1)
@@ -15082,8 +15189,8 @@
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
-		(on_board yes)
-		(dnp no)
+		(on_board no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "893a8bd5-4141-4ad7-830f-bbf30a88b9c8")
 		(property "Reference" "H4"
@@ -15276,9 +15383,9 @@
 		(at 121.92 43.18 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "8c5af5b6-e6de-45d2-8703-5b6bcf97fbcb")
 		(property "Reference" "U1"
 			(at 122.174 41.402 0)
@@ -15298,7 +15405,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Liard_BL653_ 453-00039_Custom:Laird_BL653"
+		(property "Footprint" "RF_Module:Laird_BL653"
 			(at 184.404 129.032 0)
 			(effects
 				(font
@@ -16246,7 +16353,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
 			(at -123.698 63.5 90)
 			(effects
 				(font
@@ -16347,9 +16454,9 @@
 		(at 247.65 86.36 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "96356621-61a7-4c4e-94e4-c0a2996a6b81")
 		(property "Reference" "U5"
 			(at 240.03 101.6 0)
@@ -16432,7 +16539,16 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer Part Number" ""
+		(property "Manufacturer Part Number" "LIS3DHTR"
+			(at 247.65 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C15134"
 			(at 247.65 86.36 0)
 			(effects
 				(font
@@ -16589,7 +16705,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
 			(at 55.88 124.968 90)
 			(effects
 				(font
@@ -17029,7 +17145,7 @@
 	)
 	(symbol
 		(lib_id "power:+3V3")
-		(at 118.11 22.86 0)
+		(at 110.49 22.86 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17037,7 +17153,7 @@
 		(dnp no)
 		(uuid "a4228512-34cc-4179-bcd5-0b51d90565e2")
 		(property "Reference" "#PWR049"
-			(at 118.11 26.67 0)
+			(at 110.49 26.67 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17045,8 +17161,8 @@
 				(hide yes)
 			)
 		)
-		(property "Value" "RGB_G"
-			(at 113.284 17.78 0)
+		(property "Value" "RGB_Y"
+			(at 105.664 17.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17055,7 +17171,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 118.11 22.86 0)
+			(at 110.49 22.86 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17064,7 +17180,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 118.11 22.86 0)
+			(at 110.49 22.86 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17073,7 +17189,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3V3\""
-			(at 118.11 22.86 0)
+			(at 110.49 22.86 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17111,7 +17227,7 @@
 				(hide yes)
 			)
 		)
-		(property "Value" "RGB_B"
+		(property "Value" "RGB_Y"
 			(at 105.664 128.27 90)
 			(effects
 				(font
@@ -17478,7 +17594,7 @@
 		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "af9d7cc3-6843-4195-abf8-4455024b1299")
 		(property "Reference" "FID1"
@@ -17669,127 +17785,6 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "#PWR051")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R")
-		(at 55.88 125.73 90)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "b6187717-2e40-4a74-ac17-9b3d4e4a5e9d")
-		(property "Reference" "R19"
-			(at 51.054 124.46 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "100"
-			(at 60.452 124.46 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 55.88 127.508 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8579705907481001984"
-			(at 55.88 125.73 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "-55℃~+155℃ 100Ω 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS"
-			(at 55.88 125.73 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
-			(at 55.88 125.73 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "manf#" "0402WGF1000TCE"
-			(at 55.88 125.73 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Distribution Link 1" "https://jlcpcb.com/partdetail/25819-0402WGF1000TCE/C25076"
-			(at 55.88 125.73 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Distribution Link 2" ""
-			(at 55.88 125.73 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC" "C25076"
-			(at 55.88 125.73 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer Part Number" "0402WGF1000TCE"
-			(at 55.88 125.73 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "7d7e841c-5616-4532-9c15-9607a9603d1b")
-		)
-		(pin "1"
-			(uuid "c6489fe2-882f-4e78-9992-e94f2254918c")
-		)
-		(instances
-			(project "RearLight"
-				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "R19")
 					(unit 1)
 				)
 			)
@@ -18272,7 +18267,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
 			(at 55.372 73.66 90)
 			(effects
 				(font
@@ -18393,7 +18388,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
 			(at 219.202 24.13 90)
 			(effects
 				(font
@@ -19064,7 +19059,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "RearLight:C_0603_1608Metric_NO_SILK"
 			(at 61.9252 35.56 0)
 			(effects
 				(font
@@ -19475,148 +19470,6 @@
 		)
 	)
 	(symbol
-		(lib_id "RearLight:LTRB_RASF.01-6B6C-C3E6-0-0-R18")
-		(at 67.31 120.65 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "ea744d06-b700-4fc8-b00e-738ca7e47d29")
-		(property "Reference" "LED2"
-			(at 80.01 115.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "LTRB_RASF.01-6B6C-C3E6-0-0-R18"
-			(at 80.01 118.11 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "RearLight:LTRBRASF016B6CC3E600R18"
-			(at 99.06 215.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://look.ams-osram.com/m/2d62a008e17fb3a1/original/LTRB-RASF-01.pdf"
-			(at 99.06 315.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-				(hide yes)
-			)
-		)
-		(property "Description" "Red, Green, Blue (RGB) indicator LED, 621nm Red, 530nm Green, 465nm Blue LED Indication - Discrete 2.75V Red, 2.4V Green, 2.8V Blue 1010 (2525 Metric)"
-			(at 67.31 120.65 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Height" "0.55"
-			(at 99.06 515.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-				(hide yes)
-			)
-		)
-		(property "Mouser Part Number" ""
-			(at 99.06 615.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-				(hide yes)
-			)
-		)
-		(property "Mouser Price/Stock" ""
-			(at 99.06 715.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer_Name" "ams OSRAM"
-			(at 99.06 815.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer_Part_Number" "LTRB RASF.01-6B6C-C3E6-0-0-R18"
-			(at 99.06 915.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer Part Number" "LTRB_RASF.01-6B6C-C3E6-0-0-R18"
-			(at 99.06 615.57 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "5a06f6c4-987b-429c-81c3-c3b3f630f5a8")
-		)
-		(pin "3"
-			(uuid "a84af5a1-1816-4a56-b546-648f25665208")
-		)
-		(pin "6"
-			(uuid "f8bfd4de-97f0-4a20-b36c-caffd5c45806")
-		)
-		(pin "5"
-			(uuid "d38ab6c5-c606-498c-88ec-948f70fa27c8")
-		)
-		(pin "1"
-			(uuid "666479c6-fc72-440f-8029-d16487bd7c95")
-		)
-		(pin "2"
-			(uuid "d063d82c-877d-421e-959e-c909932c59ea")
-		)
-		(instances
-			(project ""
-				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "LED2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:C")
 		(at 73.66 31.75 0)
 		(unit 1)
@@ -19643,7 +19496,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "RearLight:C_0603_1608Metric_NO_SILK"
 			(at 74.6252 35.56 0)
 			(effects
 				(font
@@ -19755,7 +19608,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
 			(at 113.792 156.21 90)
 			(effects
 				(font
@@ -19818,7 +19671,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C23179"
+		(property "LCSC" "C25117"
 			(at 115.57 156.21 90)
 			(effects
 				(font
@@ -19924,7 +19777,7 @@
 		(exclude_from_sim yes)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "effb36fc-7573-4d1b-846f-ab8ef055a741")
 		(property "Reference" "FID2"
@@ -20639,7 +20492,7 @@
 				(hide yes)
 			)
 		)
-		(property "Value" "RGB_G"
+		(property "Value" "RGB_R"
 			(at 105.664 123.19 90)
 			(effects
 				(font
