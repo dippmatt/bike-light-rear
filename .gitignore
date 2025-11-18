@@ -1,4 +1,5 @@
 .venv/
+*.lck
 RearLight-backups/
-datasheets/pdf/
-!datasheets/markdown/
+hardware/datasheets/markdown/marker_extraction_with_images/
+hardware/datasheets/markdown/marker_extraction_with_images/

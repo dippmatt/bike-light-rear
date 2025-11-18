@@ -1,1 +1,7 @@
 .venv/
+*.lck
+hardware/datasheets/markdown/marker_extraction_with_images/
+hardware/kicad_project/manufacturing
+hardware/kicad_footprints/
+hardware/kicad_3d_models/
+hardware/kicad_symbols/
