@@ -1,5 +1,6 @@
 .venv/
 *.lck
 RearLight-backups/
+hardware/kicad_project/production
 hardware/datasheets/markdown/marker_extraction_with_images/
 hardware/datasheets/markdown/marker_extraction_with_images/
