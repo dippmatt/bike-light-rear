@@ -6845,6 +6845,16 @@
 		)
 		(uuid "d78fad52-ee42-478e-985f-812a55431096")
 	)
+	(text "Pull down to GND\nThen EN is not floating\nLED off by default"
+		(exclude_from_sim no)
+		(at 179.578 150.368 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "dfa16ec3-bc87-4d28-b282-b6ef5127a931")
+	)
 	(text "Battery Overcharge,\nOverdischarge,\nOvercurrent Protection\n"
 		(exclude_from_sim no)
 		(at 132.842 148.59 0)
@@ -6908,6 +6918,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "2df5b2c0-bb4d-487c-97bc-0938ce4a4f0d")
+	)
+	(junction
+		(at 198.12 137.16)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "316ff815-53aa-4502-af4a-ac45ee2e7f58")
 	)
 	(junction
 		(at 162.56 124.46)
@@ -7538,6 +7554,16 @@
 			(type default)
 		)
 		(uuid "08d4e94c-0355-4f13-aef4-be58b5a106c7")
+	)
+	(wire
+		(pts
+			(xy 198.12 153.67) (xy 198.12 157.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "093d7232-20d1-400f-94c0-02edf8dbb1e0")
 	)
 	(wire
 		(pts
@@ -9521,6 +9547,16 @@
 	)
 	(wire
 		(pts
+			(xy 198.12 137.16) (xy 198.12 146.05)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bba9ce1e-b13a-48fd-9bcb-7afda6ba773a")
+	)
+	(wire
+		(pts
 			(xy 167.64 124.46) (xy 167.64 121.92)
 		)
 		(stroke
@@ -10751,7 +10787,43 @@
 				(hide yes)
 			)
 		)
-		(property "Manufacturer Part Number" ""
+		(property "Manufacturer Part Number" "USBLC6-2SC6"
+			(at 71.12 52.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C7519"
+			(at 71.12 52.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 1" "https://www.lcsc.com/product-detail/C7519.html?s_z=n_USBLC6-2SC6"
+			(at 71.12 52.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "STMicroelectronics"
+			(at 71.12 52.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 2" "https://www.digikey.de/de/products/detail/stmicroelectronics/USBLC6-2SC6/1040559"
 			(at 71.12 52.07 0)
 			(effects
 				(font
@@ -10968,6 +11040,128 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "R15")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 198.12 149.86 0)
+		(mirror y)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "2265b455-826b-4c40-b8d2-ac68c4550ed1")
+		(property "Reference" "R17"
+			(at 192.786 149.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "100k"
+			(at 194.818 149.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
+			(at 199.898 149.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8579705919464263680"
+			(at 198.12 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "-55℃~+155℃ 100kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS"
+			(at 198.12 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 198.12 149.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "manf#" "0402WGF1003TCE"
+			(at 198.12 149.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 1" "https://jlcpcb.com/partdetail/26484-0402WGF1003TCE/C25741"
+			(at 198.12 149.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 2" ""
+			(at 198.12 149.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C25741"
+			(at 198.12 149.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer Part Number" "0402WGF1003TCE"
+			(at 198.12 149.86 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "f722f0cf-448e-4dc5-93a6-ab365fcc2e3d")
+		)
+		(pin "1"
+			(uuid "fe47f505-0853-42df-80d1-b1353d6b5c61")
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "R17")
 					(unit 1)
 				)
 			)
@@ -16656,7 +16850,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "LIS3DH"
+		(property "Value" "LIS3DHTR"
 			(at 240.03 104.14 0)
 			(effects
 				(font
@@ -19649,6 +19843,72 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "#PWR09")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 198.12 157.48 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "e867fd9e-9fc9-4d1f-a302-9190e5c3c01e")
+		(property "Reference" "#PWR045"
+			(at 198.12 163.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 198.12 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 198.12 157.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 198.12 157.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 198.12 157.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "d8189e88-2ea1-4f8c-9af3-96c4939a602b")
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "#PWR045")
 					(unit 1)
 				)
 			)
