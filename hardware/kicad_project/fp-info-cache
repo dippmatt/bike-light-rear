@@ -1,4 +1,4 @@
-26792007876205832
+26792003463606036
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -53676,6 +53676,13 @@ USB C Type-C Receptacle SMD USB 2.0 16P 16C USB4105-15-A USB4105-15-A-060 USB410
 20
 17
 Connector_USB
+USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal_wide_slot
+USB 2.0 Type C Receptacle, GCT, 16P, top mounted, horizontal, 5A: https://gct.co/files/drawings/usb4105.pdf
+USB C Type-C Receptacle SMD USB 2.0 16P 16C USB4105-15-A USB4105-15-A-060 USB4105-15-A-120 USB4105-GF-A USB4105-GF-A-060 USB4105-GF-A-120
+0
+20
+17
+Connector_USB
 USB_C_Receptacle_GCT_USB4110
 USB 2.0 Type C Receptacle, GCT, 16P, top mounted, horizontal, 5A, https://gct.co/files/drawings/usb4110.pdf
 USB 2.0 C Type-C Receptacle SMD 16P 16C USB4110-GF-A
@@ -94996,13 +95003,6 @@ GCT_USB4105GFA060
 0
 16
 16
-RearLight
-LEDC1608X35N
-
-
-0
-2
-2
 RearLight
 LTRBRASF016B6CC3E600R18
 1010 (2525 Metric)
