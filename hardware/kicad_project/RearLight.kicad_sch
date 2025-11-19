@@ -10136,9 +10136,9 @@
 		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "014de6d0-e354-4901-9f7e-8e9e92a1544a")
 		(property "Reference" "LED1"
 			(at 266.192 134.62 0)
@@ -10790,16 +10790,16 @@
 	)
 	(symbol
 		(lib_id "Mechanical:Fiducial")
-		(at 96.52 182.88 0)
+		(at 55.88 186.69 0)
 		(unit 1)
-		(exclude_from_sim yes)
+		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
 		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "2326b1f6-32bf-4b94-a07d-c35763c86feb")
 		(property "Reference" "FID3"
-			(at 99.06 181.6099 0)
+			(at 58.42 185.4199 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10808,7 +10808,7 @@
 			)
 		)
 		(property "Value" "Fiducial"
-			(at 99.06 184.1499 0)
+			(at 58.42 187.9599 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10817,7 +10817,7 @@
 			)
 		)
 		(property "Footprint" "Fiducial:Fiducial_1mm_Mask2mm"
-			(at 96.52 182.88 0)
+			(at 55.88 186.69 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10826,7 +10826,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 96.52 182.88 0)
+			(at 55.88 186.69 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10835,7 +10835,7 @@
 			)
 		)
 		(property "Description" "Fiducial Marker"
-			(at 96.52 182.88 0)
+			(at 55.88 186.69 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10844,7 +10844,7 @@
 			)
 		)
 		(property "Manufacturer Part Number" ""
-			(at 96.52 182.88 0)
+			(at 55.88 186.69 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11820,9 +11820,9 @@
 		(at -111.76 31.75 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
-		(dnp yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "3640189b-0d01-4fc9-a828-a609d4f822f0")
 		(property "Reference" "U7"
@@ -11868,7 +11868,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC" "C6134668"
+		(property "LCSC" "C5833729"
 			(at -104.902 100.584 0)
 			(effects
 				(font
@@ -12710,6 +12710,70 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "C11")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Mechanical:MountingHole")
+		(at 25.4 186.69 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp yes)
+		(fields_autoplaced yes)
+		(uuid "4323bc88-12bb-4891-88db-ca07f8c05170")
+		(property "Reference" "H3"
+			(at 27.94 185.4199 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "JLCPCB Tooling Hole"
+			(at 27.94 187.9599 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "MountingHole:ToolingHole_1.152mm"
+			(at 25.4 186.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 25.4 186.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 25.4 186.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "H3")
 					(unit 1)
 				)
 			)
@@ -13638,70 +13702,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Mechanical:MountingHole")
-		(at 36.83 182.88 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(dnp yes)
-		(fields_autoplaced yes)
-		(uuid "642630bb-0abb-4d9b-90bc-c20415d40096")
-		(property "Reference" "H2"
-			(at 39.37 181.6099 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "M2"
-			(at 39.37 184.1499 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_2.1mm"
-			(at 36.83 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 36.83 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Mounting Hole without connection"
-			(at 36.83 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(instances
-			(project "RearLight"
-				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "H2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:PWR_FLAG")
 		(at 124.46 161.29 0)
 		(unit 1)
@@ -13885,70 +13885,6 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "R5")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Mechanical:MountingHole")
-		(at 48.26 182.88 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(dnp yes)
-		(fields_autoplaced yes)
-		(uuid "66a6f491-12ee-472f-9bcf-8e967c708757")
-		(property "Reference" "H3"
-			(at 50.8 181.6099 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "M2"
-			(at 50.8 184.1499 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_2.1mm"
-			(at 48.26 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 48.26 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Mounting Hole without connection"
-			(at 48.26 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(instances
-			(project "RearLight"
-				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "H3")
 					(unit 1)
 				)
 			)
@@ -14216,9 +14152,9 @@
 		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "6cef28ef-cf56-4ffc-8b3f-aa5058bc5e66")
 		(property "Reference" "U6"
 			(at 250.19 26.67 0)
@@ -14596,16 +14532,16 @@
 	)
 	(symbol
 		(lib_id "Mechanical:MountingHole")
-		(at 25.4 182.88 0)
+		(at 25.4 176.53 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
-		(on_board no)
+		(on_board yes)
 		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "7753ffc5-f43c-4840-9ee5-77da5e8fe0a2")
 		(property "Reference" "H1"
-			(at 27.94 181.6099 0)
+			(at 27.94 175.2599 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14613,8 +14549,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "M2"
-			(at 27.94 184.1499 0)
+		(property "Value" "JLCPCB Tooling Hole"
+			(at 27.94 177.7999 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14622,8 +14558,8 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "MountingHole:MountingHole_2.1mm"
-			(at 25.4 182.88 0)
+		(property "Footprint" "MountingHole:ToolingHole_1.152mm"
+			(at 25.4 176.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14632,7 +14568,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 25.4 182.88 0)
+			(at 25.4 176.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14641,7 +14577,7 @@
 			)
 		)
 		(property "Description" "Mounting Hole without connection"
-			(at 25.4 182.88 0)
+			(at 25.4 176.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15178,70 +15114,6 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "#PWR07")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Mechanical:MountingHole")
-		(at 59.69 182.88 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(dnp yes)
-		(fields_autoplaced yes)
-		(uuid "893a8bd5-4141-4ad7-830f-bbf30a88b9c8")
-		(property "Reference" "H4"
-			(at 62.23 181.6099 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "M2"
-			(at 62.23 184.1499 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_2.1mm"
-			(at 59.69 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 59.69 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Mounting Hole without connection"
-			(at 59.69 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(instances
-			(project "RearLight"
-				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "H4")
 					(unit 1)
 				)
 			)
@@ -16806,9 +16678,9 @@
 		(at 207.01 121.92 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(uuid "9a044b86-abe5-404d-8c8e-117fb7a6242e")
 		(property "Reference" "U8"
 			(at 203.454 119.634 0)
@@ -17210,6 +17082,70 @@
 		)
 	)
 	(symbol
+		(lib_id "Mechanical:MountingHole")
+		(at 25.4 181.61 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp yes)
+		(fields_autoplaced yes)
+		(uuid "a48a81b7-fbca-43e8-a94f-725d67b4be94")
+		(property "Reference" "H2"
+			(at 27.94 180.3399 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "JLCPCB Tooling Hole"
+			(at 27.94 182.8799 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "MountingHole:ToolingHole_1.152mm"
+			(at 25.4 181.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 25.4 181.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 25.4 181.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "H2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:+3V3")
 		(at 101.6 128.27 270)
 		(unit 1)
@@ -17589,16 +17525,16 @@
 	)
 	(symbol
 		(lib_id "Mechanical:Fiducial")
-		(at 71.12 182.88 0)
+		(at 55.88 176.53 0)
 		(unit 1)
-		(exclude_from_sim yes)
+		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
 		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "af9d7cc3-6843-4195-abf8-4455024b1299")
 		(property "Reference" "FID1"
-			(at 73.66 181.6099 0)
+			(at 58.42 175.2599 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17607,7 +17543,7 @@
 			)
 		)
 		(property "Value" "Fiducial"
-			(at 73.66 184.1499 0)
+			(at 58.42 177.7999 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17616,7 +17552,7 @@
 			)
 		)
 		(property "Footprint" "Fiducial:Fiducial_1mm_Mask2mm"
-			(at 71.12 182.88 0)
+			(at 55.88 176.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17625,7 +17561,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 71.12 182.88 0)
+			(at 55.88 176.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17634,7 +17570,7 @@
 			)
 		)
 		(property "Description" "Fiducial Marker"
-			(at 71.12 182.88 0)
+			(at 55.88 176.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17643,7 +17579,7 @@
 			)
 		)
 		(property "Manufacturer Part Number" ""
-			(at 71.12 182.88 0)
+			(at 55.88 176.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19771,17 +19707,17 @@
 		)
 	)
 	(symbol
-		(lib_id "Mechanical:Fiducial")
-		(at 83.82 182.88 0)
+		(lib_id "Mechanical:MountingHole")
+		(at 25.4 191.77 0)
 		(unit 1)
-		(exclude_from_sim yes)
+		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
 		(dnp yes)
 		(fields_autoplaced yes)
-		(uuid "effb36fc-7573-4d1b-846f-ab8ef055a741")
-		(property "Reference" "FID2"
-			(at 86.36 181.6099 0)
+		(uuid "ef092b2e-476a-42f4-9eb5-834ddb2e60f5")
+		(property "Reference" "H4"
+			(at 27.94 190.4999 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19789,8 +19725,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Fiducial"
-			(at 86.36 184.1499 0)
+		(property "Value" "JLCPCB Tooling Hole"
+			(at 27.94 193.0399 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19798,8 +19734,8 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Fiducial:Fiducial_1mm_Mask2mm"
-			(at 83.82 182.88 0)
+		(property "Footprint" "MountingHole:ToolingHole_1.152mm"
+			(at 25.4 191.77 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19808,7 +19744,71 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 83.82 182.88 0)
+			(at 25.4 191.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 25.4 191.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "H4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Mechanical:Fiducial")
+		(at 55.88 181.61 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp yes)
+		(fields_autoplaced yes)
+		(uuid "effb36fc-7573-4d1b-846f-ab8ef055a741")
+		(property "Reference" "FID2"
+			(at 58.42 180.3399 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "Fiducial"
+			(at 58.42 182.8799 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Fiducial:Fiducial_1mm_Mask2mm"
+			(at 55.88 181.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 55.88 181.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19817,7 +19817,7 @@
 			)
 		)
 		(property "Description" "Fiducial Marker"
-			(at 83.82 182.88 0)
+			(at 55.88 181.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19826,7 +19826,7 @@
 			)
 		)
 		(property "Manufacturer Part Number" ""
-			(at 83.82 182.88 0)
+			(at 55.88 181.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
