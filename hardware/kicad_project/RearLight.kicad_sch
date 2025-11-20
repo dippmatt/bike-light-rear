@@ -6914,12 +6914,6 @@
 		(uuid "2dc0a663-238a-437c-9b8e-d46851da4ed1")
 	)
 	(junction
-		(at 191.77 60.96)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "2df5b2c0-bb4d-487c-97bc-0938ce4a4f0d")
-	)
-	(junction
 		(at 198.12 137.16)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -7004,6 +6998,12 @@
 		(uuid "6343e9de-837d-43ce-99a2-61b3f387ea27")
 	)
 	(junction
+		(at 212.09 45.72)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "681ea38a-591a-4ec2-a5f1-341185de1e24")
+	)
+	(junction
 		(at 154.94 124.46)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -7076,12 +7076,6 @@
 		(uuid "9a725979-d066-4f04-85e1-f8be1e65a6ab")
 	)
 	(junction
-		(at 194.31 58.42)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "9aa5caae-33ac-4f0f-aca4-34f6669ba38d")
-	)
-	(junction
 		(at -59.69 82.55)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -7122,6 +7116,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "ae54ce76-58a2-4c43-8423-fe7a45511aa4")
+	)
+	(junction
+		(at 208.28 34.29)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "b0cb7e5c-8e4c-489b-bcf2-a0d956c05a02")
 	)
 	(junction
 		(at -57.15 59.69)
@@ -7196,10 +7196,10 @@
 		(uuid "dfa1fde6-85e1-4b8e-b78e-76d86586cde2")
 	)
 	(junction
-		(at 45.72 118.11)
+		(at 195.58 86.36)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "e1fe2a34-a13b-42d0-8d7f-440444784b9a")
+		(uuid "e257a2c2-1aa6-4969-b621-4d0aa982d6a8")
 	)
 	(junction
 		(at 212.09 39.37)
@@ -7218,12 +7218,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "ed6b174d-c230-4979-b3dd-a7c3d89cf76a")
-	)
-	(junction
-		(at 194.31 34.29)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "f4298d10-86ba-4a73-ad3f-3a41cf0821ca")
 	)
 	(junction
 		(at 55.88 52.07)
@@ -7262,10 +7256,6 @@
 	(no_connect
 		(at 119.38 88.9)
 		(uuid "0ed88e50-fa4b-4d95-a182-f5eff96e1a30")
-	)
-	(no_connect
-		(at 182.88 86.36)
-		(uuid "147037ad-62ef-457f-88ae-f50dd5e7a3f9")
 	)
 	(no_connect
 		(at -114.3 44.45)
@@ -7360,8 +7350,8 @@
 		(uuid "729bde52-f918-4bc1-b202-9b4e71bca738")
 	)
 	(no_connect
-		(at 182.88 55.88)
-		(uuid "75bff086-71c6-41d8-b368-af9b7c7d0db5")
+		(at 119.38 50.8)
+		(uuid "81cff93c-c186-42a8-aaef-80f25fbcebb4")
 	)
 	(no_connect
 		(at 182.88 68.58)
@@ -7378,6 +7368,10 @@
 	(no_connect
 		(at 234.95 86.36)
 		(uuid "90ff1fcd-7a5d-41b7-b471-ac11c6c351ce")
+	)
+	(no_connect
+		(at 182.88 55.88)
+		(uuid "96b60656-efa3-4027-9a52-edf52a824448")
 	)
 	(no_connect
 		(at 157.48 40.64)
@@ -7398,6 +7392,10 @@
 	(no_connect
 		(at 182.88 76.2)
 		(uuid "b3b76568-8284-4bd8-855d-02684be0af54")
+	)
+	(no_connect
+		(at 182.88 114.3)
+		(uuid "ce00f562-e3e9-4e56-8175-297ef390a115")
 	)
 	(no_connect
 		(at 160.02 40.64)
@@ -7537,16 +7535,6 @@
 	)
 	(wire
 		(pts
-			(xy 59.69 123.19) (xy 74.93 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "08893592-a28c-4797-a04b-c084f7a7ab87")
-	)
-	(wire
-		(pts
 			(xy 144.78 124.46) (xy 144.78 121.92)
 		)
 		(stroke
@@ -7614,6 +7602,16 @@
 			(type default)
 		)
 		(uuid "0d531cf4-8495-4bd8-a699-f98ec0aba790")
+	)
+	(wire
+		(pts
+			(xy 195.58 95.25) (xy 195.58 97.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0e52d4be-e3f2-4bcb-b600-5d7f0a535197")
 	)
 	(wire
 		(pts
@@ -7757,17 +7755,17 @@
 	)
 	(wire
 		(pts
-			(xy 191.77 91.44) (xy 191.77 60.96)
+			(xy -27.94 77.47) (xy -27.94 74.93)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "18a90a1b-0665-430a-9ed4-fa0dabb68650")
+		(uuid "194d3988-0d36-42c8-b5ba-98a0f1595393")
 	)
 	(wire
 		(pts
-			(xy 194.31 34.29) (xy 229.87 34.29)
+			(xy 201.93 30.48) (xy 208.28 30.48)
 		)
 		(stroke
 			(width 0)
@@ -7804,36 +7802,6 @@
 			(type default)
 		)
 		(uuid "1babd547-6274-482f-9b36-e03093500946")
-	)
-	(wire
-		(pts
-			(xy 119.38 53.34) (xy 116.84 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1c8d083d-502e-404d-adf6-d9358f71a164")
-	)
-	(wire
-		(pts
-			(xy 110.49 22.86) (xy 110.49 24.13)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1c9fe603-0dd4-481f-a299-9b26934b7b50")
-	)
-	(wire
-		(pts
-			(xy 82.55 123.19) (xy 101.6 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1d336321-2a27-4354-a4ac-dcf97720ab66")
 	)
 	(wire
 		(pts
@@ -7894,16 +7862,6 @@
 			(type default)
 		)
 		(uuid "200b89ad-f5b7-417d-a54e-472c5a76045b")
-	)
-	(wire
-		(pts
-			(xy 182.88 111.76) (xy 184.15 111.76)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2089f5c1-74a5-4c01-a4cc-2c6020572856")
 	)
 	(wire
 		(pts
@@ -8047,16 +8005,6 @@
 	)
 	(wire
 		(pts
-			(xy 52.07 128.27) (xy 43.18 128.27)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2f795154-ca2a-4d9b-9491-e45f7530a38a")
-	)
-	(wire
-		(pts
 			(xy -127 74.93) (xy -127 77.47)
 		)
 		(stroke
@@ -8097,7 +8045,7 @@
 	)
 	(wire
 		(pts
-			(xy 194.31 88.9) (xy 234.95 88.9)
+			(xy 208.28 88.9) (xy 234.95 88.9)
 		)
 		(stroke
 			(width 0)
@@ -8117,6 +8065,16 @@
 	)
 	(wire
 		(pts
+			(xy 196.85 60.96) (xy 182.88 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "32e674dc-ed7a-40a7-ac7f-c8ef7a36242b")
+	)
+	(wire
+		(pts
 			(xy 142.24 124.46) (xy 142.24 121.92)
 		)
 		(stroke
@@ -8124,16 +8082,6 @@
 			(type default)
 		)
 		(uuid "34a84180-c842-4994-b96b-7e01e3306aa4")
-	)
-	(wire
-		(pts
-			(xy 59.69 128.27) (xy 74.93 128.27)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "355d5a67-b1e5-4aab-908c-d0a67a40cc32")
 	)
 	(wire
 		(pts
@@ -8154,6 +8102,16 @@
 			(type default)
 		)
 		(uuid "383a7a76-f0ef-419f-9308-323a00deb783")
+	)
+	(wire
+		(pts
+			(xy -63.5 77.47) (xy -27.94 77.47)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3b486998-f9ed-41d7-8933-10510db1ccd7")
 	)
 	(wire
 		(pts
@@ -8187,16 +8145,6 @@
 	)
 	(wire
 		(pts
-			(xy 82.55 128.27) (xy 101.6 128.27)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3e4380dd-0b0b-434a-acb3-8c8db6f131b6")
-	)
-	(wire
-		(pts
 			(xy 182.88 104.14) (xy 198.12 104.14)
 		)
 		(stroke
@@ -8224,6 +8172,16 @@
 			(type default)
 		)
 		(uuid "3efbc0c0-eade-4a54-801a-556296733c30")
+	)
+	(wire
+		(pts
+			(xy -27.94 66.04) (xy -27.94 67.31)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3f4024c5-5924-4b9c-8896-b684c0cdfab0")
 	)
 	(wire
 		(pts
@@ -8297,6 +8255,16 @@
 	)
 	(wire
 		(pts
+			(xy 208.28 34.29) (xy 229.87 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "46599d2b-0b52-43eb-a2c6-32ac2e1cba85")
+	)
+	(wire
+		(pts
 			(xy -44.45 38.1) (xy -44.45 39.37)
 		)
 		(stroke
@@ -8334,16 +8302,6 @@
 			(type default)
 		)
 		(uuid "4a870487-87c3-4633-abb5-ff8ae13c92b5")
-	)
-	(wire
-		(pts
-			(xy 110.49 24.13) (xy 116.84 24.13)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4b1172af-3d5d-4b38-a490-ac6d616c4826")
 	)
 	(wire
 		(pts
@@ -8387,7 +8345,7 @@
 	)
 	(wire
 		(pts
-			(xy 191.77 39.37) (xy 191.77 60.96)
+			(xy 212.09 39.37) (xy 212.09 45.72)
 		)
 		(stroke
 			(width 0)
@@ -8457,6 +8415,16 @@
 	)
 	(wire
 		(pts
+			(xy -12.7 55.88) (xy -12.7 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5652c087-64af-400d-ad99-e81c4cec936b")
+	)
+	(wire
+		(pts
 			(xy 128.27 22.86) (xy 128.27 24.13)
 		)
 		(stroke
@@ -8464,16 +8432,6 @@
 			(type default)
 		)
 		(uuid "56bccd77-ec01-4a8d-855b-c50dde159d9b")
-	)
-	(wire
-		(pts
-			(xy 119.38 50.8) (xy 118.11 50.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "56c0bba8-66dd-47bb-b005-b7fbaad7e4e0")
 	)
 	(wire
 		(pts
@@ -8587,16 +8545,6 @@
 	)
 	(wire
 		(pts
-			(xy 194.31 58.42) (xy 194.31 34.29)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "61349a33-c694-4cda-8d4c-001a8d2c0aee")
-	)
-	(wire
-		(pts
 			(xy 152.4 170.18) (xy 152.4 166.37)
 		)
 		(stroke
@@ -8604,6 +8552,16 @@
 			(type default)
 		)
 		(uuid "64c80f54-fd4c-406f-bb14-49b148aa64fb")
+	)
+	(wire
+		(pts
+			(xy 195.58 78.74) (xy 195.58 86.36)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "655139fe-7062-497c-9ab8-514c5ebfc953")
 	)
 	(wire
 		(pts
@@ -8664,6 +8622,16 @@
 			(type default)
 		)
 		(uuid "6db417b6-ceba-472c-897a-ef9a88418c72")
+	)
+	(wire
+		(pts
+			(xy 194.31 34.29) (xy 194.31 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6df9cd81-28d1-46de-ad7c-ccf1a4345121")
 	)
 	(wire
 		(pts
@@ -8737,7 +8705,7 @@
 	)
 	(wire
 		(pts
-			(xy 182.88 114.3) (xy 184.15 114.3)
+			(xy 182.88 111.76) (xy 184.15 111.76)
 		)
 		(stroke
 			(width 0)
@@ -8754,16 +8722,6 @@
 			(type default)
 		)
 		(uuid "75d126d1-6c0a-4d64-b94f-f743c26556d0")
-	)
-	(wire
-		(pts
-			(xy 45.72 118.11) (xy 45.72 116.84)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "772dc659-af4a-4b4a-ad62-910c82a16d62")
 	)
 	(wire
 		(pts
@@ -8857,6 +8815,16 @@
 	)
 	(wire
 		(pts
+			(xy 196.85 39.37) (xy 212.09 39.37)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7d0d4873-6b43-44a0-be9f-5c01b75daa31")
+	)
+	(wire
+		(pts
 			(xy 129.54 170.18) (xy 115.57 170.18)
 		)
 		(stroke
@@ -8917,7 +8885,7 @@
 	)
 	(wire
 		(pts
-			(xy 182.88 58.42) (xy 194.31 58.42)
+			(xy 194.31 34.29) (xy 208.28 34.29)
 		)
 		(stroke
 			(width 0)
@@ -9047,7 +9015,7 @@
 	)
 	(wire
 		(pts
-			(xy 118.11 50.8) (xy 118.11 22.86)
+			(xy 118.11 22.86) (xy 118.11 53.34)
 		)
 		(stroke
 			(width 0)
@@ -9077,16 +9045,6 @@
 	)
 	(wire
 		(pts
-			(xy 43.18 118.11) (xy 43.18 128.27)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "90609cf3-71f3-4d8a-974e-c836b1e1ff0d")
-	)
-	(wire
-		(pts
 			(xy 195.58 135.89) (xy 191.77 135.89)
 		)
 		(stroke
@@ -9097,6 +9055,16 @@
 	)
 	(wire
 		(pts
+			(xy 195.58 86.36) (xy 195.58 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "91bfa6d1-15a1-4087-82ea-2ad509a3e0bd")
+	)
+	(wire
+		(pts
 			(xy 144.78 124.46) (xy 149.86 124.46)
 		)
 		(stroke
@@ -9104,6 +9072,16 @@
 			(type default)
 		)
 		(uuid "91d8e734-8cd2-4424-9afd-45ae6dac7786")
+	)
+	(wire
+		(pts
+			(xy 119.38 53.34) (xy 118.11 53.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "926a29da-f96e-497f-b31b-320d3fe2e057")
 	)
 	(wire
 		(pts
@@ -9177,6 +9155,16 @@
 	)
 	(wire
 		(pts
+			(xy 195.58 69.85) (xy 195.58 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "961cd1f7-93b8-4bdd-98f0-d86c7f22ca77")
+	)
+	(wire
+		(pts
 			(xy 134.62 124.46) (xy 134.62 121.92)
 		)
 		(stroke
@@ -9187,13 +9175,13 @@
 	)
 	(wire
 		(pts
-			(xy 194.31 88.9) (xy 194.31 58.42)
+			(xy -12.7 74.93) (xy -12.7 77.47)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "9ad90b28-5e6b-4520-935c-0d0cf726ff68")
+		(uuid "9bdb4d30-d8fd-4b2f-95e0-93f326579e07")
 	)
 	(wire
 		(pts
@@ -9257,13 +9245,13 @@
 	)
 	(wire
 		(pts
-			(xy 182.88 60.96) (xy 191.77 60.96)
+			(xy -12.7 66.04) (xy -12.7 67.31)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "a40f77ff-4699-4090-9c52-bc2eabd7eed1")
+		(uuid "a35d4be7-ce99-4e23-bed0-8db59f46af0f")
 	)
 	(wire
 		(pts
@@ -9304,6 +9292,16 @@
 			(type default)
 		)
 		(uuid "a9887516-9919-440a-8533-197a5858c0dd")
+	)
+	(wire
+		(pts
+			(xy 212.09 45.72) (xy 212.09 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ab2c57b1-6aeb-4db5-9af8-8ed69a06b698")
 	)
 	(wire
 		(pts
@@ -9417,16 +9415,6 @@
 	)
 	(wire
 		(pts
-			(xy 43.18 118.11) (xy 45.72 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b1f87ac2-5229-496b-a57a-a5acaa69ec65")
-	)
-	(wire
-		(pts
 			(xy 170.18 124.46) (xy 170.18 121.92)
 		)
 		(stroke
@@ -9457,13 +9445,13 @@
 	)
 	(wire
 		(pts
-			(xy -55.88 77.47) (xy -63.5 77.47)
+			(xy 182.88 86.36) (xy 195.58 86.36)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "b7bc7a1c-f587-4c78-87de-0e65000411bc")
+		(uuid "b6b8187f-b256-4ec1-b85b-ec4c106b3be0")
 	)
 	(wire
 		(pts
@@ -9597,16 +9585,6 @@
 	)
 	(wire
 		(pts
-			(xy 116.84 53.34) (xy 116.84 24.13)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "bf182c7d-a07a-4b0a-9ec0-31284111c799")
-	)
-	(wire
-		(pts
 			(xy 81.28 96.52) (xy 96.52 96.52)
 		)
 		(stroke
@@ -9614,16 +9592,6 @@
 			(type default)
 		)
 		(uuid "c0b5b691-4ca1-4812-8632-1cb5131d77a6")
-	)
-	(wire
-		(pts
-			(xy 191.77 39.37) (xy 212.09 39.37)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c19efc15-c689-460c-9b4c-f5a4700babf8")
 	)
 	(wire
 		(pts
@@ -9647,16 +9615,6 @@
 	)
 	(wire
 		(pts
-			(xy 48.26 123.19) (xy 48.26 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c6570a03-3a98-4e53-b660-cc1ab625b63a")
-	)
-	(wire
-		(pts
 			(xy 111.76 46.99) (xy 107.95 46.99)
 		)
 		(stroke
@@ -9664,16 +9622,6 @@
 			(type default)
 		)
 		(uuid "c8a4e2c6-17f8-4fb1-ab18-2f7ba8fdddfa")
-	)
-	(wire
-		(pts
-			(xy 45.72 118.11) (xy 48.26 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ca9629f9-99fe-4c7a-8f5e-3bdf31a66c6b")
 	)
 	(wire
 		(pts
@@ -9717,6 +9665,16 @@
 	)
 	(wire
 		(pts
+			(xy 182.88 58.42) (xy 194.31 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d1d7acb6-9732-47d3-9187-2e1e6c90a131")
+	)
+	(wire
+		(pts
 			(xy 63.5 62.23) (xy 52.07 62.23)
 		)
 		(stroke
@@ -9734,6 +9692,16 @@
 			(type default)
 		)
 		(uuid "d2b057c9-6a78-43f7-82e5-4ae84d1a307c")
+	)
+	(wire
+		(pts
+			(xy 208.28 34.29) (xy 208.28 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d35ce6cf-d89b-4765-b8b3-e4efae60ac56")
 	)
 	(wire
 		(pts
@@ -9787,7 +9755,7 @@
 	)
 	(wire
 		(pts
-			(xy 191.77 91.44) (xy 234.95 91.44)
+			(xy 212.09 91.44) (xy 234.95 91.44)
 		)
 		(stroke
 			(width 0)
@@ -9834,6 +9802,16 @@
 			(type default)
 		)
 		(uuid "e0011ef3-0835-4967-ae25-9cb5d13252ed")
+	)
+	(wire
+		(pts
+			(xy 196.85 39.37) (xy 196.85 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e017798b-b9da-44fc-8d8f-702161f927d2")
 	)
 	(wire
 		(pts
@@ -10107,6 +10085,16 @@
 	)
 	(wire
 		(pts
+			(xy 208.28 30.48) (xy 208.28 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f52795ca-863b-4b5b-9ba6-bba748eab2c6")
+	)
+	(wire
+		(pts
 			(xy 57.15 64.77) (xy 57.15 69.85)
 		)
 		(stroke
@@ -10127,6 +10115,16 @@
 	)
 	(wire
 		(pts
+			(xy -27.94 55.88) (xy -27.94 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f8d96e5c-8b99-4eb8-9c67-49f4a58c1d0d")
+	)
+	(wire
+		(pts
 			(xy 142.24 171.45) (xy 142.24 175.26)
 		)
 		(stroke
@@ -10134,16 +10132,6 @@
 			(type default)
 		)
 		(uuid "fc4349d6-4673-4cc1-b4dd-f30707522010")
-	)
-	(wire
-		(pts
-			(xy 52.07 123.19) (xy 48.26 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fc83f676-d05d-4483-80d1-912b212c9fd5")
 	)
 	(wire
 		(pts
@@ -10216,7 +10204,7 @@
 		(uuid "06464266-c483-410e-ae9d-ec76ca09895a")
 	)
 	(label "I2C_SCL"
-		(at 200.66 39.37 0)
+		(at 212.09 39.37 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -10246,7 +10234,7 @@
 		(uuid "3601084a-9392-4ded-8046-6a90c1a2069d")
 	)
 	(label "I2C_SDA"
-		(at 200.66 34.29 0)
+		(at 201.93 30.48 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -10666,7 +10654,7 @@
 	)
 	(symbol
 		(lib_id "power:+3V3")
-		(at 45.72 116.84 0)
+		(at -12.7 55.88 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -10674,7 +10662,7 @@
 		(dnp no)
 		(uuid "10dd638d-4c79-4e71-be55-407874dd5adf")
 		(property "Reference" "#PWR054"
-			(at 45.72 120.65 0)
+			(at -12.7 59.69 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10683,7 +10671,7 @@
 			)
 		)
 		(property "Value" "+VDD_nRF"
-			(at 40.894 111.76 0)
+			(at -17.526 50.8 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10692,7 +10680,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 45.72 116.84 0)
+			(at -12.7 55.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10701,7 +10689,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 45.72 116.84 0)
+			(at -12.7 55.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10710,7 +10698,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3V3\""
-			(at 45.72 116.84 0)
+			(at -12.7 55.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10854,6 +10842,72 @@
 			(project ""
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "U2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at -27.94 55.88 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "16380504-ee4e-47e2-861a-2ec7a3bb907a")
+		(property "Reference" "#PWR048"
+			(at -27.94 59.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+VDD_nRF"
+			(at -32.766 50.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at -27.94 55.88 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at -27.94 55.88 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at -27.94 55.88 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "bf5dad67-6300-4ce4-9a40-d0130bda8f04")
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "#PWR048")
 					(unit 1)
 				)
 			)
@@ -11056,7 +11110,7 @@
 		(dnp no)
 		(uuid "2265b455-826b-4c40-b8d2-ac68c4550ed1")
 		(property "Reference" "R17"
-			(at 192.786 149.86 90)
+			(at 193.04 152.4 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11064,7 +11118,7 @@
 			)
 		)
 		(property "Value" "100k"
-			(at 194.818 149.86 90)
+			(at 195.072 152.4 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11242,7 +11296,7 @@
 	)
 	(symbol
 		(lib_id "Device:LED")
-		(at 78.74 123.19 180)
+		(at -27.94 71.12 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -11251,23 +11305,25 @@
 		(fields_autoplaced yes)
 		(uuid "24929154-08c2-44ca-bbb4-bfae672b2c90")
 		(property "Reference" "D1"
-			(at 80.3275 115.57 0)
+			(at -22.86 71.4374 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify right)
 			)
 		)
 		(property "Value" "LED_R"
-			(at 80.3275 118.11 0)
+			(at -22.86 73.9774 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify right)
 			)
 		)
 		(property "Footprint" "LED_SMD:LED_0603_1608Metric"
-			(at 78.74 123.19 0)
+			(at -27.94 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11276,7 +11332,7 @@
 			)
 		)
 		(property "Datasheet" "https://www.lcsc.com/datasheet/C2286.pdf"
-			(at 78.74 123.19 0)
+			(at -27.94 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11285,7 +11341,7 @@
 			)
 		)
 		(property "Description" "20mA 300mcd 615nm~630nm Red 2.4V 40mW 0603 LED Indication - Discrete RoHS"
-			(at 78.74 123.19 0)
+			(at -27.94 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11294,7 +11350,7 @@
 			)
 		)
 		(property "Sim.Pins" "1=K 2=A"
-			(at 78.74 123.19 0)
+			(at -27.94 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11303,7 +11359,7 @@
 			)
 		)
 		(property "LCSC" "C2286"
-			(at 78.74 123.19 0)
+			(at -27.94 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11312,7 +11368,7 @@
 			)
 		)
 		(property "Manufacturer Number" "KT-0603R"
-			(at 78.74 123.19 0)
+			(at -27.94 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11321,7 +11377,7 @@
 			)
 		)
 		(property "manf#" "KT-0603R"
-			(at 78.74 123.19 0)
+			(at -27.94 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11330,7 +11386,7 @@
 			)
 		)
 		(property "Distribution Link 1" "https://www.lcsc.com/product-detail/C2286.html"
-			(at 78.74 123.19 0)
+			(at -27.94 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11345,7 +11401,7 @@
 			(uuid "83c786a9-d903-4c3a-9207-18ec8a98327e")
 		)
 		(instances
-			(project ""
+			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "D1")
 					(unit 1)
@@ -12075,7 +12131,7 @@
 	)
 	(symbol
 		(lib_id "Connector:TestPoint")
-		(at 212.09 39.37 180)
+		(at 212.09 45.72 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
@@ -12083,7 +12139,7 @@
 		(dnp yes)
 		(uuid "35776ad9-a85a-4273-8d36-4bc3094c8f7f")
 		(property "Reference" "SCL1"
-			(at 224.282 45.466 0)
+			(at 219.964 44.704 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12092,7 +12148,7 @@
 			)
 		)
 		(property "Value" "TestPoint"
-			(at 224.282 42.926 0)
+			(at 219.964 47.244 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12101,7 +12157,7 @@
 			)
 		)
 		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
-			(at 207.01 39.37 0)
+			(at 212.09 50.8 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12110,7 +12166,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 207.01 39.37 0)
+			(at 212.09 50.8 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12119,7 +12175,7 @@
 			)
 		)
 		(property "Description" "test point"
-			(at 212.09 39.37 0)
+			(at 212.09 45.72 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12540,7 +12596,7 @@
 	)
 	(symbol
 		(lib_id "Device:R")
-		(at 55.88 128.27 90)
+		(at -12.7 62.23 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -12548,7 +12604,7 @@
 		(dnp no)
 		(uuid "3af4379d-905b-4dc9-877a-7bdcf4cf0f14")
 		(property "Reference" "R16"
-			(at 53.848 125.73 90)
+			(at -15.24 64.262 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12556,7 +12612,7 @@
 			)
 		)
 		(property "Value" "49R9"
-			(at 59.182 125.73 90)
+			(at -15.24 58.928 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12564,7 +12620,7 @@
 			)
 		)
 		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
-			(at 55.88 130.048 90)
+			(at -10.922 62.23 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12573,7 +12629,7 @@
 			)
 		)
 		(property "Datasheet" "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8579705916650295296"
-			(at 55.88 128.27 0)
+			(at -12.7 62.23 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12582,7 +12638,7 @@
 			)
 		)
 		(property "Description" "-55℃~+155℃ 49.9Ω 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS"
-			(at 55.88 128.27 0)
+			(at -12.7 62.23 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12591,7 +12647,7 @@
 			)
 		)
 		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
-			(at 55.88 128.27 90)
+			(at -12.7 62.23 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12600,7 +12656,7 @@
 			)
 		)
 		(property "manf#" "0402WGF499JTCE"
-			(at 55.88 128.27 90)
+			(at -12.7 62.23 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12609,7 +12665,7 @@
 			)
 		)
 		(property "Distribution Link 1" "https://jlcpcb.com/partdetail/25863-0402WGF499JTCE/C25120"
-			(at 55.88 128.27 90)
+			(at -12.7 62.23 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12618,7 +12674,7 @@
 			)
 		)
 		(property "Distribution Link 2" ""
-			(at 55.88 128.27 90)
+			(at -12.7 62.23 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12627,7 +12683,7 @@
 			)
 		)
 		(property "LCSC" "C25120"
-			(at 55.88 128.27 90)
+			(at -12.7 62.23 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12636,7 +12692,7 @@
 			)
 		)
 		(property "Manufacturer Part Number" "0402WGF499JTCE"
-			(at 55.88 128.27 90)
+			(at -12.7 62.23 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12778,72 +12834,6 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "C14")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:+3V3")
-		(at 118.11 22.86 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "3d8739c1-d33d-48ca-bc27-9a2998c961d3")
-		(property "Reference" "#PWR048"
-			(at 118.11 26.67 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "RGB_R"
-			(at 113.284 17.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 118.11 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 118.11 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+3V3\""
-			(at 118.11 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "e70639db-3b55-4278-8a80-86005661ccdd")
-		)
-		(instances
-			(project "RearLight"
-				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "#PWR048")
 					(unit 1)
 				)
 			)
@@ -15041,7 +15031,7 @@
 	)
 	(symbol
 		(lib_id "Connector:TestPoint")
-		(at 194.31 34.29 0)
+		(at 201.93 30.48 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
@@ -15049,7 +15039,7 @@
 		(dnp yes)
 		(uuid "78b51846-60a6-40af-9e01-eaf03c83f9cc")
 		(property "Reference" "SDA1"
-			(at 182.118 28.194 0)
+			(at 193.04 31.75 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15058,7 +15048,7 @@
 			)
 		)
 		(property "Value" "TestPoint"
-			(at 182.118 30.734 0)
+			(at 193.04 29.21 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15067,7 +15057,7 @@
 			)
 		)
 		(property "Footprint" "TestPoint:TestPoint_Pad_D1.0mm"
-			(at 199.39 34.29 0)
+			(at 201.93 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15076,7 +15066,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 199.39 34.29 0)
+			(at 201.93 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15085,7 +15075,7 @@
 			)
 		)
 		(property "Description" "test point"
-			(at 194.31 34.29 0)
+			(at 201.93 30.48 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15455,7 +15445,7 @@
 	)
 	(symbol
 		(lib_id "Device:LED")
-		(at 78.74 128.27 180)
+		(at -12.7 71.12 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -15463,7 +15453,7 @@
 		(dnp no)
 		(uuid "81e52cb1-b62d-4f5c-9d74-c39e2372fb0d")
 		(property "Reference" "D2"
-			(at 80.01 131.572 0)
+			(at -5.842 71.882 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15471,7 +15461,7 @@
 			)
 		)
 		(property "Value" "LED_Y"
-			(at 80.264 133.604 0)
+			(at -5.588 73.914 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15479,7 +15469,7 @@
 			)
 		)
 		(property "Footprint" "LED_SMD:LED_0805_2012Metric"
-			(at 78.74 128.27 0)
+			(at -12.7 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15488,7 +15478,7 @@
 			)
 		)
 		(property "Datasheet" "https://www.lcsc.com/datasheet/C2296.pdf"
-			(at 78.74 128.27 0)
+			(at -12.7 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15497,7 +15487,7 @@
 			)
 		)
 		(property "Description" "175mcd 584nm~594nm Yellow 1.8V~2.4V 40mW 0805 LED Indication - Discrete RoHS"
-			(at 78.74 128.27 0)
+			(at -12.7 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15506,7 +15496,7 @@
 			)
 		)
 		(property "Sim.Pins" "1=K 2=A"
-			(at 78.74 128.27 0)
+			(at -12.7 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15515,7 +15505,7 @@
 			)
 		)
 		(property "LCSC" "C2296"
-			(at 78.74 128.27 0)
+			(at -12.7 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15524,7 +15514,7 @@
 			)
 		)
 		(property "Manufacturer Number" "KT-0805Y"
-			(at 78.74 128.27 0)
+			(at -12.7 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15533,7 +15523,7 @@
 			)
 		)
 		(property "manf#" "KT-0805Y"
-			(at 78.74 128.27 0)
+			(at -12.7 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15542,7 +15532,7 @@
 			)
 		)
 		(property "Distribution Link 1" "https://www.lcsc.com/product-detail/C2296.html"
-			(at 78.74 128.27 0)
+			(at -12.7 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16998,6 +16988,127 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 195.58 91.44 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "97dc3070-82b5-45ef-a715-c670233d861d")
+		(property "Reference" "R19"
+			(at 199.898 90.678 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "100k"
+			(at 199.898 92.71 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
+			(at 193.802 91.44 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8579705919464263680"
+			(at 195.58 91.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "-55℃~+155℃ 100kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS"
+			(at 195.58 91.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 195.58 91.44 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "manf#" "0402WGF1003TCE"
+			(at 195.58 91.44 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 1" "https://jlcpcb.com/partdetail/26484-0402WGF1003TCE/C25741"
+			(at 195.58 91.44 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 2" ""
+			(at 195.58 91.44 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C25741"
+			(at 195.58 91.44 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer Part Number" "0402WGF1003TCE"
+			(at 195.58 91.44 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "d9f4744d-ec09-4d0b-b63d-0f7e666202b4")
+		)
+		(pin "1"
+			(uuid "aad0f2fb-b9e0-471c-81c7-308fcfab1ad4")
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "R19")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 107.95 60.96 0)
 		(unit 1)
@@ -17058,127 +17169,6 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "#PWR022")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R")
-		(at 55.88 123.19 90)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "99846754-a44c-47d8-b0cd-399e39717c8f")
-		(property "Reference" "R10"
-			(at 53.848 120.65 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "49R9"
-			(at 59.182 120.65 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
-			(at 55.88 124.968 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8579705916650295296"
-			(at 55.88 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "-55℃~+155℃ 49.9Ω 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS"
-			(at 55.88 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
-			(at 55.88 123.19 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "manf#" "0402WGF499JTCE"
-			(at 55.88 123.19 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Distribution Link 1" "https://jlcpcb.com/partdetail/25863-0402WGF499JTCE/C25120"
-			(at 55.88 123.19 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Distribution Link 2" ""
-			(at 55.88 123.19 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC" "C25120"
-			(at 55.88 123.19 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Manufacturer Part Number" "0402WGF499JTCE"
-			(at 55.88 123.19 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "2"
-			(uuid "4decc777-f03b-471f-84e5-c36219ed9b1e")
-		)
-		(pin "1"
-			(uuid "c40d416b-d26f-465a-b558-96285158383b")
-		)
-		(instances
-			(project "RearLight"
-				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "R10")
 					(unit 1)
 				)
 			)
@@ -17395,6 +17385,72 @@
 		)
 	)
 	(symbol
+		(lib_id "power:+BATT")
+		(at 195.58 69.85 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "9c6fba0a-d4cb-48a2-88f8-c03b579f56f4")
+		(property "Reference" "#PWR047"
+			(at 195.58 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+BATT"
+			(at 195.58 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 195.58 69.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 195.58 69.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+BATT\""
+			(at 195.58 69.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "2b4d0646-5e59-4816-9cda-51d3c12ff6b3")
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "#PWR047")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 128.27 34.29 0)
 		(unit 1)
@@ -17527,72 +17583,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:+3V3")
-		(at 110.49 22.86 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "a4228512-34cc-4179-bcd5-0b51d90565e2")
-		(property "Reference" "#PWR049"
-			(at 110.49 26.67 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "RGB_Y"
-			(at 105.664 17.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 110.49 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 110.49 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+3V3\""
-			(at 110.49 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "d856913d-a25b-49de-a50d-d09c8a453dd9")
-		)
-		(instances
-			(project "RearLight"
-				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "#PWR049")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Mechanical:MountingHole")
 		(at 25.4 181.61 0)
 		(unit 1)
@@ -17658,7 +17648,7 @@
 	)
 	(symbol
 		(lib_id "power:+3V3")
-		(at 101.6 128.27 270)
+		(at -12.7 77.47 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17666,7 +17656,7 @@
 		(dnp no)
 		(uuid "a4bbec62-b025-46a5-ae49-fe786c659ef7")
 		(property "Reference" "#PWR046"
-			(at 97.79 128.27 0)
+			(at -12.7 73.66 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17675,7 +17665,7 @@
 			)
 		)
 		(property "Value" "RGB_Y"
-			(at 105.664 128.27 90)
+			(at -9.652 81.534 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17684,7 +17674,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 101.6 128.27 0)
+			(at -12.7 77.47 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17693,7 +17683,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 101.6 128.27 0)
+			(at -12.7 77.47 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17702,7 +17692,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3V3\""
-			(at 101.6 128.27 0)
+			(at -12.7 77.47 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18109,7 +18099,7 @@
 	)
 	(symbol
 		(lib_id "power:VBUS")
-		(at 184.15 114.3 270)
+		(at 184.15 111.76 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18117,7 +18107,7 @@
 		(dnp no)
 		(uuid "b1f25da8-7aef-4ea5-894a-4f35ac907724")
 		(property "Reference" "#PWR053"
-			(at 180.34 114.3 0)
+			(at 180.34 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18126,7 +18116,7 @@
 			)
 		)
 		(property "Value" "CHG_SIG"
-			(at 192.786 114.3 90)
+			(at 192.786 111.76 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18134,7 +18124,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 184.15 114.3 0)
+			(at 184.15 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18143,7 +18133,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 184.15 114.3 0)
+			(at 184.15 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18152,7 +18142,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"VBUS\""
-			(at 184.15 114.3 0)
+			(at 184.15 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18167,71 +18157,6 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "#PWR053")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:VBUS")
-		(at -55.88 77.47 270)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "b35612bc-ed0e-437a-9121-26b8ce7481b8")
-		(property "Reference" "#PWR051"
-			(at -59.69 77.47 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "ERR_SIG"
-			(at -47.244 77.47 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at -55.88 77.47 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at -55.88 77.47 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"VBUS\""
-			(at -55.88 77.47 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "8f379ce0-fcef-4f67-8629-7a95844a4f08")
-		)
-		(instances
-			(project "RearLight"
-				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "#PWR051")
 					(unit 1)
 				)
 			)
@@ -18428,6 +18353,71 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "#PWR044")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 195.58 97.79 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "c4116f9f-3501-44ee-a3f9-aa750a92d460")
+		(property "Reference" "#PWR056"
+			(at 195.58 104.14 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 191.516 99.822 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 195.58 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 195.58 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 195.58 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "524f966f-27e2-4d5d-9765-efccd42e91e5")
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "#PWR056")
 					(unit 1)
 				)
 			)
@@ -18684,6 +18674,127 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "#PWR08")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at -27.94 62.23 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "c8bd9281-6fec-46d2-aae7-e0a5160c46b0")
+		(property "Reference" "R10"
+			(at -30.48 64.262 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "49R9"
+			(at -30.48 58.928 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
+			(at -26.162 62.23 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8579705916650295296"
+			(at -27.94 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "-55℃~+155℃ 49.9Ω 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS"
+			(at -27.94 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at -27.94 62.23 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "manf#" "0402WGF499JTCE"
+			(at -27.94 62.23 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 1" "https://jlcpcb.com/partdetail/25863-0402WGF499JTCE/C25120"
+			(at -27.94 62.23 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 2" ""
+			(at -27.94 62.23 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C25120"
+			(at -27.94 62.23 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer Part Number" "0402WGF499JTCE"
+			(at -27.94 62.23 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "24ea573d-f226-4579-8b12-837cb1ca4c59")
+		)
+		(pin "1"
+			(uuid "56845059-b52a-462c-b97f-e9a5ffc25917")
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "R10")
 					(unit 1)
 				)
 			)
@@ -19539,6 +19650,72 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "#PWR037")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 118.11 22.86 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "dd4a85d2-3e08-421a-8f95-03468c508cbe")
+		(property "Reference" "#PWR042"
+			(at 118.11 26.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "RGB_Y"
+			(at 110.744 21.082 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 118.11 22.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 118.11 22.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at 118.11 22.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "61f232e4-fe93-4806-9b8f-cd92b64b4b55")
+		)
+		(instances
+			(project "RearLight"
+				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
+					(reference "#PWR042")
 					(unit 1)
 				)
 			)
@@ -20487,16 +20664,32 @@
 		)
 	)
 	(symbol
-		(lib_id "power:VBUS")
-		(at 184.15 111.76 270)
+		(lib_id "Device:R")
+		(at 195.58 74.93 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "f2a91b5c-f453-4fd6-bd02-c816fb12bc4c")
-		(property "Reference" "#PWR052"
-			(at 180.34 111.76 0)
+		(uuid "f049eaf6-0aca-458e-81c9-293a04a67e3c")
+		(property "Reference" "R18"
+			(at 199.644 74.168 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "1M"
+			(at 199.644 76.2 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "RearLight:R_0402_1005Metric_NO_SILK"
+			(at 193.802 74.93 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20504,16 +20697,8 @@
 				(hide yes)
 			)
 		)
-		(property "Value" "ERR_SIG"
-			(at 192.786 111.76 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 184.15 111.76 0)
+		(property "Datasheet" "https://jlcpcb.com/api/file/downloadByFileSystemAccessId/8579705944068186112"
+			(at 195.58 74.93 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20521,8 +20706,8 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" ""
-			(at 184.15 111.76 0)
+		(property "Description" "-55℃~+155℃ 1MΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS"
+			(at 195.58 74.93 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20530,22 +20715,70 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Power symbol creates a global label with name \"VBUS\""
-			(at 184.15 111.76 0)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 195.58 74.93 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
 			)
+		)
+		(property "manf#" "0402WGF1004TCE"
+			(at 195.58 74.93 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 1" "https://jlcpcb.com/partdetail/26826-0402WGF1004TCE/C26083"
+			(at 195.58 74.93 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Distribution Link 2" ""
+			(at 195.58 74.93 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC" "C26083"
+			(at 195.58 74.93 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Manufacturer Part Number" "0402WGF1004TCE"
+			(at 195.58 74.93 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "2cb94e14-37f2-417b-bf48-5518e10bc259")
 		)
 		(pin "1"
-			(uuid "373035aa-89fc-4377-83c2-d2e426e023e8")
+			(uuid "d4d9bd8c-2bd0-45a0-8280-7cca251e8871")
 		)
 		(instances
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "#PWR052")
+					(reference "R18")
 					(unit 1)
 				)
 			)
@@ -21112,72 +21345,6 @@
 			(project "RearLight"
 				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
 					(reference "C5")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:+3V3")
-		(at 101.6 123.19 270)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "fae2cc0b-97c6-4553-b338-062cd0f472b9")
-		(property "Reference" "#PWR042"
-			(at 97.79 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "RGB_R"
-			(at 105.664 123.19 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 101.6 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 101.6 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"+3V3\""
-			(at 101.6 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "31941d8d-6ff3-44c8-a567-c29c543e489c")
-		)
-		(instances
-			(project "RearLight"
-				(path "/208fea16-5e62-4965-9b6b-5e5560989a18"
-					(reference "#PWR042")
 					(unit 1)
 				)
 			)
