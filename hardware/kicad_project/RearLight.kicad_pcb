@@ -3,7 +3,7 @@
 	(generator "pcbnew")
 	(generator_version "9.0")
 	(general
-		(thickness 0.9154)
+		(thickness 1.6)
 		(legacy_teardrops no)
 	)
 	(paper "A4")
@@ -43,26 +43,26 @@
 			)
 			(layer "F.Mask"
 				(type "Top Solder Mask")
-				(thickness 0.01)
+				(thickness 0.0325)
 			)
 			(layer "F.Cu"
 				(type "copper")
-				(thickness 0.0152)
+				(thickness 0.035)
 			)
 			(layer "dielectric 1"
 				(type "core")
-				(thickness 0.865)
+				(thickness 1.465)
 				(material "FR4")
 				(epsilon_r 4.5)
 				(loss_tangent 0.02)
 			)
 			(layer "B.Cu"
 				(type "copper")
-				(thickness 0.0152)
+				(thickness 0.035)
 			)
 			(layer "B.Mask"
 				(type "Bottom Solder Mask")
-				(thickness 0.01)
+				(thickness 0.0325)
 			)
 			(layer "B.Paste"
 				(type "Bottom Solder Paste")
@@ -2261,7 +2261,7 @@
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
-			(uuid "f0981c78-b9c7-427e-b517-8c791102ebde")
+			(uuid "dc75b6e2-ba1a-4b14-961b-6998fa50612c")
 			(effects
 				(font
 					(size 1 1)
@@ -2273,7 +2273,7 @@
 			(at 0 5 90)
 			(unlocked yes)
 			(layer "F.Fab")
-			(uuid "dd47f02f-3920-46c5-898e-ac3749665e24")
+			(uuid "99946b95-dbea-483f-8cf0-9f5681bfb921")
 			(effects
 				(font
 					(size 1 1)
@@ -2286,7 +2286,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "221ce7c6-b031-4672-bf29-df2fde6734a0")
+			(uuid "ef9cf928-cc78-4cd4-98cb-41b56a2f73f6")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2299,7 +2299,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "6f5a122c-7972-4c08-baf7-506e2684702d")
+			(uuid "9a10fddc-5126-4e3c-a9ea-b1a7e42e8a1b")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2955,7 +2955,7 @@
 			(at 0 -1.95 0)
 			(layer "F.SilkS")
 			(hide yes)
-			(uuid "9a97d5fa-42ea-405d-a913-4056a38ea74d")
+			(uuid "b1693f4e-c6a5-4914-b1dd-c81f95e13243")
 			(effects
 				(font
 					(size 1 1)
@@ -2966,7 +2966,7 @@
 		(property "Value" "Fiducial"
 			(at 0 1.95 0)
 			(layer "F.Fab")
-			(uuid "278cd8c3-860f-4cf7-9411-aa735b9f5cbe")
+			(uuid "4da2d23e-55cf-4b54-8d53-e5b69a455ed8")
 			(effects
 				(font
 					(size 1 1)
@@ -2978,7 +2978,7 @@
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "f56d2ec4-1a0e-4e70-bf07-4aa4210e9750")
+			(uuid "8b7abaf9-9442-4cb5-a59b-fb731b1c2cde")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2990,7 +2990,7 @@
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "0b76138e-0c1f-4930-8fdb-d24f03280228")
+			(uuid "44d216dd-9839-49d8-bf38-f671f8fe776c")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4185,7 +4185,7 @@
 			(at 0 -1.95 0)
 			(layer "F.SilkS")
 			(hide yes)
-			(uuid "7e5f7bfc-5dbf-4f7d-9463-07d5e447712b")
+			(uuid "05c73da8-1937-4476-9875-2d938eb56c9f")
 			(effects
 				(font
 					(size 1 1)
@@ -4196,7 +4196,7 @@
 		(property "Value" "Fiducial"
 			(at 0 1.95 0)
 			(layer "F.Fab")
-			(uuid "1d73e371-c270-4318-a688-e4bc2d8b973f")
+			(uuid "ea232764-f499-4186-9d43-5620e5f788dd")
 			(effects
 				(font
 					(size 1 1)
@@ -4208,7 +4208,7 @@
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "5602e362-b3fe-4790-a92a-7e09291bd6e8")
+			(uuid "c00c9158-0543-4aa0-ab01-f34846ff557f")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4220,7 +4220,7 @@
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "8611258f-9f95-486f-abc5-964b196b5212")
+			(uuid "442a1b05-443a-4d19-9a30-2bbb83467238")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7435,14 +7435,14 @@
 			)
 		)
 	)
-	(footprint "RF_Module:Laird_BL653"
+	(footprint "Liard_BL653_ 453-00039_Custom:Laird_BL653"
 		(layer "F.Cu")
 		(uuid "82a43633-1ead-4db8-ad7d-d5e2555b55fc")
 		(at 137.5 108.6)
 		(descr "BL653 Bluetooth 5.1 module, https://www.lairdconnect.com/wireless-modules/bluetooth-modules/bluetooth-5-modules/bl653-series-bluetooth-51-802154-nfc-module")
 		(tags "Wi-Fi Module")
 		(property "Reference" "U1"
-			(at -7 6 180)
+			(at 0 6 180)
 			(layer "F.SilkS")
 			(uuid "ed34e4bc-74e1-48cb-aa14-04a85def1754")
 			(effects
@@ -7492,7 +7492,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "ec749186-1126-40de-a981-9d64c64a17ea")
+			(uuid "94b1a36f-5b9e-49dd-8171-06183c0e22df")
 			(effects
 				(font
 					(size 1 1)
@@ -7505,7 +7505,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "b35689ce-88bd-4e50-8ff7-10a74a18376c")
+			(uuid "0a1194c0-37c3-4e89-8d4f-f4f0f3e506c4")
 			(effects
 				(font
 					(size 1 1)
@@ -7518,7 +7518,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "f8825ef1-64fe-4566-87db-a7624c394302")
+			(uuid "caae8f39-a66b-4e22-b2fc-e17bbb22256b")
 			(effects
 				(font
 					(size 1 1)
@@ -7531,7 +7531,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "138e9ef6-1f93-4f19-ae36-58b6506f38f8")
+			(uuid "9fae2535-c8a1-4948-8706-7510b7da958b")
 			(effects
 				(font
 					(size 1 1)
@@ -7544,7 +7544,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "f182aa7c-df1c-46db-925e-66849cd54aee")
+			(uuid "7653e6c0-bc11-4ca3-af80-452404154260")
 			(effects
 				(font
 					(size 1 1)
@@ -7564,7 +7564,7 @@
 				(type default)
 			)
 			(layer "F.SilkS")
-			(uuid "3367a98f-e817-4daf-a313-6be0d8e03fa5")
+			(uuid "0123c5bd-4c98-42c6-8786-eac637fd5db6")
 		)
 		(fp_line
 			(start -7.61 5.11)
@@ -7574,7 +7574,7 @@
 				(type default)
 			)
 			(layer "F.SilkS")
-			(uuid "654c2268-9937-424e-90d7-695e56d0a710")
+			(uuid "234a6c1a-d56f-42f4-a4f6-8bd31a12c547")
 		)
 		(fp_line
 			(start -2.225 -5.11)
@@ -7584,7 +7584,7 @@
 				(type default)
 			)
 			(layer "F.SilkS")
-			(uuid "50b6da18-3ee1-4d56-8eeb-7a8ea7675aa1")
+			(uuid "bf9d353f-0831-4f17-972d-daebfb7b884a")
 		)
 		(fp_line
 			(start 7.61 -5.11)
@@ -7594,7 +7594,7 @@
 				(type default)
 			)
 			(layer "F.SilkS")
-			(uuid "ef852a53-5549-433c-b9fc-0d5c22cd4a0b")
+			(uuid "34224875-c274-426c-ac9e-d1a1b8839e32")
 		)
 		(fp_line
 			(start 7.61 5.11)
@@ -7604,7 +7604,7 @@
 				(type default)
 			)
 			(layer "F.SilkS")
-			(uuid "1e05697b-f574-46e4-9569-41cec7ebf204")
+			(uuid "39702a6f-8aaa-4e59-a52d-b29c46946aea")
 		)
 		(fp_poly
 			(pts
@@ -7616,7 +7616,7 @@
 			)
 			(fill yes)
 			(layer "F.SilkS")
-			(uuid "5ed04534-5a3b-4358-bedf-0e0b70763a09")
+			(uuid "d6ce5278-2c0b-4566-8dd4-b70046d4794c")
 		)
 		(fp_poly
 			(pts
@@ -7628,7 +7628,7 @@
 			)
 			(fill no)
 			(layer "F.CrtYd")
-			(uuid "00df8f1c-1b1e-405f-8193-1b51223584b4")
+			(uuid "4de314dc-0243-4214-9549-a89273fe86a8")
 		)
 		(fp_poly
 			(pts
@@ -7640,7 +7640,7 @@
 			)
 			(fill no)
 			(layer "F.Fab")
-			(uuid "32fb4ee5-a602-4eb4-8e72-cf1b9ea63e83")
+			(uuid "e69ac44d-c32c-4d85-9a72-1cfbbcac37a4")
 		)
 		(fp_text user "${REFERENCE}"
 			(at 0 0 0)
@@ -8387,7 +8387,7 @@
 			(net 0)
 			(net_name "")
 			(layer "F.Cu")
-			(uuid "8c3a9cc5-7612-48ce-abba-57b782528cd5")
+			(uuid "7585a027-4e0f-49b4-95de-b0c581b04a39")
 			(hatch edge 0.5)
 			(connect_pads
 				(clearance 0)
@@ -8416,7 +8416,7 @@
 			)
 		)
 		(embedded_fonts no)
-		(model "${KICAD9_3DMODEL_DIR}/RF_Module.3dshapes/Laird_BL653.step"
+		(model "${KIPRJMOD}/../kicad_3d_models/BL653 453-00039_3D Model with label.STEP"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -8424,7 +8424,7 @@
 				(xyz 1 1 1)
 			)
 			(rotate
-				(xyz 0 0 0)
+				(xyz -90 -0 -90)
 			)
 		)
 	)
@@ -9332,7 +9332,7 @@
 			(at 0 -1.5 0)
 			(layer "F.SilkS")
 			(hide yes)
-			(uuid "70bbd60f-a8af-40c1-9800-8584c6bcc1b6")
+			(uuid "1272db51-33b3-43de-9886-4d3869744244")
 			(effects
 				(font
 					(size 1 1)
@@ -9343,7 +9343,7 @@
 		(property "Value" "JLCPCB Tooling Hole"
 			(at 0 1.6 0)
 			(layer "F.Fab")
-			(uuid "c4eb7423-2a0d-4f6c-b5f4-622db2ed2f69")
+			(uuid "6a7a0f90-ea93-4c56-b043-de85d4bb1359")
 			(effects
 				(font
 					(size 1 1)
@@ -9356,7 +9356,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "f7ac45b2-553f-4136-bc46-2573540ddaeb")
+			(uuid "58f0ea62-40c3-44b7-8eb3-78bd4d1d26c5")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9369,7 +9369,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "a80d793b-d8bc-42ae-ade8-28b0bab4bde3")
+			(uuid "dfbb191c-3c95-44f9-a2ca-22f617744a43")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10504,7 +10504,7 @@
 			(at 0 -1.5 0)
 			(layer "F.SilkS")
 			(hide yes)
-			(uuid "3490a35d-f208-47e9-85f4-d967aa4207c5")
+			(uuid "5b12aaf4-c7e2-42a4-83e4-5c3b02c8345a")
 			(effects
 				(font
 					(size 1 1)
@@ -10515,7 +10515,7 @@
 		(property "Value" "JLCPCB Tooling Hole"
 			(at 0 1.6 0)
 			(layer "F.Fab")
-			(uuid "5d48b09b-11eb-46b5-802c-08145b4a25d9")
+			(uuid "361462b5-c1a1-4300-8a72-9c7093ee2aa4")
 			(effects
 				(font
 					(size 1 1)
@@ -10528,7 +10528,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "28ac5e7d-f36b-4ffa-8b4e-0e408a9c87d4")
+			(uuid "a726292b-d780-4602-9dde-de2b81746417")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -10541,7 +10541,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "ab3386d1-0071-4506-ae44-7a2579b15d64")
+			(uuid "a3f8cba9-13cf-4dc9-a116-eb2d5048dca1")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14266,7 +14266,7 @@
 			(at 0 -1.5 0)
 			(layer "F.SilkS")
 			(hide yes)
-			(uuid "6f68f08c-3c49-484d-bf47-3db161673d28")
+			(uuid "5e6dd327-ccd1-43ed-8883-682ed7b6c9a5")
 			(effects
 				(font
 					(size 1 1)
@@ -14277,7 +14277,7 @@
 		(property "Value" "JLCPCB Tooling Hole"
 			(at 0 1.6 0)
 			(layer "F.Fab")
-			(uuid "d1e2ccc7-5651-4949-8a98-0420b84de014")
+			(uuid "c372200e-58af-417f-b0aa-a64256151481")
 			(effects
 				(font
 					(size 1 1)
@@ -14290,7 +14290,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "70a5b859-fdf2-42be-8426-b725f85e3989")
+			(uuid "14c8ef7d-0b64-4e86-ad92-9a67601a065f")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14303,7 +14303,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "3e62a64a-f878-4ff6-9984-e9531275ce42")
+			(uuid "e822746a-1cc7-45e3-bc0a-a64d8f81bf6b")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14396,7 +14396,7 @@
 			(at 0 -1.5 0)
 			(layer "F.SilkS")
 			(hide yes)
-			(uuid "daacb997-1e37-4865-9b39-ee75be53eea2")
+			(uuid "35a696ae-8821-4481-a6b7-d7023a3a2bbc")
 			(effects
 				(font
 					(size 1 1)
@@ -14407,7 +14407,7 @@
 		(property "Value" "JLCPCB Tooling Hole"
 			(at 0 1.6 0)
 			(layer "F.Fab")
-			(uuid "19885e98-8436-429c-bd19-2d842ff4870d")
+			(uuid "c2ec8ec2-b6b9-4311-b1e2-cbc064b85203")
 			(effects
 				(font
 					(size 1 1)
@@ -14420,7 +14420,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "30e1ea45-578f-4ab1-b2a4-01aa6c72453e")
+			(uuid "8bfc9ef8-9d6f-42d3-9b40-c8d47c139deb")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14433,7 +14433,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "fcabe63b-1b72-4249-830e-312e3729894a")
+			(uuid "202ea167-78d8-4f7b-b786-324907af3792")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15170,7 +15170,7 @@
 			(at 0 -1.95 0)
 			(layer "F.SilkS")
 			(hide yes)
-			(uuid "06d637d7-7cf5-4bc3-9186-fe694d17058d")
+			(uuid "c57b3bac-b788-4aac-8c97-8d78f3f8948a")
 			(effects
 				(font
 					(size 1 1)
@@ -15181,7 +15181,7 @@
 		(property "Value" "Fiducial"
 			(at 0 1.95 0)
 			(layer "F.Fab")
-			(uuid "44ed0f2a-4be2-4b08-b8a4-da4750c5452e")
+			(uuid "ed44f87f-a8c0-45ff-8927-f8b2853204c9")
 			(effects
 				(font
 					(size 1 1)
@@ -15193,7 +15193,7 @@
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "e7350ad9-508b-4558-afc0-2ec666d73566")
+			(uuid "5e0d97f3-717b-485e-a4d3-0d2ab3014d21")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15205,7 +15205,7 @@
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "225c3c14-1085-4792-b6c2-ff08ecd7272f")
+			(uuid "f2cfe779-4af1-4fd4-9f9b-530538ee5de8")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17084,7 +17084,7 @@
 		(property "Reference" "BT1"
 			(at -1 11.5 90)
 			(layer "B.SilkS")
-			(uuid "cbc80bfd-a8cd-40ce-a77f-8c1f4ccc8ab6")
+			(uuid "f349983b-3ded-4121-970d-e43e8a0431de")
 			(effects
 				(font
 					(size 1 1)
@@ -17096,7 +17096,7 @@
 		(property "Value" "1096"
 			(at -17.145 -4.605 90)
 			(layer "B.Fab")
-			(uuid "ec88b941-1444-4ded-aa61-a117f57b79bc")
+			(uuid "40d6f087-0c5f-4363-9245-f07ab621742f")
 			(effects
 				(font
 					(size 1 1)
@@ -17109,7 +17109,7 @@
 			(at 0 0 90)
 			(layer "B.Fab")
 			(hide yes)
-			(uuid "4dfcdfbd-519b-4328-aacf-2fee89ca256b")
+			(uuid "07bb091b-b5b9-4b55-97bd-88252321fc37")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17122,7 +17122,7 @@
 			(at 0 0 90)
 			(layer "B.Fab")
 			(hide yes)
-			(uuid "5dc5fa75-3ac3-47e5-ba04-787a39dae639")
+			(uuid "d8411500-8736-4bea-b683-a4b096455fc0")
 			(effects
 				(font
 					(size 1.27 1.27)

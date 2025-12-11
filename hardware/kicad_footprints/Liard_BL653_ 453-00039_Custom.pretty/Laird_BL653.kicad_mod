@@ -693,7 +693,7 @@
 		)
 	)
 	(embedded_fonts no)
-	(model "//wsl.localhost/Ubuntu/home/matthias/Documents/bike-light-rear/hardware/kicad_3d_models/BL653 453-00039_3D Model with label.STEP"
+	(model "${KIPRJMOD}/../kicad_3d_models/BL653 453-00039_3D Model with label.STEP"
 		(offset
 			(xyz 0 0 0)
 		)

@@ -15778,7 +15778,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "RF_Module:Laird_BL653"
+		(property "Footprint" "Liard_BL653_ 453-00039_Custom:Laird_BL653"
 			(at 184.404 129.032 0)
 			(effects
 				(font

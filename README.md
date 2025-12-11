@@ -14,7 +14,7 @@ High-visibility rear bicycle light with Bluetooth Low Energy control, featuring 
 - **OPT3001 light sensor** – 0.01-83k lux range with human-eye spectral matching for automatic brightness control and day/night mode switching
 
 ### High-power LED driver
-- **Cree XP-E2** (XPEBRD-L1-0000-00801) – Far-red emitter driven at 500mA via PAM2804 step-down constant-current driver
+- **Cree XP-E2** (XPEBRD-L1-0000-00801) – 625nm Red emitter driven at 500mA via PAM2804 step-down constant-current driver
 - **Control** – PWM dimming via BL653 GPIO with 100kΩ pull-down for safe default-off state
 
 ### Power subsystem
@@ -36,17 +36,20 @@ High-visibility rear bicycle light with Bluetooth Low Energy control, featuring 
 - `LICENSE` – GPLv3 with NonCommercial clause
 
 ## Hardware workflow
-1. Install KiCad 9.0 (schema version `20250114`) or newer.
+1. Install KiCad 9.0 or newer.
 2. Install the [JLCPCB Fabrication Toolkit](https://github.com/bennymeg/Fabrication-Toolkit) to be able to export the design in the correct format for JLCPCBs [Design For Manufacturing (DFM) Tool](https://jlcdfm.com/).
 3. Open `hardware/kicad_project/RearLight.kicad_pro` to access the schematic and PCB.
 4. Run ERC/DRC before layout edits; generated artifacts (Gerbers, pick-and-place, STEP export) go to `hardware/kicad_project/production`, which is gitignored and intentionally kept out of releases.
 5. Note: Components marked DNP (Do Not Populate) in fabrication files are intended for hand-soldering to minimize assembly costs.
 
-## Key design decisions
-- **2.7V system voltage** – Optimized for nRF52833 efficiency while allowing 90-95% battery utilization before undervoltage cutoff (3.11V minimum)
-- **400mA charge current** – Conservative charging rate extends 18350 cell lifespan; full charge in ~3 hours from 0%
-- **500mA LED drive** – Balances brightness requirements with thermal constraints; typically operated at lower duty cycles via PWM
-- **Unprotected cell + DW01A** – Cost optimization by using commodity unprotected cells with board-level protection rather than protected battery packs
+## Firmware
+
+### Firmware environment setup
+1. Install the [nRF Command Line Tools](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools) for access to `nrfjprog` and programming utilities.
+2. Install [nRF Connect for VS Code](https://www.nordicsemi.com/Products/Development-tools/nrf-connect-for-vs-code) 
+3. Within its extension packs, install the **nRF Connect Bare Metal SDK v0.9.0**.
+4. Use the nRF Connect for VS Code Toolchain Manager to install the **nRF Connect SDK toolchain v3.1.1** so the project can target the BL653/nRF52833 with the expected compilers and CMake presets.
+5. (Optional) Through the nrf Connect Tab in VS Code, install the nrf Kconfig and nrf Devicetree extentions
 
 ## License
 This hardware is released under **GPLv3 + NonCommercial**. You may copy, modify, and share for non-commercial use as long as derivatives retain the same license and attribution. See `LICENSE` for full terms.

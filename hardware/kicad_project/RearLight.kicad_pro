@@ -598,7 +598,7 @@
       "plot": "manufacturing/",
       "pos_files": "manufacturing/",
       "specctra_dsn": "",
-      "step": "",
+      "step": "../kicad_3d_models/RearLight.step",
       "svg": "",
       "vrml": ""
     },
