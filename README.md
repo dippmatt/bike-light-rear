@@ -51,5 +51,21 @@ High-visibility rear bicycle light with Bluetooth Low Energy control, featuring 
 4. Use the nRF Connect for VS Code Toolchain Manager to install the **nRF Connect SDK toolchain v3.1.1** so the project can target the BL653/nRF52833 with the expected compilers and CMake presets.
 5. (Optional) Through the nrf Connect Tab in VS Code, install the nrf Kconfig and nrf Devicetree extentions
 
+Note 1: Device flashing using WSL2
+If you are not using WSL, 
+To connect a J-Link debugger to to a wsl instance take the following steps:
+- Open a Windows Powershell CLI and run..
+- `usbipd list`
+- `usbipd bind --busid <J-Link BusID>`
+- `usbipd attach --wsl --busid <J-Link BusID>`
+
+Note 2: Device does not show up under "Connected Devices" in nRF Connect VSCode Extention
+- Install [nRF-Util](https://www.nordicsemi.com/Products/Development-tools/nRF-Util)
+- Make nrfutil executable using `chmod +x nrfutil`
+- Move the nrfutil executable to a directory in the system $PATH (e.g. /usr/bin)
+- Install the _device_ package for nrfutil using `nrfutil install device`
+- Restart VSCode. Your device should now show up under _Connected Devices_ in nRF Connect  
+
+
 ## License
 This hardware is released under **GPLv3 + NonCommercial**. You may copy, modify, and share for non-commercial use as long as derivatives retain the same license and attribution. See `LICENSE` for full terms.
