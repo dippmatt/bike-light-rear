@@ -13,13 +13,22 @@
 #define PWM_PERIOD_USEC 100
 /* 50% duty cycle = 50 microseconds */
 #define PWM_DUTY_CYCLE_USEC 50
+/* 100% duty cycle = 100 microseconds (same as period) */
+#define PWM_DUTY_CYCLE_100_USEC 100
+
+/* LED brightness states */
+enum led_brightness {
+    LED_OFF = 0,      /* 0% duty cycle */
+    LED_50_PERCENT,  /* 50% duty cycle */
+    LED_100_PERCENT  /* 100% duty cycle */
+};
 
 /* PWM device specification from devicetree */
 static const struct pwm_dt_spec pwm_led = PWM_DT_SPEC_GET(MAIN_LED_PWM_NODE);
 static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(BUTTON_NODE, gpios);
 
-/* LED state */
-static volatile bool led_is_on = false;
+/* LED state - cycles through OFF -> 50% -> 100% -> OFF */
+static volatile enum led_brightness led_state = LED_OFF;
 
 /* Debounce timer */
 static struct k_timer debounce_timer;
@@ -30,7 +39,8 @@ static volatile bool last_button_state = false;
 /**
  * @brief Debounce timer expiry callback
  * 
- * Checks button state after debounce delay and toggles MAIN_LED on press.
+ * Checks button state after debounce delay and cycles MAIN_LED brightness on press.
+ * Cycles through: OFF (0%) -> 50% -> 100% -> OFF
  */
 static void debounce_timer_expiry(struct k_timer *timer)
 {
@@ -38,16 +48,24 @@ static void debounce_timer_expiry(struct k_timer *timer)
     int pin_state = gpio_pin_get_dt(&button);
     bool currently_pressed = (pin_state == 0);
     
-    /* Toggle MAIN_LED on button press (transition from released to pressed) */
+    /* Cycle MAIN_LED brightness on button press (transition from released to pressed) */
     if (currently_pressed && !last_button_state) {
-        if (led_is_on) {
-            /* Turn LED off by setting duty cycle to 0 */
-            pwm_set_dt(&pwm_led, PWM_USEC(PWM_PERIOD_USEC), 0);
-            led_is_on = false;
-        } else {
-            /* Turn LED on with 10kHz PWM at 50% duty cycle */
-            pwm_set_dt(&pwm_led, PWM_USEC(PWM_PERIOD_USEC), PWM_USEC(PWM_DUTY_CYCLE_USEC));
-            led_is_on = true;
+        switch (led_state) {
+            case LED_OFF:
+                /* Turn LED on with 10kHz PWM at 50% duty cycle */
+                pwm_set_dt(&pwm_led, PWM_USEC(PWM_PERIOD_USEC), PWM_USEC(PWM_DUTY_CYCLE_USEC));
+                led_state = LED_50_PERCENT;
+                break;
+            case LED_50_PERCENT:
+                /* Turn LED on with 10kHz PWM at 100% duty cycle */
+                pwm_set_dt(&pwm_led, PWM_USEC(PWM_PERIOD_USEC), PWM_USEC(PWM_DUTY_CYCLE_100_USEC));
+                led_state = LED_100_PERCENT;
+                break;
+            case LED_100_PERCENT:
+                /* Turn LED off by setting duty cycle to 0 */
+                pwm_set_dt(&pwm_led, PWM_USEC(PWM_PERIOD_USEC), 0);
+                led_state = LED_OFF;
+                break;
         }
     }
     
@@ -86,7 +104,7 @@ int button_control_init(void)
     if (ret < 0) {
         return ret;
     }
-    led_is_on = false;
+    led_state = LED_OFF;
     
     /* Configure button as input with pullup */
     ret = gpio_pin_configure_dt(&button, GPIO_INPUT | GPIO_PULL_UP);
