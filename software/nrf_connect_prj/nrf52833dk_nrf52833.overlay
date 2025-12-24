@@ -14,3 +14,82 @@
 &uicr {
 	nfct-pins-as-gpios;
 };
+
+/* Disable base board LEDs since we're using custom hardware */
+&led0 {
+	status = "disabled";
+};
+
+&led1 {
+	status = "disabled";
+};
+
+&led2 {
+	status = "disabled";
+};
+
+&led3 {
+	status = "disabled";
+};
+
+/ {
+	aliases {
+		led0 = &led0_child;
+		pwm-led0 = &pwm_led0;
+		sw0 = &button0_child;
+	};
+
+	/* STATUS_LED on P0.11 (pin 11) - Active low */
+	led0_node: led0 {
+		compatible = "gpio-leds";
+		led0_child: led_0 {
+			gpios = <&gpio0 11 GPIO_ACTIVE_LOW>;
+			label = "Status LED";
+		};
+	};
+
+	/* MAIN_LED on P0.09 (pin 9) - PWM controlled */
+	pwmleds {
+		compatible = "pwm-leds";
+		pwm_led0: pwm_led_0 {
+			pwms = <&pwm0 0 PWM_USEC(100) PWM_POLARITY_NORMAL>;
+			label = "Main LED PWM";
+		};
+	};
+
+	/* BUTTON on P1.00 (pin 32) - Active low with pullup */
+	button0_node: button0 {
+		compatible = "gpio-keys";
+		button0_child: button_0 {
+			gpios = <&gpio1 0 (GPIO_PULL_UP | GPIO_ACTIVE_HIGH)>;
+			label = "Button";
+		};
+	};
+};
+&clock {
+	status = "disabled";
+};
+
+/* Configure PWM0 for Main LED on P0.09 */
+&pwm0 {
+	status = "okay";
+	pinctrl-0 = <&pwm0_default>;
+	pinctrl-1 = <&pwm0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pinctrl {
+	pwm0_default: pwm0_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 9)>;
+			nordic,invert;
+		};
+	};
+
+	pwm0_sleep: pwm0_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 9)>;
+			low-power-enable;
+		};
+	};
+};
