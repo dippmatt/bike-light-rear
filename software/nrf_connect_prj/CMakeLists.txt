@@ -5,5 +5,19 @@ project(nrf_connect_prj)
 
 target_sources(app PRIVATE 
     src/main.c
-    src/button_control.c
+    src/sensor_data_collector.c
+)
+
+target_include_directories(app PRIVATE
+    include
+)
+
+target_link_libraries(app PRIVATE
+    -lm
+)
+
+target_compile_options(app PRIVATE
+    -Wall
+    -Wextra
+    -Werror
 )
