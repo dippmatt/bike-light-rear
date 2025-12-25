@@ -30,11 +30,6 @@
 /* 100% duty cycle = 100 microseconds (same as period) */
 #define PWM_DUTY_CYCLE_100_USEC 100
 
-#define SENSOR_THREAD_PRIORITY 7
-#define SENSOR_THREAD_STACK_SIZE 1024
-
-//K_THREAD_DEFINE(sensor_data_collector_id, SENSOR_THREAD_STACK_SIZE, sensor_data_collector, NULL, NULL, NULL, SENSOR_THREAD_PRIORITY, 0, 1000);
-
 /* LED brightness states */
 enum led_brightness {
     LED_OFF = 0,      /* 0% duty cycle */
@@ -78,6 +73,7 @@ static void debounce_timer_expiry()
     
     /* Cycle MAIN_LED brightness on button press (transition from released to pressed) */
     if (currently_pressed && !last_button_state) {
+        printk("Button pressed\n");
         switch (led_state) {
             case LED_OFF:
                 /* Turn LED on with 10kHz PWM at 50% duty cycle */
@@ -180,6 +176,8 @@ static int init_pwm_led_and_button(void)
 int main(void)
 {
     int ret;
+    
+    printk("System starting...\n");
     
     /* Check if STATUS_LED device is ready */
     if (!gpio_is_ready_dt(&status_led)) {

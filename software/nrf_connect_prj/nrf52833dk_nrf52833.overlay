@@ -67,7 +67,7 @@
 	};
 };
 &clock {
-	status = "disabled";
+	status = "okay";
 };
 
 /* Configure PWM0 for Main LED on P0.09 */
@@ -92,4 +92,9 @@
 			low-power-enable;
 		};
 	};
+};
+
+// Configure internal temperature sensor
+&temp {
+	status = "okay";
 };
