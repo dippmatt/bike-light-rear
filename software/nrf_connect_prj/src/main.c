@@ -12,6 +12,11 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/init.h>
 
+#include "utils.h"
+#ifdef DEBUG
+#include "i2c_scanner.h"
+#endif
+
 /* GPIO Devicetree Specifications */
 #define STATUS_LED_NODE     DT_ALIAS(led0)
 #define MAIN_LED_PWM_NODE   DT_ALIAS(pwm_led0)
@@ -73,7 +78,7 @@ static void debounce_timer_expiry()
     
     /* Cycle MAIN_LED brightness on button press (transition from released to pressed) */
     if (currently_pressed && !last_button_state) {
-        printk("Button pressed\n");
+        debug_printk("Button pressed\n");
         switch (led_state) {
             case LED_OFF:
                 /* Turn LED on with 10kHz PWM at 50% duty cycle */
@@ -177,7 +182,7 @@ int main(void)
 {
     int ret;
     
-    printk("System starting...\n");
+    debug_printk("System starting...\n");
     
     /* Check if STATUS_LED device is ready */
     if (!gpio_is_ready_dt(&status_led)) {
@@ -195,6 +200,17 @@ int main(void)
         /* PWM LED and button initialization failed */
         return -1;
     }
+    
+#ifdef DEBUG
+    /* Scan I2C bus for debugging */
+    const struct device *const i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c0));
+    if (i2c_dev != NULL && device_is_ready(i2c_dev)) {
+        debug_printk("Scanning I2C bus during initialization...\n");
+        scan_i2c_bus(i2c_dev);
+    } else {
+        debug_printk("I2C bus not available for scanning\n");
+    }
+#endif
     
     /* Initialize and start LED blink timer */
     /* Timer fires every 500ms, toggling the LED for 1Hz blink (on 500ms, off 500ms) */

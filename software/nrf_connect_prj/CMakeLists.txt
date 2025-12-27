@@ -3,10 +3,23 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
 project(nrf_connect_prj)
 
+# Option to enable debug features (I2C scanner and debug prints)
+option(DEBUG "Enable debug features (I2C scanner and debug prints)" ON)
+
 target_sources(app PRIVATE 
     src/main.c
     src/sensor_data_collector.c
 )
+
+# Conditionally enable debug features
+if(DEBUG)
+    target_sources(app PRIVATE 
+        src/i2c_scanner.c
+    )
+    target_compile_definitions(app PRIVATE 
+        DEBUG=1
+    )
+endif()
 
 target_include_directories(app PRIVATE
     inc/
