@@ -9,6 +9,9 @@ option(DEBUG "Enable debug features (I2C scanner and debug prints)" ON)
 target_sources(app PRIVATE 
     src/main.c
     src/sensor_data_collector.c
+    src/button.c
+    src/light_modes.c
+    src/main_state_machine.c
 )
 
 # Conditionally enable debug features
