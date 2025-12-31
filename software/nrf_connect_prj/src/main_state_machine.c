@@ -23,9 +23,10 @@
 
 #include "main_state_machine.h"
 #include "light_modes.h"
+#include "utils.h"
 
 /* LED state - cycles through OFF -> 50% -> 100% -> OFF */
-static enum led_brightness led_state = LED_OFF;
+enum led_brightness g_led_state = LED_OFF;
 
 /**
  * @brief Initialize the main state machine
@@ -43,7 +44,7 @@ int main_state_machine_init(void)
     }
     
     /* Initialize LED state to OFF */
-    led_state = LED_OFF;
+    g_led_state = LED_OFF;
     light_modes_set_off();
     
     return 0;
@@ -57,23 +58,56 @@ int main_state_machine_init(void)
  */
 void main_state_machine_on_button_press(void)
 {
-    /* Cycle MAIN_LED brightness on button press */
-    switch (led_state) {
+    debug_printk("State machine: Button press handler called, current state: %d\n", g_led_state);
+    /* Cycle through LED brightness states: OFF -> 50% -> 50_80_FLASH -> SMART_MODE -> OFF */
+    switch (g_led_state) {
         case LED_OFF:
             /* Turn LED on with 10kHz PWM at 50% duty cycle */
             light_modes_set_50_percent();
-            led_state = LED_50_PERCENT;
+            g_led_state = LED_50_PERCENT;
             break;
         case LED_50_PERCENT:
             /* Turn LED on with high visibility blinking mode (50% with periodic 80% flashes) */
             light_modes_set_100_percent();
-            led_state = LED_100_PERCENT;
+            g_led_state = LED_50_80_FLASH;
             break;
-        case LED_100_PERCENT:
+        case LED_50_80_FLASH:
+            /* Enter SMART_MODE */
+            light_modes_set_smart_mode();
+            g_led_state = LED_SMART_MODE;
+            break;
+        case LED_SMART_MODE:
             /* Turn LED off by setting duty cycle to 0 */
             light_modes_set_off();
-            led_state = LED_OFF;
+            g_led_state = LED_OFF;
             break;
     }
+    /* Note: Status LED blinking is controlled by timer callback which checks the state */
+}
+
+/**
+ * @brief Automatically turn off LED
+ * 
+ * Called by stationary monitor when device has been stationary for too long.
+ * Only acts if current state is SMART_MODE.
+ */
+void main_state_machine_auto_off(void)
+{
+    /* Only auto-off from SMART_MODE */
+    if (g_led_state == LED_SMART_MODE) {
+        debug_printk("State machine: Auto-off triggered, current state: %d\n", g_led_state);
+        light_modes_set_off();
+        g_led_state = LED_OFF;
+    }
+}
+
+/**
+ * @brief Get current LED state
+ * 
+ * @return Current LED brightness state
+ */
+enum led_brightness main_state_machine_get_state(void)
+{
+    return g_led_state;
 }
 

@@ -44,6 +44,18 @@ High-visibility rear bicycle light with Bluetooth Low Energy control, featuring 
 
 ## Firmware
 
+The bike light firmware implements intelligent lighting control with multiple operating modes:
+
+### Features
+- **Four Operating Modes**: OFF, 50% continuous, 50/80 flash, and Smart Mode
+- **Smart Mode**: Adaptive brightness based on braking detection and ambient light
+- **Braking Detection**: Automatic 80% brightness boost during deceleration
+- **Ambient Light Sensing**: Adjusts brightness for day/night conditions
+- **Auto-Off**: Power-saving mode when stationary for 2.5+ minutes
+- **Sensor Buffering**: 3-minute circular buffer for motion and environmental data
+
+For complete operating instructions and technical details, see the **[User Manual](software/nrf_connect_prj/MANUAL.md)**.
+
 ### Firmware environment setup
 1. Install the [nRF Command Line Tools](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools) for access to `nrfjprog` and programming utilities.
 2. Install [nRF Connect for VS Code](https://www.nordicsemi.com/Products/Development-tools/nrf-connect-for-vs-code) 

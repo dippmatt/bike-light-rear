@@ -24,13 +24,16 @@
 #ifndef LIGHT_MODES_H
 #define LIGHT_MODES_H
 
+#include <stdint.h>
+
 /**
  * @brief LED brightness levels
  */
 enum led_brightness {
-    LED_OFF = 0,      /* 0% duty cycle */
+    LED_OFF = 0,     /* 0% duty cycle */
     LED_50_PERCENT,  /* 50% duty cycle */
-    LED_100_PERCENT  /* High visibility mode: 50% with periodic 80% flashes */
+    LED_50_80_FLASH, /* High visibility mode: 50% with periodic 80% flashes */
+    LED_SMART_MODE   /* Smart mode: adaptive brightness based on braking and ambient light */
 };
 
 /**
@@ -67,6 +70,29 @@ void light_modes_set_100_percent(void);
  * @param brightness Brightness level to set
  */
 void light_modes_set_brightness(enum led_brightness brightness);
+
+/**
+ * @brief Initialize SMART_MODE
+ * 
+ * Sets LED to initial state for SMART_MODE operation.
+ * Actual brightness is controlled by environmental conditions.
+ */
+void light_modes_set_smart_mode(void);
+
+/**
+ * @brief Update PWM in SMART_MODE based on environmental state
+ * 
+ * Should be called when environmental conditions change (braking, ambient light).
+ * Reads global environmental state and adjusts PWM accordingly.
+ */
+void light_modes_update_smart_pwm(void);
+
+/**
+ * @brief Get current PWM pulse width
+ * 
+ * @return Current PWM pulse width in microseconds
+ */
+uint32_t light_modes_get_current_pwm(void);
 
 #endif /* LIGHT_MODES_H */
 

@@ -24,6 +24,8 @@
 #ifndef MAIN_STATE_MACHINE_H
 #define MAIN_STATE_MACHINE_H
 
+#include "light_modes.h"
+
 /**
  * @brief Initialize the main state machine
  * 
@@ -40,6 +42,24 @@ int main_state_machine_init(void);
  * This function cycles through LED brightness states.
  */
 void main_state_machine_on_button_press(void);
+
+/**
+ * @brief Automatically turn off LED
+ * 
+ * Called by stationary monitor when device has been stationary for too long.
+ * Only acts if current state is SMART_MODE.
+ */
+void main_state_machine_auto_off(void);
+
+/**
+ * @brief Get current LED state
+ * 
+ * @return Current LED brightness state
+ */
+enum led_brightness main_state_machine_get_state(void);
+
+/* Global LED state */
+extern enum led_brightness g_led_state;
 
 #endif /* MAIN_STATE_MACHINE_H */
 

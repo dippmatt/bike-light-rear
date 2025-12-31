@@ -28,9 +28,14 @@
 #include "utils.h"
 #include "button.h"
 #include "main_state_machine.h"
+#include "sensor_data_collector.h"
 #ifdef DEBUG
 #include "i2c_scanner.h"
 #endif
+
+/* Global sensor buffer and environmental state */
+sensor_buffer_t g_sensor_buffer;
+environmental_state_t g_env_state;
 
 /* GPIO Devicetree Specifications */
 #define STATUS_LED_NODE     DT_ALIAS(led0)
@@ -47,11 +52,40 @@ static struct k_timer led_timer;
 /**
  * @brief STATUS_LED timer expiry callback
  * 
- * Simply toggles the LED on every timer tick.
+ * Toggles the LED on every timer tick, but only if not in LED_OFF mode.
+ * When in LED_OFF mode, the LED stays off.
  */
 static void led_timer_expiry()
 {
-    gpio_pin_toggle_dt(&status_led);
+    /* Only blink if not in LED_OFF mode */
+    if (main_state_machine_get_state() != LED_OFF) {
+        gpio_pin_toggle_dt(&status_led);
+    } else {
+        /* Ensure LED is off when in LED_OFF mode */
+        gpio_pin_set_dt(&status_led, 0);
+    }
+}
+
+static char *helper_button_evt_str(enum button_evt evt)
+{
+	switch (evt) {
+	case BUTTON_EVT_PRESSED:
+		return "Pressed";
+	case BUTTON_EVT_RELEASED:
+		return "Released";
+	default:
+		return "Unknown";
+	}
+}
+
+static void button_event_handler(enum button_evt evt)
+{
+	debug_printk("Button event: %s\n", helper_button_evt_str(evt));
+
+    /* Advance state machine on button press */
+	if (evt == BUTTON_EVT_PRESSED) {
+		main_state_machine_on_button_press();
+	}
 }
 
 int main(void)
@@ -59,6 +93,15 @@ int main(void)
     int ret;
     
     debug_printk("System starting...\n");
+    
+    /* Initialize global sensor buffer */
+    pthread_rwlock_init(&g_sensor_buffer.lock, NULL);
+    g_sensor_buffer.write_index = 0;
+    
+    /* Initialize environmental state to safe defaults */
+    g_env_state.is_braking = false;
+    g_env_state.ambient_dark = false;
+    g_env_state.previous_brightness = 0;
     
     /* Check if STATUS_LED device is ready */
     if (!gpio_is_ready_dt(&status_led)) {
@@ -77,12 +120,14 @@ int main(void)
         return -1;
     }
     
-    /* Initialize button with callback to state machine */
-    ret = button_init(main_state_machine_on_button_press);
-    if (ret != 0) {
-        /* Button initialization failed */
-        return -1;
-    }
+    /* Initialize button */
+    int err = -1;
+    err = button_init(button_event_handler);
+	if (err) {
+		debug_printk("Button Init failed: %d\n", err);
+		return err;
+	}
+	debug_printk("Button Init succeeded. Waiting for event...\n");
     
 #ifdef DEBUG
     /* Scan I2C bus for debugging */
@@ -97,8 +142,12 @@ int main(void)
     
     /* Initialize and start LED blink timer */
     /* Timer fires every 500ms, toggling the LED for 1Hz blink (on 500ms, off 500ms) */
+    /* Note: Timer callback checks state and won't blink when in LED_OFF mode */
     k_timer_init(&led_timer, led_timer_expiry, NULL);
     k_timer_start(&led_timer, K_MSEC(TIMER_INTERVAL_MS), K_MSEC(TIMER_INTERVAL_MS));
+    
+    /* Initialize status LED to off (since we start in LED_OFF mode) */
+    gpio_pin_set_dt(&status_led, 0);
     
     /* Main loop */
     while (1) {

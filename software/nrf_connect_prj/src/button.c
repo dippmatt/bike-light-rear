@@ -28,104 +28,98 @@
 #include "button.h"
 #include "utils.h"
 
-/* GPIO Devicetree Specifications */
-#define BUTTON_NODE         DT_ALIAS(sw0)
+/* GPIO Button Devicetree Specifications */
+#define SW0_NODE DT_ALIAS(sw0)
 
-/* Button debounce time in milliseconds */
-#define BUTTON_DEBOUNCE_MS 50
-
-/* GPIO device specification for button */
-static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(BUTTON_NODE, gpios);
-
-/* Debounce timer */
-static struct k_timer debounce_timer;
-
-/* Last button state */
-static volatile bool last_button_state = false;
-
-/* Button press callback */
-static button_press_callback_t button_callback = NULL;
-
-/* GPIO callback structure */
+static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios, {0});
 static struct gpio_callback button_cb_data;
 
+static button_event_handler_t user_cb;
+static bool initialized = false;
+
 /**
- * @brief Debounce timer expiry callback
+ * @brief GPIO interrupt callback for button press/release
  * 
- * Checks button state after debounce delay and calls callback on press.
+ * Called when button state changes (press or release).
+ * Detects the current state and triggers the user callback.
  */
-static void debounce_timer_expiry()
+static void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-    /* Read current button state (active low: 0 = pressed, 1 = released) */
-    int pin_state = gpio_pin_get_dt(&button);
-    bool currently_pressed = (pin_state == 0);
+    ARG_UNUSED(dev);
+    ARG_UNUSED(cb);
+    ARG_UNUSED(pins);
     
-    /* Call callback on button press (transition from released to pressed) */
-    if (currently_pressed && !last_button_state) {
-        debug_printk("Button pressed\n");
-        if (button_callback != NULL) {
-            button_callback();
-        }
+    if (!initialized || !user_cb) {
+        return;
     }
     
-    last_button_state = currently_pressed;
+    /* Read current button state */
+    int val = gpio_pin_get_dt(&button);
+    if (val < 0) {
+        debug_printk("Error reading button state: %d\n", val);
+        return;
+    }
+    
+    /* Button is active low, so val == 0 means pressed */
+    enum button_evt evt = (val == 0) ? BUTTON_EVT_PRESSED : BUTTON_EVT_RELEASED;
+    
+    if (evt == BUTTON_EVT_PRESSED) {
+        debug_printk("Button pressed\n");
+    } else {
+        debug_printk("Button released\n");
+    }
+    
+    user_cb(evt);
 }
 
 /**
- * @brief GPIO interrupt callback for button
+ * @brief Initialize GPIO button with interrupt
  * 
- * Triggered when button state changes. Starts debounce timer.
- */
-static void button_pressed_callback()
-{
-    /* Start debounce timer */
-    k_timer_start(&debounce_timer, K_MSEC(BUTTON_DEBOUNCE_MS), K_NO_WAIT);
-}
-
-/**
- * @brief Initialize button hardware and detection
+ * Configures the button GPIO pin and sets up interrupt for state changes.
  * 
- * Configures GPIO pin, sets up interrupts, and initializes debounce timer.
- * 
- * @param callback Function to call when button press is detected
+ * @param handler Function to call when button event is detected
  * @return 0 on success, negative error code on failure
  */
-int button_init(button_press_callback_t callback)
+int button_init(button_event_handler_t handler)
 {
-    int ret;
-    
+    int err;
+
+    if (!handler) {
+        return -EINVAL;
+    }
+
+    user_cb = handler;
+
+    /* Check if GPIO device is ready */
     if (!gpio_is_ready_dt(&button)) {
-        return -ENODEV;
+        debug_printk("Button GPIO device %s is not ready\n", button.port->name);
+        return -EIO;
     }
-    
-    /* Store callback */
-    button_callback = callback;
-    
-    /* Configure button as input with pullup */
-    ret = gpio_pin_configure_dt(&button, GPIO_INPUT | GPIO_PULL_UP);
-    if (ret < 0) {
-        return ret;
+
+    /* Configure button pin as input with pull-up (active low is set in device tree) */
+    err = gpio_pin_configure_dt(&button, GPIO_INPUT | GPIO_PULL_UP);
+    if (err < 0) {
+        debug_printk("Error %d: failed to configure %s pin %d\n", 
+                     err, button.port->name, button.pin);
+        return err;
     }
-    
-    /* Initialize debounce timer */
-    k_timer_init(&debounce_timer, debounce_timer_expiry, NULL);
-    
-    /* Configure button interrupt on both edges */
-    ret = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_BOTH);
-    if (ret < 0) {
-        return ret;
+
+    /* Configure interrupt for both edges (press and release) */
+    err = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_BOTH);
+    if (err < 0) {
+        debug_printk("Error %d: failed to configure interrupt on %s pin %d\n", 
+                     err, button.port->name, button.pin);
+        return err;
     }
+
+    /* Initialize and add callback */
+    gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
+    gpio_add_callback(button.port, &button_cb_data);
     
-    /* Initialize and add GPIO callback */
-    gpio_init_callback(&button_cb_data, button_pressed_callback, BIT(button.pin));
-    ret = gpio_add_callback(button.port, &button_cb_data);
-    if (ret < 0) {
-        return ret;
-    }
+    initialized = true;
     
-    /* Initialize state */
-    last_button_state = (gpio_pin_get_dt(&button) == 0);
+    debug_printk("GPIO button initialized successfully on %s pin %d\n", 
+                 button.port->name, button.pin);
     
     return 0;
 }
-
