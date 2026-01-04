@@ -31,6 +31,7 @@
 #include "utils.h"
 #include "light_modes.h"
 #include "main_state_machine.h"
+#include "power_management.h"
 
 #define SENSOR_THREAD_PRIORITY 7
 #define SENSOR_THREAD_STACK_SIZE 1024
@@ -399,10 +400,14 @@ void stationary_monitor_thread(void)
                      MAX_MAGNITUDE);
 #endif
         
-        /* If stationary for 2.5 minutes, trigger auto-off */
+        /* If stationary for 2.5 minutes, trigger auto-off and enter sleep */
         if (is_stationary) {
             debug_printk("Stationary detected for 2.5 minutes, auto-off triggered\n");
-            main_state_machine_auto_off();
+            main_state_machine_auto_off(true);
+            /* Small delay before entering sleep mode */
+            k_msleep(100);
+            /* Enter deep sleep mode - button press will wake the system */
+            power_management_enter_sleep();
         }
         k_sleep(K_SECONDS(150));  /* Wait 2.5 minutes for buffer to fill again*/
     }

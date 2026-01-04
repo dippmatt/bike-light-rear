@@ -25,6 +25,7 @@
 #define LIGHT_MODES_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /**
  * @brief LED brightness levels

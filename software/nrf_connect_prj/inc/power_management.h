@@ -21,18 +21,18 @@
  * explicit written permission from the copyright holder.
  */
 
- #ifndef _BUTTON_H_
- #define _BUTTON_H_
- 
- enum button_evt {
-     BUTTON_EVT_PRESSED,
-     BUTTON_EVT_RELEASED
- };
- 
- typedef void (*button_event_handler_t)(enum button_evt evt);
- 
- int button_init(button_event_handler_t handler);
- int button_enable_interrupts(void);
- int button_configure_wakeup(void);
- 
- #endif /* _BUTTON_H_ */
+#ifndef POWER_MANAGEMENT_H
+#define POWER_MANAGEMENT_H
+
+/**
+ * @brief Enter system off (deep sleep) mode
+ * 
+ * Prepares the system for low-power system off mode and enters it.
+ * The system will wake on button press (configured as wake source).
+ * Note: System off is like a reset - upon wake, execution starts from main().
+ */
+void power_management_enter_sleep(void);
+
+#endif /* POWER_MANAGEMENT_H */
+
+

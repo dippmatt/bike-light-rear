@@ -25,8 +25,9 @@
 #include "light_modes.h"
 #include "utils.h"
 
-/* LED state - cycles through OFF -> 50% -> 100% -> OFF */
-enum led_brightness g_led_state = LED_OFF;
+/* LED state - cycles through OFF -> 50% -> 100% -> OFF
+ * Note: We initialize to LED_50_PERCENT so device is immediately functional after wake-up */
+enum led_brightness g_led_state = LED_50_PERCENT;
 
 /**
  * @brief Initialize the main state machine
@@ -43,9 +44,12 @@ int main_state_machine_init(void)
         return ret;
     }
     
-    /* Initialize LED state to OFF */
-    g_led_state = LED_OFF;
-    light_modes_set_off();
+    /* Initialize LED state to LED_50_PERCENT instead of LED_OFF
+     * This ensures that when the device wakes from deep sleep (via button press),
+     * it immediately goes to 50% brightness and is ready to use.
+     * LED_OFF state always means deep sleep mode. */
+    g_led_state = LED_50_PERCENT;
+    light_modes_set_50_percent();
     
     return 0;
 }
@@ -90,14 +94,21 @@ void main_state_machine_on_button_press(void)
  * 
  * Called by stationary monitor when device has been stationary for too long.
  * Only acts if current state is SMART_MODE.
+ * 
+ * @param enter_sleep If true, system will enter sleep mode after turning off
  */
-void main_state_machine_auto_off(void)
+void main_state_machine_auto_off(bool enter_sleep)
 {
+    ARG_UNUSED(enter_sleep);
+    
     /* Only auto-off from SMART_MODE */
     if (g_led_state == LED_SMART_MODE) {
         debug_printk("State machine: Auto-off triggered, current state: %d\n", g_led_state);
         light_modes_set_off();
         g_led_state = LED_OFF;
+        
+        /* Note: Sleep functionality would be triggered by caller if enter_sleep is true */
+        /* This is left to main.c to handle since it owns the sleep functionality */
     }
 }
 
