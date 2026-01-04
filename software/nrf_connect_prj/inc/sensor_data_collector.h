@@ -71,4 +71,8 @@ typedef struct {
 extern sensor_buffer_t g_sensor_buffer;
 extern environmental_state_t g_env_state;
 
+/* Thread control functions */
+void sensor_threads_start(void);
+void sensor_threads_stop(void);
+
 #endif /* SENSOR_DATA_COLLECTOR_H */

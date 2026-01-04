@@ -59,18 +59,11 @@ void light_modes_set_off(void);
 void light_modes_set_50_percent(void);
 
 /**
- * @brief Set LED to high visibility blinking mode
+ * @brief Set LED to 50-80% flash mode (high visibility blinking)
  * 
- * LED runs at 50% duty cycle normally, and flashes to 80% for 100ms every second.
+ * LED runs at 50% duty cycle normally, and flashes to 80% for 100ms every 1.5 seconds.
  */
-void light_modes_set_100_percent(void);
-
-/**
- * @brief Set LED brightness based on enum value
- * 
- * @param brightness Brightness level to set
- */
-void light_modes_set_brightness(enum led_brightness brightness);
+void light_modes_set_50_80_flash(void);
 
 /**
  * @brief Initialize SMART_MODE

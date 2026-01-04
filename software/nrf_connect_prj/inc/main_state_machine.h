@@ -26,13 +26,18 @@
 
 #include "light_modes.h"
 
-/**
- * @brief Initialize the main state machine
- * 
- * Sets up the state machine and connects button and LED control.
- * 
- * @return 0 on success, negative error code on failure
- */
+/* State function pointer types */
+typedef void (*state_init_fn)(void);
+typedef void (*state_terminate_fn)(void);
+
+/* State descriptor */
+typedef struct {
+    enum led_brightness state_id;
+    state_init_fn init;
+    state_terminate_fn terminate;
+    enum led_brightness next_state;
+} state_descriptor_t;
+
 int main_state_machine_init(void);
 
 /**

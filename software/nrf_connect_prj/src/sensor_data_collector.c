@@ -35,349 +35,211 @@
 
 #define SENSOR_THREAD_PRIORITY 7
 #define SENSOR_THREAD_STACK_SIZE 1024
-#define TIME_SAMPLING_INTERVAL_MS 500  /* Changed to 500ms for 360 samples = 3 minutes */
+#define STATIONARY_THREAD_STACK_SIZE 1024
+#define STATIONARY_THREAD_PRIORITY 8
+#define TIME_SAMPLING_INTERVAL_MS 500
 
 /* Braking detection thresholds */
-#define BRAKING_ACCEL_THRESHOLD -3.0  /* m/s^2, negative z-axis for rear light */
-#define AMBIENT_DARK_THRESHOLD 50.0   /* lux - threshold to enter dark mode */
-#define AMBIENT_BRIGHT_THRESHOLD 150.0 /* lux - threshold to exit dark mode (hysteresis) */
-#define AMBIENT_DARK_SAMPLES_REQUIRED 3  /* Number of consecutive samples required to change state */
+#define BRAKING_ACCEL_THRESHOLD -3.0
+#define AMBIENT_DARK_THRESHOLD 50.0
+#define AMBIENT_BRIGHT_THRESHOLD 150.0
+#define AMBIENT_DARK_SAMPLES_REQUIRED 3
 
-/* Static variables for braking detection (need 2 consecutive samples) */
+/* Thread control */
+static k_tid_t sensor_thread_id = NULL;
+static k_tid_t stationary_thread_id = NULL;
+static bool threads_running = false;
+
+K_THREAD_STACK_DEFINE(sensor_stack, SENSOR_THREAD_STACK_SIZE);
+K_THREAD_STACK_DEFINE(stationary_stack, STATIONARY_THREAD_STACK_SIZE);
+static struct k_thread sensor_thread_data;
+static struct k_thread stationary_thread_data;
+
+/* State variables */
 static bool prev_sample_braking = false;
-
-/* Static variables for ambient light debouncing */
 static uint8_t ambient_dark_sample_count = 0;
 static uint8_t ambient_bright_sample_count = 0;
 
-/* Forward declarations */
 static void write_sensor_data(const sensor_readings_t *value);
 static void update_environmental_state(const sensor_readings_t *value);
-static void debug_print_state(void);
 
-static const struct device *get_temp_sensor(void){
-
+static const struct device *get_temp_sensor(void)
+{
     const struct device *const dev = DEVICE_DT_GET(DT_NODELABEL(temp));
-
-    if (dev == NULL) {
-        /* No such node, or the node does not have status "okay"*/
-        debug_printk("Error: Temperature sensor not found\n");
+    if (dev == NULL || !device_is_ready(dev)) {
+        debug_printk("Error: Temperature sensor not ready\n");
         return NULL;
     }
-
-    if (!device_is_ready(dev)) {
-        debug_printk("Error: Device %s not ready\n"
-            "Check the driver initialization logs for errors.", dev->name);
-        return NULL;
-    }
-
     return dev;
 }
 
-static const struct device *get_light_sensor(void){
-
+static const struct device *get_light_sensor(void)
+{
     const struct device *const dev = DEVICE_DT_GET(DT_NODELABEL(opt3001));
-
-    if (dev == NULL) {
-        /* No such node, or the node does not have status "okay"*/
-        debug_printk("Error: OPT3001 device tree node not found\n");
+    if (dev == NULL || !device_is_ready(dev)) {
+        debug_printk("Error: Light sensor not ready\n");
         return NULL;
     }
-    
-    if (!device_is_ready(dev)) {
-        debug_printk("Error: Device %s not ready\n"
-            "Check the driver initialization logs for errors.\n", dev->name);
-        return NULL;
-    }
-
     return dev;
 }
 
-static const struct device *get_accel_sensor(void){
-
+static const struct device *get_accel_sensor(void)
+{
     const struct device *const dev = DEVICE_DT_GET(DT_NODELABEL(lis3dh));
-    
-    if (dev == NULL) {
-        /* No such node, or the node does not have status "okay"*/
-        debug_printk("Error: LIS3DH device tree node not found\n");
+    if (dev == NULL || !device_is_ready(dev)) {
+        debug_printk("Error: Accelerometer not ready\n");
         return NULL;
     }
-    
-    if (!device_is_ready(dev)) {
-        debug_printk("Error: Device %s not ready\n"
-            "Check the driver initialization logs for errors.\n", dev->name);
-        return NULL;
-    }
-
     return dev;
 }
 
-/**
- * @brief Write sensor data to circular buffer
- * 
- * Thread-safe write using pthread rwlock.
- * 
- * @param value Sensor readings to write
- */
 static void write_sensor_data(const sensor_readings_t *value)
 {
     pthread_rwlock_wrlock(&g_sensor_buffer.lock);
     
     uint16_t idx = g_sensor_buffer.write_index;
-    
     g_sensor_buffer.temp[idx] = value->temp;
     g_sensor_buffer.light[idx] = value->light;
     g_sensor_buffer.accel_x[idx] = value->accel_x;
     g_sensor_buffer.accel_y[idx] = value->accel_y;
     g_sensor_buffer.accel_z[idx] = value->accel_z;
-    
-    /* Increment write index (circular buffer) */
     g_sensor_buffer.write_index = (idx + 1) % SENSOR_BUFFER_SIZE;
     
     pthread_rwlock_unlock(&g_sensor_buffer.lock);
 }
 
-/**
- * @brief Debug print current mode and environmental state
- * 
- * Prints the current LED mode and environmental state for debugging.
- */
-static void debug_print_state(void)
-{
-    /* Get current LED mode */
-    const char *mode_str;
-    
-    switch (g_led_state) {
-        case LED_OFF:
-            mode_str = "LED_OFF";
-            break;
-        case LED_50_PERCENT:
-            mode_str = "LED_50_PERCENT";
-            break;
-        case LED_50_80_FLASH:
-            mode_str = "LED_50_80_FLASH";
-            break;
-        case LED_SMART_MODE:
-            mode_str = "SMART_MODE";
-            break;
-        default:
-            mode_str = "UNKNOWN";
-            break;
-    }
-
-    debug_printk("  Mode: %s\n", mode_str);
-    /*
-    debug_printk("=== STATE DEBUG ===\n");
-    debug_printk("  Environmental State:\n");
-    debug_printk("    - Braking: %s\n", g_env_state.is_braking ? "YES" : "NO");
-    debug_printk("    - Ambient Dark: %s\n", g_env_state.ambient_dark ? "YES (< 30 lux)" : "NO (>= 30 lux)");
-    debug_printk("    - Previous PWM: %u us\n", g_env_state.previous_brightness);
-    debug_printk("  Current PWM: %u us\n", light_modes_get_current_pwm());
-    debug_printk("==================\n");
-    */
-}
-
-/**
- * @brief Detect and update environmental state
- * 
- * Updates global environmental state based on sensor readings.
- * Handles braking detection (2 consecutive samples) and ambient darkness.
- * 
- * @param value Current sensor readings
- */
 static void update_environmental_state(const sensor_readings_t *value)
 {
     bool was_braking = g_env_state.is_braking;
     bool was_dark = g_env_state.ambient_dark;
     
-    /* Braking detection: z-acceleration < -2.0 m/s^2 for 2 consecutive samples */
+    /* Braking detection: 2 consecutive samples below threshold */
     double accel_z = sensor_value_to_double(&value->accel_z);
     bool current_sample_braking = (accel_z < BRAKING_ACCEL_THRESHOLD);
     
     if (current_sample_braking && prev_sample_braking && !was_braking) {
-        /* Entering braking - save current PWM state */
         g_env_state.previous_brightness = light_modes_get_current_pwm();
         g_env_state.is_braking = true;
-        debug_printk("Braking detected: z-accel = %.2f m/s^2\n", accel_z);
+        debug_printk("Braking detected: %.2f m/s^2\n", accel_z);
     } else if (!current_sample_braking && !prev_sample_braking && was_braking) {
-        /* Exiting braking - 2 consecutive samples above threshold */
         g_env_state.is_braking = false;
-        debug_printk("Braking ended: z-accel = %.2f m/s^2\n", accel_z);
+        debug_printk("Braking ended: %.2f m/s^2\n", accel_z);
     }
     
     prev_sample_braking = current_sample_braking;
     
-    /* Ambient darkness detection with debouncing and hysteresis to prevent feedback loop */
+    /* Ambient darkness detection with hysteresis */
     double light_lux = sensor_value_to_double(&value->light);
     
     if (was_dark) {
-        /* Currently dark - check if we should switch to bright */
         if (light_lux >= AMBIENT_BRIGHT_THRESHOLD) {
             ambient_bright_sample_count++;
-            ambient_dark_sample_count = 0;  /* Reset dark counter */
+            ambient_dark_sample_count = 0;
             
             if (ambient_bright_sample_count >= AMBIENT_DARK_SAMPLES_REQUIRED) {
                 g_env_state.ambient_dark = false;
-                ambient_bright_sample_count = 0;  /* Reset after state change */
+                ambient_bright_sample_count = 0;
+                debug_printk("Ambient light: BRIGHT (%.2f lux)\n", light_lux);
             }
         } else {
-            /* Still dark - reset bright counter */
             ambient_bright_sample_count = 0;
         }
     } else {
-        /* Currently bright - check if we should switch to dark */
         if (light_lux < AMBIENT_DARK_THRESHOLD) {
             ambient_dark_sample_count++;
-            ambient_bright_sample_count = 0;  /* Reset bright counter */
+            ambient_bright_sample_count = 0;
             
             if (ambient_dark_sample_count >= AMBIENT_DARK_SAMPLES_REQUIRED) {
                 g_env_state.ambient_dark = true;
-                ambient_dark_sample_count = 0;  /* Reset after state change */
+                ambient_dark_sample_count = 0;
+                debug_printk("Ambient light: DARK (%.2f lux)\n", light_lux);
             }
         } else {
-            /* Still bright - reset dark counter */
             ambient_dark_sample_count = 0;
         }
     }
-    
-    if (g_env_state.ambient_dark != was_dark) {
-        debug_printk("Ambient light changed: %.2f lux (%s)\n", 
-                     light_lux, g_env_state.ambient_dark ? "DARK" : "BRIGHT");
-    }
 }
 
-void sensor_data_collector()
+static void sensor_data_collector(void *p1, void *p2, void *p3)
 {
+    ARG_UNUSED(p1);
+    ARG_UNUSED(p2);
+    ARG_UNUSED(p3);
 
     const struct device *const temp_sensor = get_temp_sensor();
     const struct device *const light_sensor = get_light_sensor();
     const struct device *const accel_sensor = get_accel_sensor();
 
-    if (temp_sensor == NULL && light_sensor == NULL && accel_sensor == NULL) {
+    if (!temp_sensor && !light_sensor && !accel_sensor) {
         debug_printk("No sensors available\n");
         return;
     }
 
-    while (1) {
+    while (threads_running) {
         sensor_readings_t value;
         
-        if (temp_sensor != NULL) {
+        if (temp_sensor) {
             sensor_sample_fetch(temp_sensor);
             sensor_channel_get(temp_sensor, SENSOR_CHAN_DIE_TEMP, &value.temp);
-            debug_printk("Temperature: %d.%06d\n", value.temp.val1, value.temp.val2);
+            debug_printk("Temp: %d.%06d C\n", value.temp.val1, value.temp.val2);
         }
         
-        if (light_sensor != NULL) {
+        if (light_sensor) {
             sensor_sample_fetch(light_sensor);
             sensor_channel_get(light_sensor, SENSOR_CHAN_LIGHT, &value.light);
             debug_printk("Light: %d.%06d lux\n", value.light.val1, value.light.val2);
         }
-        else {
-            debug_printk("No light sensor available\n");
-        }
         
-        if (accel_sensor != NULL) {
+        if (accel_sensor) {
             sensor_sample_fetch(accel_sensor);
             sensor_channel_get(accel_sensor, SENSOR_CHAN_ACCEL_X, &value.accel_x);
             sensor_channel_get(accel_sensor, SENSOR_CHAN_ACCEL_Y, &value.accel_y);
             sensor_channel_get(accel_sensor, SENSOR_CHAN_ACCEL_Z, &value.accel_z);
-            debug_printk("Acceleration X: %d.%06d, Y: %d.%06d, Z: %d.%06d m/s^2\n",
+            debug_printk("Accel X:%d.%06d Y:%d.%06d Z:%d.%06d m/s^2\n",
                    value.accel_x.val1, value.accel_x.val2,
                    value.accel_y.val1, value.accel_y.val2,
                    value.accel_z.val1, value.accel_z.val2);
         }
-        else {
-            debug_printk("No accelerometer available\n");
-        }
         
-        /* Write sensor data to circular buffer */
         write_sensor_data(&value);
-        
-        /* Update environmental state (braking, darkness) */
         update_environmental_state(&value);
-        
-        /* If in SMART_MODE, update PWM based on environmental state */
-        if (main_state_machine_get_state() == LED_SMART_MODE) {
-            light_modes_update_smart_pwm();
-        }
-        
-        /* Print debug state information */
-        debug_print_state();
+        light_modes_update_smart_pwm();
         
         k_sleep(K_MSEC(TIME_SAMPLING_INTERVAL_MS));
     }
 }
 
-K_THREAD_DEFINE(sensor_data_collector_id, SENSOR_THREAD_STACK_SIZE, sensor_data_collector, NULL, 
-        NULL, NULL, SENSOR_THREAD_PRIORITY, 0, 1000);
-
-/**
- * @brief Stationary monitor thread
- * 
- * Checks every 60 seconds if the device has been stationary for 2.5 minutes.
- * If stationary and in SMART_MODE, automatically switches to OFF mode.
- */
-void stationary_monitor_thread(void)
+static void stationary_monitor_thread(void *p1, void *p2, void *p3)
 {
-    /* Stationary detection parameters */
-    const double GRAVITY = 9.81;  /* m/s^2 */
-    const double TOLERANCE = 0.10;  /* 10% tolerance */
-    const double MIN_MAGNITUDE = GRAVITY * (1.0 - TOLERANCE);  /* 8.829 m/s^2 */
-    const double MAX_MAGNITUDE = GRAVITY * (1.0 + TOLERANCE);  /* 10.791 m/s^2 */
-    const uint16_t SAMPLES_TO_CHECK = 300;  /* 2.5 minutes at 500ms sampling */
+    ARG_UNUSED(p1);
+    ARG_UNUSED(p2);
+    ARG_UNUSED(p3);
+    
+    const double GRAVITY = 9.81;
+    const double TOLERANCE = 0.10;
+    const double MIN_MAGNITUDE = GRAVITY * (1.0 - TOLERANCE);
+    const double MAX_MAGNITUDE = GRAVITY * (1.0 + TOLERANCE);
+    const uint16_t SAMPLES_TO_CHECK = 300;
     
     /* Wait for initial buffer fill */
-    k_sleep(K_SECONDS(150));  /* Wait 2.5 minutes for buffer to fill */
+    k_sleep(K_SECONDS(150));
     
-    while (1) {
-        /* Check every 60 seconds for stationary state */
-        debug_printk("Stationary monitor: checking for stationary state\n");
+    while (threads_running) {
+        debug_printk("Stationary check\n");
         
-        /* Only check if in SMART_MODE */
-        if (main_state_machine_get_state() != LED_SMART_MODE) {
-            continue;
-        }
-        
-        /* Acquire read lock to check sensor buffer */
         pthread_rwlock_rdlock(&g_sensor_buffer.lock);
         
         bool is_stationary = true;
         uint16_t current_idx = g_sensor_buffer.write_index;
         
-#ifdef DEBUG
-        double min_magnitude = 999.0;
-        double max_magnitude = 0.0;
-        uint16_t samples_checked = 0;
-        double last_magnitude = 0.0;
-#endif
-        
-        /* Check last 300 samples (2.5 minutes) */
         for (uint16_t i = 0; i < SAMPLES_TO_CHECK; i++) {
-            /* Calculate index going backwards in circular buffer */
             uint16_t idx = (current_idx + SENSOR_BUFFER_SIZE - 1 - i) % SENSOR_BUFFER_SIZE;
             
-            /* Get acceleration values */
             double x = sensor_value_to_double(&g_sensor_buffer.accel_x[idx]);
             double y = sensor_value_to_double(&g_sensor_buffer.accel_y[idx]);
             double z = sensor_value_to_double(&g_sensor_buffer.accel_z[idx]);
-            
-            /* Calculate magnitude: sqrt(x^2 + y^2 + z^2) */
             double magnitude = sqrt(x*x + y*y + z*z);
             
-#ifdef DEBUG
-            last_magnitude = magnitude;
-            samples_checked++;
-            
-            /* Track min/max */
-            if (magnitude < min_magnitude) {
-                min_magnitude = magnitude;
-            }
-            if (magnitude > max_magnitude) {
-                max_magnitude = magnitude;
-            }
-#endif
-            
-            /* Check if within stationary range */
             if (magnitude < MIN_MAGNITUDE || magnitude > MAX_MAGNITUDE) {
                 is_stationary = false;
                 break;
@@ -386,35 +248,65 @@ void stationary_monitor_thread(void)
         
         pthread_rwlock_unlock(&g_sensor_buffer.lock);
         
-#ifdef DEBUG
-        /* Debug: Print magnitude calculation results */
-        debug_printk("Stationary check: samples_checked=%u, is_stationary=%s, "
-                     "min_magnitude=%.3f, max_magnitude=%.3f, last_magnitude=%.3f, "
-                     "range=[%.3f, %.3f]\n",
-                     samples_checked,
-                     is_stationary ? "YES" : "NO",
-                     min_magnitude,
-                     max_magnitude,
-                     last_magnitude,
-                     MIN_MAGNITUDE,
-                     MAX_MAGNITUDE);
-#endif
-        
-        /* If stationary for 2.5 minutes, trigger auto-off and enter sleep */
         if (is_stationary) {
-            debug_printk("Stationary detected for 2.5 minutes, auto-off triggered\n");
+            debug_printk("Stationary for 2.5 minutes, auto-off\n");
             main_state_machine_auto_off(true);
-            /* Small delay before entering sleep mode */
             k_msleep(100);
-            /* Enter deep sleep mode - button press will wake the system */
             power_management_enter_sleep();
         }
-        k_sleep(K_SECONDS(150));  /* Wait 2.5 minutes for buffer to fill again*/
+        
+        k_sleep(K_SECONDS(150));
     }
 }
 
-#define STATIONARY_THREAD_STACK_SIZE 1024
-#define STATIONARY_THREAD_PRIORITY 8  /* Lower priority than sensor thread */
+void sensor_threads_start(void)
+{
+    if (threads_running) {
+        debug_printk("Sensor threads already running\n");
+        return;
+    }
+    
+    debug_printk("Starting sensor threads\n");
+    threads_running = true;
+    
+    /* Reset state variables */
+    prev_sample_braking = false;
+    ambient_dark_sample_count = 0;
+    ambient_bright_sample_count = 0;
+    
+    sensor_thread_id = k_thread_create(&sensor_thread_data, sensor_stack,
+                                      K_THREAD_STACK_SIZEOF(sensor_stack),
+                                      sensor_data_collector,
+                                      NULL, NULL, NULL,
+                                      SENSOR_THREAD_PRIORITY, 0, K_NO_WAIT);
+    
+    stationary_thread_id = k_thread_create(&stationary_thread_data, stationary_stack,
+                                          K_THREAD_STACK_SIZEOF(stationary_stack),
+                                          stationary_monitor_thread,
+                                          NULL, NULL, NULL,
+                                          STATIONARY_THREAD_PRIORITY, 0, K_NO_WAIT);
+}
 
-K_THREAD_DEFINE(stationary_monitor_id, STATIONARY_THREAD_STACK_SIZE, stationary_monitor_thread, 
-        NULL, NULL, NULL, STATIONARY_THREAD_PRIORITY, 0, 150000);  /* Start after 150s */
+void sensor_threads_stop(void)
+{
+    if (!threads_running) {
+        debug_printk("Sensor threads not running\n");
+        return;
+    }
+    
+    debug_printk("Stopping sensor threads\n");
+    threads_running = false;
+    
+    /* Give threads time to exit gracefully */
+    k_msleep(100);
+    
+    if (sensor_thread_id) {
+        k_thread_abort(sensor_thread_id);
+        sensor_thread_id = NULL;
+    }
+    
+    if (stationary_thread_id) {
+        k_thread_abort(stationary_thread_id);
+        stationary_thread_id = NULL;
+    }
+}

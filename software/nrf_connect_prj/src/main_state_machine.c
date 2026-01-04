@@ -21,104 +21,180 @@
  * explicit written permission from the copyright holder.
  */
 
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/devicetree.h>
+
 #include "main_state_machine.h"
 #include "light_modes.h"
 #include "utils.h"
+#include "sensor_data_collector.h"
 
-/* LED state - cycles through OFF -> 50% -> 100% -> OFF
- * Note: We initialize to LED_50_PERCENT so device is immediately functional after wake-up */
 enum led_brightness g_led_state = LED_50_PERCENT;
 
-/**
- * @brief Initialize the main state machine
- * 
- * Sets up the state machine and connects button and LED control.
- * 
- * @return 0 on success, negative error code on failure
- */
+/* Status LED for SMART_MODE */
+#define STATUS_LED_NODE DT_ALIAS(led0)
+static const struct gpio_dt_spec status_led = GPIO_DT_SPEC_GET(STATUS_LED_NODE, gpios);
+static struct k_timer status_led_timer;
+
+/* Forward declarations for state functions */
+static void state_led_50_percent_init(void);
+static void state_led_50_percent_terminate(void);
+static void state_led_50_80_flash_init(void);
+static void state_led_50_80_flash_terminate(void);
+static void state_led_smart_mode_init(void);
+static void state_led_smart_mode_terminate(void);
+static void state_led_off_init(void);
+static void state_led_off_terminate(void);
+
+/* State descriptors */
+static const state_descriptor_t state_descriptors[] = {
+    {LED_50_PERCENT, state_led_50_percent_init, state_led_50_percent_terminate, LED_50_80_FLASH},
+    {LED_50_80_FLASH, state_led_50_80_flash_init, state_led_50_80_flash_terminate, LED_SMART_MODE},
+    {LED_SMART_MODE, state_led_smart_mode_init, state_led_smart_mode_terminate, LED_OFF},
+    {LED_OFF, state_led_off_init, state_led_off_terminate, LED_50_PERCENT},
+};
+
+static const state_descriptor_t* get_state_descriptor(enum led_brightness state)
+{
+    for (size_t i = 0; i < ARRAY_SIZE(state_descriptors); i++) {
+        if (state_descriptors[i].state_id == state) {
+            return &state_descriptors[i];
+        }
+    }
+    return NULL;
+}
+
+static void status_led_timer_expiry(struct k_timer *timer)
+{
+    ARG_UNUSED(timer);
+    gpio_pin_toggle_dt(&status_led);
+}
+
+/* State: LED_50_PERCENT */
+static void state_led_50_percent_init(void)
+{
+    debug_printk("State: LED_50_PERCENT init\n");
+    light_modes_set_50_percent();
+}
+
+static void state_led_50_percent_terminate(void)
+{
+    debug_printk("State: LED_50_PERCENT terminate\n");
+}
+
+/* State: LED_50_80_FLASH */
+static void state_led_50_80_flash_init(void)
+{
+    debug_printk("State: LED_50_80_FLASH init\n");
+    light_modes_set_50_80_flash();
+}
+
+static void state_led_50_80_flash_terminate(void)
+{
+    debug_printk("State: LED_50_80_FLASH terminate\n");
+}
+
+/* State: LED_SMART_MODE */
+static void state_led_smart_mode_init(void)
+{
+    debug_printk("State: LED_SMART_MODE init\n");
+    light_modes_set_smart_mode();
+    sensor_threads_start();
+    k_timer_start(&status_led_timer, K_MSEC(500), K_MSEC(500));
+}
+
+static void state_led_smart_mode_terminate(void)
+{
+    debug_printk("State: LED_SMART_MODE terminate\n");
+    sensor_threads_stop();
+    k_timer_stop(&status_led_timer);
+    gpio_pin_set_dt(&status_led, 0);
+}
+
+/* State: LED_OFF */
+static void state_led_off_init(void)
+{
+    debug_printk("State: LED_OFF init\n");
+    light_modes_set_off();
+}
+
+static void state_led_off_terminate(void)
+{
+    debug_printk("State: LED_OFF terminate\n");
+}
+
+static void state_transition(enum led_brightness new_state)
+{
+    const state_descriptor_t *current = get_state_descriptor(g_led_state);
+    const state_descriptor_t *next = get_state_descriptor(new_state);
+    
+    if (!next) {
+        debug_printk("Error: Invalid state transition to %d\n", new_state);
+        return;
+    }
+    
+    /* Terminate current state */
+    if (current && current->terminate) {
+        current->terminate();
+    }
+    
+    /* Update state */
+    g_led_state = new_state;
+    
+    /* Initialize new state */
+    if (next->init) {
+        next->init();
+    }
+}
+
 int main_state_machine_init(void)
 {
-    /* Initialize light modes */
     int ret = light_modes_init();
     if (ret != 0) {
         return ret;
     }
     
-    /* Initialize LED state to LED_50_PERCENT instead of LED_OFF
-     * This ensures that when the device wakes from deep sleep (via button press),
-     * it immediately goes to 50% brightness and is ready to use.
-     * LED_OFF state always means deep sleep mode. */
-    g_led_state = LED_50_PERCENT;
-    light_modes_set_50_percent();
+    /* Initialize status LED GPIO */
+    if (!gpio_is_ready_dt(&status_led)) {
+        return -1;
+    }
+    ret = gpio_pin_configure_dt(&status_led, GPIO_OUTPUT_INACTIVE);
+    if (ret < 0) {
+        return -1;
+    }
+    
+    /* Initialize status LED timer */
+    k_timer_init(&status_led_timer, status_led_timer_expiry, NULL);
+    
+    /* Initialize to LED_50_PERCENT state */
+    g_led_state = LED_OFF;  /* Set to OFF temporarily so transition works */
+    state_transition(LED_50_PERCENT);
     
     return 0;
 }
 
-/**
- * @brief Handle button press event
- * 
- * Called by button module when a button press is detected.
- * This function cycles through LED brightness states.
- */
 void main_state_machine_on_button_press(void)
 {
-    debug_printk("State machine: Button press handler called, current state: %d\n", g_led_state);
-    /* Cycle through LED brightness states: OFF -> 50% -> 50_80_FLASH -> SMART_MODE -> OFF */
-    switch (g_led_state) {
-        case LED_OFF:
-            /* Turn LED on with 10kHz PWM at 50% duty cycle */
-            light_modes_set_50_percent();
-            g_led_state = LED_50_PERCENT;
-            break;
-        case LED_50_PERCENT:
-            /* Turn LED on with high visibility blinking mode (50% with periodic 80% flashes) */
-            light_modes_set_100_percent();
-            g_led_state = LED_50_80_FLASH;
-            break;
-        case LED_50_80_FLASH:
-            /* Enter SMART_MODE */
-            light_modes_set_smart_mode();
-            g_led_state = LED_SMART_MODE;
-            break;
-        case LED_SMART_MODE:
-            /* Turn LED off by setting duty cycle to 0 */
-            light_modes_set_off();
-            g_led_state = LED_OFF;
-            break;
+    const state_descriptor_t *current = get_state_descriptor(g_led_state);
+    if (current) {
+        debug_printk("State machine: Button press, transitioning from %d to %d\n", 
+                     g_led_state, current->next_state);
+        state_transition(current->next_state);
     }
-    /* Note: Status LED blinking is controlled by timer callback which checks the state */
 }
 
-/**
- * @brief Automatically turn off LED
- * 
- * Called by stationary monitor when device has been stationary for too long.
- * Only acts if current state is SMART_MODE.
- * 
- * @param enter_sleep If true, system will enter sleep mode after turning off
- */
 void main_state_machine_auto_off(bool enter_sleep)
 {
     ARG_UNUSED(enter_sleep);
     
-    /* Only auto-off from SMART_MODE */
     if (g_led_state == LED_SMART_MODE) {
-        debug_printk("State machine: Auto-off triggered, current state: %d\n", g_led_state);
-        light_modes_set_off();
-        g_led_state = LED_OFF;
-        
-        /* Note: Sleep functionality would be triggered by caller if enter_sleep is true */
-        /* This is left to main.c to handle since it owns the sleep functionality */
+        debug_printk("State machine: Auto-off triggered\n");
+        state_transition(LED_OFF);
     }
 }
 
-/**
- * @brief Get current LED state
- * 
- * @return Current LED brightness state
- */
 enum led_brightness main_state_machine_get_state(void)
 {
     return g_led_state;
 }
-
