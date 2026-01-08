@@ -36,12 +36,10 @@ static struct gpio_callback button_cb_data;
 
 static button_event_handler_t user_cb;
 static bool initialized = false;
-static bool interrupts_enabled = false;
-static uint32_t interrupt_enable_time = 0;
 static uint32_t last_event_time = 0;
+static uint32_t current_time = 0;
 
-#define IGNORE_INTERRUPTS_MS 200  /* Ignore spurious interrupts for 200ms after enabling */
-#define DEBOUNCE_MS 50  /* Minimum time between button events to filter bounce */
+#define DEBOUNCE_MS 100  /* Minimum time between button events to filter bounce */
 
 /**
  * @brief GPIO interrupt callback for button press/release
@@ -59,19 +57,7 @@ static void button_pressed(const struct device *dev, struct gpio_callback *cb, u
         return;
     }
     
-    /* Ignore interrupts for a short time after enabling to filter spurious events */
-    if (!interrupts_enabled) {
-        debug_printk("Button interrupt before enabled flag - ignoring\n");
-        return;
-    }
-    
-    uint32_t current_time = k_uptime_get_32();
-    if (current_time - interrupt_enable_time < IGNORE_INTERRUPTS_MS) {
-        debug_printk("Ignoring spurious interrupt during init window (age: %u ms)\n", 
-                     current_time - interrupt_enable_time);
-        return;
-    }
-    
+    current_time = k_uptime_get_32();
     /* Debounce: ignore events that occur too quickly after the last one */
     if (current_time - last_event_time < DEBOUNCE_MS) {
         debug_printk("Debouncing: ignoring event %u ms after last event\n", 
@@ -82,23 +68,7 @@ static void button_pressed(const struct device *dev, struct gpio_callback *cb, u
     /* Update last event time for debouncing */
     last_event_time = current_time;
     
-    /* Read current button state */
-    int val = gpio_pin_get_dt(&button);
-    if (val < 0) {
-        debug_printk("Error reading button state: %d\n", val);
-        return;
-    }
-    
-    /* Button is active low, so val == 0 means pressed */
-    enum button_evt evt = (val == 0) ? BUTTON_EVT_PRESSED : BUTTON_EVT_RELEASED;
-    
-    if (evt == BUTTON_EVT_PRESSED) {
-        debug_printk("Button pressed\n");
-    } else {
-        debug_printk("Button released\n");
-    }
-    
-    user_cb(evt);
+    user_cb();
 }
 
 /**
@@ -133,32 +103,8 @@ int button_init(button_event_handler_t handler)
         return err;
     }
 
-    /* Wait for button to be released before enabling interrupts
-     * This prevents the wake-up button press from interfering with normal operation.
-     * When waking from sleep, the button is still pressed during initialization.
-     * We wait up to 1 second for release, checking every 50ms. */
-    debug_printk("Waiting for button release before enabling interrupts...\n");
-    int timeout_count = 0;
-    const int max_timeout = 20;  /* 20 * 50ms = 1 second */
-    while (timeout_count < max_timeout) {
-        int button_state = gpio_pin_get_dt(&button);
-        if (button_state > 0) {
-            /* Button is released (high = not pressed, since active low) */
-            debug_printk("Button released, waiting additional 100ms for debounce\n");
-            k_msleep(100);  /* Extra delay for debounce */
-            break;
-        }
-        k_msleep(50);
-        timeout_count++;
-    }
-    
-    if (timeout_count >= max_timeout) {
-        debug_printk("Warning: Button still pressed after 1 second timeout\n");
-    }
-
     /* Mark as initialized - interrupts will be enabled later */
     initialized = true;
-    interrupts_enabled = false;
     
     debug_printk("GPIO button configured successfully on %s pin %d (interrupts not yet enabled)\n", 
                  button.port->name, button.pin);
@@ -181,11 +127,6 @@ int button_enable_interrupts(void)
     if (!initialized) {
         debug_printk("Button not initialized, call button_init() first\n");
         return -EINVAL;
-    }
-    
-    if (interrupts_enabled) {
-        debug_printk("Button interrupts already enabled\n");
-        return 0;
     }
     
     /* Check if GPIO device is ready */
@@ -218,10 +159,8 @@ int button_enable_interrupts(void)
     gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
     gpio_add_callback(button.port, &button_cb_data);
     
-    /* Mark interrupts as enabled and record time */
-    interrupts_enabled = true;
-    interrupt_enable_time = k_uptime_get_32();
-    last_event_time = interrupt_enable_time;
+    /* Initialize last event time */
+    last_event_time = k_uptime_get_32();
     
     debug_printk("Button interrupts enabled successfully on %s pin %d\n", 
                  button.port->name, button.pin);

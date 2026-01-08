@@ -12,6 +12,7 @@ target_sources(app PRIVATE
     src/button.c
     src/light_modes.c
     src/main_state_machine.c
+    src/power_management.c
 )
 
 # Conditionally enable debug features

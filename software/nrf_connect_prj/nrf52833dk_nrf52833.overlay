@@ -35,7 +35,7 @@
 / {
 	aliases {
 		led0 = &led0_child;
-		pwm-led0 = &pwm_led0;
+		main-led0 = &main_led0;
 		analog-button = &analog_button_node;
 		sw0 = &button0;
 	};
@@ -65,7 +65,7 @@
 	/* MAIN_LED on P0.09 (pin 9) - PWM controlled */
 	pwmleds {
 		compatible = "pwm-leds";
-		pwm_led0: pwm_led_0 {
+		main_led0: main_led_0 {
 			pwms = <&pwm0 0 PWM_USEC(1000) PWM_POLARITY_NORMAL>;
 			label = "Main LED PWM";
 		};

@@ -41,7 +41,7 @@
 #define BRAKING_ACCEL_THRESHOLD -3.0  /* m/s^2, negative z-axis for rear light */
 #define AMBIENT_DARK_THRESHOLD 50.0   /* lux - threshold to enter dark mode */
 #define AMBIENT_BRIGHT_THRESHOLD 150.0 /* lux - threshold to exit dark mode (hysteresis) */
-#define AMBIENT_DARK_SAMPLES_REQUIRED 3  /* Number of consecutive samples required to change state */
+#define AMBIENT_DARK_SAMPLES_REQUIRED 2  /* Number of consecutive samples required to change state */
 
 /* Static variables for braking detection (need 2 consecutive samples) */
 static bool prev_sample_braking = false;
@@ -58,7 +58,6 @@ K_SEM_DEFINE(sensor_sampling_sem, 0, 1);
 /* Forward declarations */
 static void write_sensor_data(const sensor_readings_t *value);
 static void update_environmental_state(const sensor_readings_t *value);
-static void debug_print_state(void);
 
 static const struct device *get_temp_sensor(void){
 
@@ -140,47 +139,6 @@ static void write_sensor_data(const sensor_readings_t *value)
     g_sensor_buffer.write_index = (idx + 1) % SENSOR_BUFFER_SIZE;
     
     pthread_rwlock_unlock(&g_sensor_buffer.lock);
-}
-
-/**
- * @brief Debug print current mode and environmental state
- * 
- * Prints the current LED mode and environmental state for debugging.
- */
-static void debug_print_state(void)
-{
-    /* Get current LED mode */
-    const char *mode_str;
-    enum led_brightness current_state = main_state_machine_get_state();
-    
-    switch (current_state) {
-        case LED_OFF:
-            mode_str = "LED_OFF";
-            break;
-        case LED_50_PERCENT:
-            mode_str = "LED_50_PERCENT";
-            break;
-        case LED_50_80_FLASH:
-            mode_str = "LED_50_80_FLASH";
-            break;
-        case LED_SMART_MODE:
-            mode_str = "SMART_MODE";
-            break;
-        default:
-            mode_str = "UNKNOWN";
-            break;
-    }
-
-    debug_printk("  Mode: %s\n", mode_str);
-    /*
-    debug_printk("=== STATE DEBUG ===\n");
-    debug_printk("  Environmental State:\n");
-    debug_printk("    - Braking: %s\n", g_env_state.is_braking ? "YES" : "NO");
-    debug_printk("    - Ambient Dark: %s\n", g_env_state.ambient_dark ? "YES (< 30 lux)" : "NO (>= 30 lux)");
-    debug_printk("    - Previous PWM: %u us\n", g_env_state.previous_brightness);
-    debug_printk("  Current PWM: %u us\n", light_modes_get_current_pwm());
-    debug_printk("==================\n");
-    */
 }
 
 /**
@@ -311,9 +269,6 @@ void sensor_data_collector()
             
             /* Update PWM based on environmental state (we're only active in SMART_MODE) */
             light_modes_update_smart_pwm();
-            
-            /* Print debug state information */
-            debug_print_state();
             
             k_sleep(K_MSEC(TIME_SAMPLING_INTERVAL_MS));
         }
@@ -448,7 +403,7 @@ void stationary_monitor_thread(void)
         /* If stationary for 2.5 minutes, trigger auto-off and enter sleep */
         if (is_stationary) {
             debug_printk("Stationary detected for 2.5 minutes, auto-off triggered\n");
-            main_state_machine_auto_off(true);
+            main_state_machine_auto_off();
             /* Small delay before entering sleep mode */
             k_msleep(100);
             /* Enter deep sleep mode - button press will wake the system */

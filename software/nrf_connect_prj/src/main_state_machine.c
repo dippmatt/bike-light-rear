@@ -27,7 +27,7 @@
 #include "utils.h"
 
 /* LED state - cycles through OFF -> 50% -> 50_80_FLASH -> SMART_MODE -> OFF */
-enum led_brightness g_led_state = LED_50_PERCENT;
+enum system_state g_system_state = LED_50_PERCENT;
 
 /* Forward declarations for state init/terminate functions */
 static void state_led_50_percent_init(void);
@@ -64,7 +64,7 @@ static const struct {
  * @param from_state Current state (will be terminated)
  * @param to_state Next state (will be initialized)
  */
-static void state_transition(enum led_brightness from_state, enum led_brightness to_state)
+static void state_transition(enum system_state from_state, enum system_state to_state)
 {
     debug_printk("State transition: %d -> %d\n", from_state, to_state);
     
@@ -75,7 +75,7 @@ static void state_transition(enum led_brightness from_state, enum led_brightness
     }
     
     /* Update global state */
-    g_led_state = to_state;
+    g_system_state = to_state;
     
     /* Initialize next state */
     if (to_state < sizeof(state_functions) / sizeof(state_functions[0]) &&
@@ -92,6 +92,7 @@ static void state_transition(enum led_brightness from_state, enum led_brightness
 static void state_led_50_percent_init(void)
 {
     debug_printk("State init: LED_50_PERCENT\n");
+    light_modes_start_status_led();
     light_modes_set_50_percent();
 }
 
@@ -125,7 +126,7 @@ static void state_led_50_80_flash_init(void)
 static void state_led_50_80_flash_terminate(void)
 {
     debug_printk("State terminate: LED_50_80_FLASH\n");
-    light_modes_set_off();
+    light_modes_stop_blinking();
 }
 
 /**
@@ -149,7 +150,6 @@ static void state_led_smart_mode_terminate(void)
 {
     debug_printk("State terminate: LED_SMART_MODE\n");
     sensor_data_collector_stop();
-    light_modes_set_off();
 }
 
 /**
@@ -160,7 +160,7 @@ static void state_led_smart_mode_terminate(void)
 static void state_led_off_init(void)
 {
     debug_printk("State init: LED_OFF\n");
-    light_modes_set_off();
+    light_modes_stop_status_led();
 }
 
 /**
@@ -183,14 +183,22 @@ static void state_led_off_terminate(void)
  */
 int main_state_machine_init(void)
 {
-    /* Initialize light modes */
-    int ret = light_modes_init();
+    int ret;
+    
+    /* Initialize flash timers for blinking mode */
+    ret = flash_timers_init();
+    if (ret != 0) {
+        return ret;
+    }
+    
+    /* Initialize status LED */
+    ret = status_led_init();
     if (ret != 0) {
         return ret;
     }
     
     /* Initialize to LED_50_PERCENT state */
-    g_led_state = LED_50_PERCENT;
+    g_system_state = LED_50_PERCENT;
     state_led_50_percent_init();
     
     return 0;
@@ -204,8 +212,8 @@ int main_state_machine_init(void)
  */
 void main_state_machine_on_button_press(void)
 {
-    enum led_brightness current_state = g_led_state;
-    enum led_brightness next_state;
+    enum system_state current_state = g_system_state;
+    enum system_state next_state;
     
     debug_printk("State machine: Button press handler called, current state: %d\n", current_state);
     
@@ -239,20 +247,11 @@ void main_state_machine_on_button_press(void)
  * Called by stationary monitor when device has been stationary for too long.
  * Only acts if current state is SMART_MODE.
  * 
- * @param enter_sleep If true, system will enter sleep mode after turning off
  */
-void main_state_machine_auto_off(bool enter_sleep)
-{
-    ARG_UNUSED(enter_sleep);
-    
-    /* Only auto-off from SMART_MODE */
-    if (g_led_state == LED_SMART_MODE) {
-        debug_printk("State machine: Auto-off triggered, current state: %d\n", g_led_state);
-        state_transition(LED_SMART_MODE, LED_OFF);
-        
-        /* Note: Sleep functionality would be triggered by caller if enter_sleep is true */
-        /* This is left to main.c to handle since it owns the sleep functionality */
-    }
+void main_state_machine_auto_off()
+{    
+    debug_printk("State machine: Auto-off triggered, current state: %d\n", g_system_state);
+    state_transition(LED_SMART_MODE, LED_OFF);
 }
 
 /**
@@ -260,7 +259,7 @@ void main_state_machine_auto_off(bool enter_sleep)
  * 
  * @return Current LED brightness state
  */
-enum led_brightness main_state_machine_get_state(void)
+enum system_state main_state_machine_get_state(void)
 {
-    return g_led_state;
+    return g_system_state;
 }

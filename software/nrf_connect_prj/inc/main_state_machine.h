@@ -49,19 +49,18 @@ void main_state_machine_on_button_press(void);
  * Called by stationary monitor when device has been stationary for too long.
  * Only acts if current state is SMART_MODE.
  * 
- * @param enter_sleep If true, system will enter sleep mode after turning off
  */
-void main_state_machine_auto_off(bool enter_sleep);
+void main_state_machine_auto_off(void);
 
 /**
  * @brief Get current LED state
  * 
  * @return Current LED brightness state
  */
-enum led_brightness main_state_machine_get_state(void);
+enum system_state main_state_machine_get_state(void);
 
 /* Global LED state */
-extern enum led_brightness g_led_state;
+extern enum system_state g_system_state;
 
 #endif /* MAIN_STATE_MACHINE_H */
 
