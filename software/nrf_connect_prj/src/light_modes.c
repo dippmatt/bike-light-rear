@@ -35,9 +35,9 @@
 /* PWM period for 1kHz = 1000 microseconds (1ms) */
 #define PWM_PERIOD_USEC 1000
 /* 50% duty cycle - scaled for 1ms period */
-#define PWM_DUTY_CYCLE_50_USEC 500
+#define PWM_DUTY_CYCLE_50_USEC 300
 /* 80% duty cycle - scaled for 1ms period */
-#define PWM_DUTY_CYCLE_80_USEC 800
+#define PWM_DUTY_CYCLE_80_USEC 1000
 /* 100% duty cycle - scaled for 1ms period */
 #define PWM_DUTY_CYCLE_100_USEC 1000
 
@@ -186,28 +186,6 @@ void light_modes_set_100_percent(void)
     k_timer_start(&blink_timer, K_MSEC(BLINK_INTERVAL_MS), K_MSEC(BLINK_INTERVAL_MS));
 }
 
-/**
- * @brief Set LED brightness based on enum value
- * 
- * @param brightness Brightness level to set
- */
-void light_modes_set_brightness(enum led_brightness brightness)
-{
-    switch (brightness) {
-        case LED_OFF:
-            light_modes_set_off();
-            break;
-        case LED_50_PERCENT:
-            light_modes_set_50_percent();
-            break;
-        case LED_50_80_FLASH:
-            light_modes_set_100_percent();
-            break;
-        case LED_SMART_MODE:
-            light_modes_set_smart_mode();
-            break;
-    }
-}
 
 /**
  * @brief Initialize SMART_MODE

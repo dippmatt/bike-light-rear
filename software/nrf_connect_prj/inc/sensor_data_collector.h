@@ -71,4 +71,20 @@ typedef struct {
 extern sensor_buffer_t g_sensor_buffer;
 extern environmental_state_t g_env_state;
 
+/**
+ * @brief Start sensor data collection
+ * 
+ * Activates sensor sampling thread. Should only be called when entering
+ * LED_SMART_MODE state.
+ */
+void sensor_data_collector_start(void);
+
+/**
+ * @brief Stop sensor data collection
+ * 
+ * Deactivates sensor sampling thread. Should be called when leaving
+ * LED_SMART_MODE state.
+ */
+void sensor_data_collector_stop(void);
+
 #endif /* SENSOR_DATA_COLLECTOR_H */

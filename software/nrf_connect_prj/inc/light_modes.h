@@ -66,13 +66,6 @@ void light_modes_set_50_percent(void);
 void light_modes_set_100_percent(void);
 
 /**
- * @brief Set LED brightness based on enum value
- * 
- * @param brightness Brightness level to set
- */
-void light_modes_set_brightness(enum led_brightness brightness);
-
-/**
  * @brief Initialize SMART_MODE
  * 
  * Sets LED to initial state for SMART_MODE operation.

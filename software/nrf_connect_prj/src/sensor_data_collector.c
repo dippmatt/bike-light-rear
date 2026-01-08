@@ -50,6 +50,11 @@ static bool prev_sample_braking = false;
 static uint8_t ambient_dark_sample_count = 0;
 static uint8_t ambient_bright_sample_count = 0;
 
+/* Sensor sampling control */
+static bool sensor_sampling_active = false;
+static struct k_thread *sensor_thread_handle = NULL;
+K_SEM_DEFINE(sensor_sampling_sem, 0, 1);
+
 /* Forward declarations */
 static void write_sensor_data(const sensor_readings_t *value);
 static void update_environmental_state(const sensor_readings_t *value);
@@ -146,8 +151,9 @@ static void debug_print_state(void)
 {
     /* Get current LED mode */
     const char *mode_str;
+    enum led_brightness current_state = main_state_machine_get_state();
     
-    switch (g_led_state) {
+    switch (current_state) {
         case LED_OFF:
             mode_str = "LED_OFF";
             break;
@@ -248,7 +254,6 @@ static void update_environmental_state(const sensor_readings_t *value)
 
 void sensor_data_collector()
 {
-
     const struct device *const temp_sensor = get_temp_sensor();
     const struct device *const light_sensor = get_light_sensor();
     const struct device *const accel_sensor = get_accel_sensor();
@@ -258,58 +263,98 @@ void sensor_data_collector()
         return;
     }
 
+    /* Store thread handle for suspend/resume control */
+    sensor_thread_handle = k_current_get();
+
     while (1) {
-        sensor_readings_t value;
+        /* Wait until sampling is activated (block on semaphore) */
+        k_sem_take(&sensor_sampling_sem, K_FOREVER);
         
-        if (temp_sensor != NULL) {
-            sensor_sample_fetch(temp_sensor);
-            sensor_channel_get(temp_sensor, SENSOR_CHAN_DIE_TEMP, &value.temp);
-            debug_printk("Temperature: %d.%06d\n", value.temp.val1, value.temp.val2);
-        }
-        
-        if (light_sensor != NULL) {
-            sensor_sample_fetch(light_sensor);
-            sensor_channel_get(light_sensor, SENSOR_CHAN_LIGHT, &value.light);
-            debug_printk("Light: %d.%06d lux\n", value.light.val1, value.light.val2);
-        }
-        else {
-            debug_printk("No light sensor available\n");
-        }
-        
-        if (accel_sensor != NULL) {
-            sensor_sample_fetch(accel_sensor);
-            sensor_channel_get(accel_sensor, SENSOR_CHAN_ACCEL_X, &value.accel_x);
-            sensor_channel_get(accel_sensor, SENSOR_CHAN_ACCEL_Y, &value.accel_y);
-            sensor_channel_get(accel_sensor, SENSOR_CHAN_ACCEL_Z, &value.accel_z);
-            debug_printk("Acceleration X: %d.%06d, Y: %d.%06d, Z: %d.%06d m/s^2\n",
-                   value.accel_x.val1, value.accel_x.val2,
-                   value.accel_y.val1, value.accel_y.val2,
-                   value.accel_z.val1, value.accel_z.val2);
-        }
-        else {
-            debug_printk("No accelerometer available\n");
-        }
-        
-        /* Write sensor data to circular buffer */
-        write_sensor_data(&value);
-        
-        /* Update environmental state (braking, darkness) */
-        update_environmental_state(&value);
-        
-        /* If in SMART_MODE, update PWM based on environmental state */
-        if (main_state_machine_get_state() == LED_SMART_MODE) {
+        /* Sample continuously while active */
+        while (sensor_sampling_active) {
+            sensor_readings_t value;
+            
+            if (temp_sensor != NULL) {
+                sensor_sample_fetch(temp_sensor);
+                sensor_channel_get(temp_sensor, SENSOR_CHAN_DIE_TEMP, &value.temp);
+                debug_printk("Temperature: %d.%06d\n", value.temp.val1, value.temp.val2);
+            }
+            
+            if (light_sensor != NULL) {
+                sensor_sample_fetch(light_sensor);
+                sensor_channel_get(light_sensor, SENSOR_CHAN_LIGHT, &value.light);
+                debug_printk("Light: %d.%06d lux\n", value.light.val1, value.light.val2);
+            }
+            else {
+                debug_printk("No light sensor available\n");
+            }
+            
+            if (accel_sensor != NULL) {
+                sensor_sample_fetch(accel_sensor);
+                sensor_channel_get(accel_sensor, SENSOR_CHAN_ACCEL_X, &value.accel_x);
+                sensor_channel_get(accel_sensor, SENSOR_CHAN_ACCEL_Y, &value.accel_y);
+                sensor_channel_get(accel_sensor, SENSOR_CHAN_ACCEL_Z, &value.accel_z);
+                debug_printk("Acceleration X: %d.%06d, Y: %d.%06d, Z: %d.%06d m/s^2\n",
+                       value.accel_x.val1, value.accel_x.val2,
+                       value.accel_y.val1, value.accel_y.val2,
+                       value.accel_z.val1, value.accel_z.val2);
+            }
+            else {
+                debug_printk("No accelerometer available\n");
+            }
+            
+            /* Write sensor data to circular buffer */
+            write_sensor_data(&value);
+            
+            /* Update environmental state (braking, darkness) */
+            update_environmental_state(&value);
+            
+            /* Update PWM based on environmental state (we're only active in SMART_MODE) */
             light_modes_update_smart_pwm();
+            
+            /* Print debug state information */
+            debug_print_state();
+            
+            k_sleep(K_MSEC(TIME_SAMPLING_INTERVAL_MS));
         }
-        
-        /* Print debug state information */
-        debug_print_state();
-        
-        k_sleep(K_MSEC(TIME_SAMPLING_INTERVAL_MS));
     }
 }
 
 K_THREAD_DEFINE(sensor_data_collector_id, SENSOR_THREAD_STACK_SIZE, sensor_data_collector, NULL, 
         NULL, NULL, SENSOR_THREAD_PRIORITY, 0, 1000);
+
+/**
+ * @brief Start sensor data collection
+ * 
+ * Activates sensor sampling thread. Should only be called when entering
+ * LED_SMART_MODE state.
+ */
+void sensor_data_collector_start(void)
+{
+    if (!sensor_sampling_active) {
+        sensor_sampling_active = true;
+        debug_printk("Sensor data collection started\n");
+        
+        /* Give semaphore to wake up thread */
+        k_sem_give(&sensor_sampling_sem);
+    }
+}
+
+/**
+ * @brief Stop sensor data collection
+ * 
+ * Deactivates sensor sampling thread. Should be called when leaving
+ * LED_SMART_MODE state.
+ */
+void sensor_data_collector_stop(void)
+{
+    if (sensor_sampling_active) {
+        sensor_sampling_active = false;
+        debug_printk("Sensor data collection stopped\n");
+        
+        /* Thread will check flag and stop sampling on next iteration */
+    }
+}
 
 /**
  * @brief Stationary monitor thread
