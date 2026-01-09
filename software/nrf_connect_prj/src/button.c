@@ -39,7 +39,7 @@ static bool initialized = false;
 static uint32_t last_event_time = 0;
 static uint32_t current_time = 0;
 
-#define DEBOUNCE_MS 100  /* Minimum time between button events to filter bounce */
+#define DEBOUNCE_MS 200  /* Minimum time between button events to filter bounce */
 
 /**
  * @brief GPIO interrupt callback for button press/release

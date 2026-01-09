@@ -160,7 +160,10 @@ static void state_led_smart_mode_terminate(void)
 static void state_led_off_init(void)
 {
     debug_printk("State init: LED_OFF\n");
+    debug_printk("Stopping status LED\n");
     light_modes_stop_status_led();
+    debug_printk("Turning off main LED\n");
+    light_modes_off_main_led();
 }
 
 /**

@@ -41,15 +41,15 @@
 /* PWM period for 1kHz = 1000 microseconds (1ms) */
 #define PWM_PERIOD_USEC 1000
 /* 50% duty cycle - scaled for 1ms period */
-#define PWM_DUTY_CYCLE_50_USEC 300
+#define PWM_DUTY_CYCLE_30_USEC 300
 /* 80% duty cycle - scaled for 1ms period */
-#define PWM_DUTY_CYCLE_80_USEC 1000
+#define PWM_DUTY_CYCLE_80_USEC 800
 /* 100% duty cycle - scaled for 1ms period */
 #define PWM_DUTY_CYCLE_100_USEC 1000
 
 /* Blinking mode timing */
 #define BLINK_INTERVAL_MS 1500      /* Flash every 1.5 seconds */
-#define BLINK_FLASH_DURATION_MS 100 /* Flash duration: 100ms */
+#define BLINK_FLASH_DURATION_MS 70 /* Flash duration: 70ms */
 
 /* PWM device specification from devicetree */
 static const struct pwm_dt_spec main_led = PWM_DT_SPEC_GET(MAIN_LED_PWM_NODE);
@@ -61,6 +61,7 @@ static const struct gpio_dt_spec status_led = GPIO_DT_SPEC_GET(STATUS_LED_NODE, 
 static struct k_timer blink_timer;
 static struct k_timer flash_timer;
 static bool blinking_active = false;
+static int flash_step = 0; /* Tracks flash sequence: 0=after first flash, 1=after gap, 2=after second flash */
 
 /* Timer for STATUS_LED blinking */
 static struct k_timer status_led_timer;
@@ -92,6 +93,7 @@ int flash_timers_init(void)
     k_timer_init(&blink_timer, blink_timer_expiry, NULL);
     k_timer_init(&flash_timer, flash_timer_expiry, NULL);
     blinking_active = false;
+    flash_step = 0;
     
     return 0;
 }
@@ -125,7 +127,7 @@ int status_led_init(void)
 /**
  * @brief Flash timer expiry callback
  * 
- * Returns LED to 50% duty cycle after flash period.
+ * Handles the double-flash sequence: 80% (first) -> 50% (gap) -> 80% (second) -> 50% (done)
  * Only acts if blinking mode is still active.
  */
 void flash_timer_expiry(struct k_timer *timer)
@@ -134,27 +136,51 @@ void flash_timer_expiry(struct k_timer *timer)
     
     /* Only update if blinking is still active - prevents interference with SMART_MODE */
     if (blinking_active) {
-        /* Return to 50% duty cycle */
-        pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_50_USEC));
-        current_pwm_usec = PWM_DUTY_CYCLE_50_USEC;
-        debug_printk("PWM duty cycle changed to %u us (flash timer)\n", current_pwm_usec);
+        if (flash_step == 0) {
+            /* After first flash (80%): return to 50% for gap */
+            pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_30_USEC));
+            current_pwm_usec = PWM_DUTY_CYCLE_30_USEC;
+            debug_printk("PWM duty cycle changed to %u us (flash timer - gap after first flash)\n", current_pwm_usec);
+            flash_step++;
+            /* Start flash timer again for second flash */
+            k_timer_start(&flash_timer, K_MSEC(BLINK_FLASH_DURATION_MS), K_NO_WAIT);
+        } else if (flash_step == 1) {
+            /* After gap (50%): flash to 80% for second flash */
+            pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_80_USEC));
+            current_pwm_usec = PWM_DUTY_CYCLE_80_USEC;
+            debug_printk("PWM duty cycle changed to %u us (flash timer - second flash)\n", current_pwm_usec);
+            flash_step++;
+            /* Start flash timer to return to 50% after second flash */
+            k_timer_start(&flash_timer, K_MSEC(BLINK_FLASH_DURATION_MS), K_NO_WAIT);
+        } else if (flash_step == 2) {
+            /* After second flash (80%): return to 50% and wait for blink timer */
+            pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_30_USEC));
+            current_pwm_usec = PWM_DUTY_CYCLE_30_USEC;
+            debug_printk("PWM duty cycle changed to %u us (flash timer - second flash done)\n", current_pwm_usec);
+            flash_step = 0;
+            /* Don't start flash timer - wait for blink_timer to start next cycle */
+        }
     }
 }
 
 /**
  * @brief Blink timer expiry callback
  * 
- * Triggers a flash to 80% duty cycle every 1.5 seconds.
+ * Triggers the first flash to 80% duty cycle every 1.5 seconds.
+ * Resets flash_step to start a new double-flash sequence.
  */
 void blink_timer_expiry(struct k_timer *timer)
 {
     ARG_UNUSED(timer);
     
     if (blinking_active) {
-        /* Flash to 80% duty cycle */
+        /* Flash to 80% duty cycle (first flash) */
         pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_80_USEC));
         current_pwm_usec = PWM_DUTY_CYCLE_80_USEC;
-        debug_printk("PWM duty cycle changed to %u us\n", current_pwm_usec);
+        debug_printk("PWM duty cycle changed to %u us (blink timer - first flash)\n", current_pwm_usec);
+        
+        /* Reset flash step to start new double-flash sequence */
+        flash_step = 0;
         
         /* Start flash timer to return to 50% after 100ms */
         k_timer_start(&flash_timer, K_MSEC(BLINK_FLASH_DURATION_MS), K_NO_WAIT);
@@ -191,6 +217,7 @@ void light_modes_stop_blinking(void)
         k_timer_stop(&blink_timer);
         k_timer_stop(&flash_timer);
         blinking_active = false;
+        flash_step = 0;
     }
     
     pwm_set_pulse_dt(&main_led, 0);
@@ -203,8 +230,8 @@ void light_modes_stop_blinking(void)
  */
 void light_modes_set_50_percent(void)
 {    
-    pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_50_USEC));
-    current_pwm_usec = PWM_DUTY_CYCLE_50_USEC;
+    pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_30_USEC));
+    current_pwm_usec = PWM_DUTY_CYCLE_30_USEC;
     debug_printk("PWM duty cycle changed to %u us\n", current_pwm_usec);
 }
 
@@ -216,8 +243,8 @@ void light_modes_set_50_percent(void)
 void light_modes_set_100_percent(void)
 {
     /* Set initial state to 50% */
-    pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_50_USEC));
-    current_pwm_usec = PWM_DUTY_CYCLE_50_USEC;
+    pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_30_USEC));
+    current_pwm_usec = PWM_DUTY_CYCLE_30_USEC;
     debug_printk("PWM duty cycle changed to %u us\n", current_pwm_usec);
     
     /* Start blinking mode */
@@ -265,7 +292,7 @@ void light_modes_update_smart_pwm(void)
     if (g_env_state.is_braking) {
         target_pwm = PWM_DUTY_CYCLE_80_USEC;
     } else if (g_env_state.ambient_dark) {
-        target_pwm = PWM_DUTY_CYCLE_50_USEC;
+        target_pwm = PWM_DUTY_CYCLE_30_USEC;
     } else {
         /* Bright daylight, not braking - LED off */
         target_pwm = 0;
@@ -287,6 +314,18 @@ void light_modes_update_smart_pwm(void)
 uint32_t light_modes_get_current_pwm(void)
 {
     return current_pwm_usec;
+}
+
+/**
+ * @brief Set main LED to off
+ * 
+ * Sets LED PWM to 0% duty cycle.
+ */
+void light_modes_off_main_led(void)
+{
+    pwm_set_pulse_dt(&main_led, 0);
+    current_pwm_usec = 0;
+    debug_printk("PWM duty cycle changed to %u us (main LED off)\n", current_pwm_usec);
 }
 
 /**

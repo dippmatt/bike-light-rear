@@ -108,6 +108,13 @@ void light_modes_update_smart_pwm(void);
 uint32_t light_modes_get_current_pwm(void);
 
 /**
+ * @brief Set main LED to off
+ * 
+ * Sets LED PWM to 0% duty cycle.
+ */
+void light_modes_off_main_led(void);
+
+/**
  * @brief Start the status LED timer
  * 
  * Starts the periodic timer that blinks the status LED.
