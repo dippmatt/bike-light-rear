@@ -21,46 +21,18 @@
  * explicit written permission from the copyright holder.
  */
 
-#ifndef MAIN_STATE_MACHINE_H
-#define MAIN_STATE_MACHINE_H
-
-#include "light_modes.h"
+#ifndef POWER_MANAGEMENT_H
+#define POWER_MANAGEMENT_H
 
 /**
- * @brief Initialize the main state machine
+ * @brief Enter system off (deep sleep) mode
  * 
- * Sets up the state machine and connects button and LED control.
- * 
- * @return 0 on success, negative error code on failure
+ * Prepares the system for low-power system off mode and enters it.
+ * The system will wake on button press (configured as wake source).
+ * Note: System off is like a reset - upon wake, execution starts from main().
  */
-int main_state_machine_init(void);
+void power_management_enter_sleep(void);
 
-/**
- * @brief Handle button press event
- * 
- * Called by button module when a button press is detected.
- * This function cycles through LED brightness states.
- */
-void main_state_machine_on_button_press(void);
+#endif /* POWER_MANAGEMENT_H */
 
-/**
- * @brief Automatically turn off LED
- * 
- * Called by stationary monitor when device has been stationary for too long.
- * Only acts if current state is SMART_MODE.
- * 
- */
-void main_state_machine_auto_off(void);
-
-/**
- * @brief Get current LED state
- * 
- * @return Current LED brightness state
- */
-enum system_state main_state_machine_get_state(void);
-
-/* Global LED state */
-extern enum system_state g_system_state;
-
-#endif /* MAIN_STATE_MACHINE_H */
 

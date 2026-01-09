@@ -24,11 +24,14 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/devicetree.h>
+#include <zephyr/pm/device.h>
+#include <zephyr/sys/poweroff.h>
 
 #include "utils.h"
 #include "button.h"
 #include "main_state_machine.h"
 #include "sensor_data_collector.h"
+#include "power_management.h"
 #ifdef DEBUG
 #include "i2c_scanner.h"
 #endif
@@ -37,55 +40,19 @@
 sensor_buffer_t g_sensor_buffer;
 environmental_state_t g_env_state;
 
-/* GPIO Devicetree Specifications */
-#define STATUS_LED_NODE     DT_ALIAS(led0)
-
-/* Timer interval for STATUS_LED blinking */
-#define TIMER_INTERVAL_MS 500
-
-/* GPIO device specification for STATUS_LED */
-static const struct gpio_dt_spec status_led = GPIO_DT_SPEC_GET(STATUS_LED_NODE, gpios);
-
-/* Timer for STATUS_LED blinking */
-static struct k_timer led_timer;
-
-/**
- * @brief STATUS_LED timer expiry callback
- * 
- * Toggles the LED on every timer tick, but only if not in LED_OFF mode.
- * When in LED_OFF mode, the LED stays off.
- */
-static void led_timer_expiry()
+static void button_event_handler()
 {
-    /* Only blink if not in LED_OFF mode */
-    if (main_state_machine_get_state() != LED_OFF) {
-        gpio_pin_toggle_dt(&status_led);
-    } else {
-        /* Ensure LED is off when in LED_OFF mode */
-        gpio_pin_set_dt(&status_led, 0);
-    }
-}
-
-static char *helper_button_evt_str(enum button_evt evt)
-{
-	switch (evt) {
-	case BUTTON_EVT_PRESSED:
-		return "Pressed";
-	case BUTTON_EVT_RELEASED:
-		return "Released";
-	default:
-		return "Unknown";
-	}
-}
-
-static void button_event_handler(enum button_evt evt)
-{
-	debug_printk("Button event: %s\n", helper_button_evt_str(evt));
-
     /* Advance state machine on button press */
-	if (evt == BUTTON_EVT_PRESSED) {
-		main_state_machine_on_button_press();
-	}
+    main_state_machine_on_button_press();
+    enum system_state new_state = main_state_machine_get_state();
+
+    /* If we transitioned to LED_OFF, enter sleep mode */
+    if (new_state == LED_OFF) {
+        debug_printk("Transitioning to LED_OFF - entering sleep mode\n");
+        /* Give a short delay for user feedback (status LED off) */
+        k_msleep(100);
+        power_management_enter_sleep();
+    }
 }
 
 int main(void)
@@ -103,16 +70,6 @@ int main(void)
     g_env_state.ambient_dark = false;
     g_env_state.previous_brightness = 0;
     
-    /* Check if STATUS_LED device is ready */
-    if (!gpio_is_ready_dt(&status_led)) {
-        return -1;
-    }
-    /* Configure STATUS_LED as output and initialize to off */
-    ret = gpio_pin_configure_dt(&status_led, GPIO_OUTPUT_INACTIVE);
-    if (ret < 0) {
-        return -1;
-    }
-
     /* Initialize main state machine (LED control) */
     ret = main_state_machine_init();
     if (ret != 0) {
@@ -120,14 +77,14 @@ int main(void)
         return -1;
     }
     
-    /* Initialize button */
+    /* Initialize button GPIO (but don't enable interrupts yet) */
     int err = -1;
     err = button_init(button_event_handler);
 	if (err) {
 		debug_printk("Button Init failed: %d\n", err);
 		return err;
 	}
-	debug_printk("Button Init succeeded. Waiting for event...\n");
+	debug_printk("Button GPIO configured (interrupts not yet enabled)...\n");
     
 #ifdef DEBUG
     /* Scan I2C bus for debugging */
@@ -140,16 +97,16 @@ int main(void)
     }
 #endif
     
-    /* Initialize and start LED blink timer */
-    /* Timer fires every 500ms, toggling the LED for 1Hz blink (on 500ms, off 500ms) */
-    /* Note: Timer callback checks state and won't blink when in LED_OFF mode */
-    k_timer_init(&led_timer, led_timer_expiry, NULL);
-    k_timer_start(&led_timer, K_MSEC(TIMER_INTERVAL_MS), K_MSEC(TIMER_INTERVAL_MS));
+    /* Enable button interrupts AFTER slow initialization tasks
+     * This prevents spurious button events during I2C scanning and other init */
+    err = button_enable_interrupts();
+    if (err) {
+        debug_printk("Button interrupt enable failed: %d\n", err);
+        return err;
+    }
+    debug_printk("Button interrupts enabled. Ready for events...\n");
     
-    /* Initialize status LED to off (since we start in LED_OFF mode) */
-    gpio_pin_set_dt(&status_led, 0);
-    
-    /* Main loop */
+    /* Main loop (only reached if NOT in LED_OFF state) */
     while (1) {
         /* Sleep to save power - timers and interrupts will wake the CPU */
         k_msleep(1000);

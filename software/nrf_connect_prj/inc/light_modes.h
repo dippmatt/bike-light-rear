@@ -25,16 +25,27 @@
 #define LIGHT_MODES_H
 
 #include <stdint.h>
+#include <stdbool.h>
+#include <zephyr/kernel.h>
 
 /**
- * @brief LED brightness levels
+ * @brief LED state machine states
  */
-enum led_brightness {
+enum system_state {
     LED_OFF = 0,     /* 0% duty cycle */
     LED_50_PERCENT,  /* 50% duty cycle */
     LED_50_80_FLASH, /* High visibility mode: 50% with periodic 80% flashes */
     LED_SMART_MODE   /* Smart mode: adaptive brightness based on braking and ambient light */
 };
+
+/** @brief Timer expiry callback for the flash timer */
+void flash_timer_expiry(struct k_timer *timer);
+
+/** @brief Timer expiry callback for the blink timer */
+void blink_timer_expiry(struct k_timer *timer);
+
+/** @brief Timer expiry callback for the status LED timer */
+void status_led_timer_expiry(struct k_timer *timer);
 
 /**
  * @brief Initialize PWM LED hardware
@@ -43,13 +54,22 @@ enum led_brightness {
  * 
  * @return 0 on success, negative error code on failure
  */
-int light_modes_init(void);
+int flash_timers_init(void);
 
 /**
- * @brief Set LED brightness to 0% (off)
- * Stops any active blinking mode.
+ * @brief Initialize Status LED GPIO
+ * 
+ * Initializes and starts the timer for the STATUS LED.
+ * 
+ * @return 0 on success, negative error code on failure
  */
-void light_modes_set_off(void);
+int status_led_init(void);
+
+/**
+ * @brief Stop any active blinking mode
+ * Sets LED brightness to 0% (off).
+ */
+void light_modes_stop_blinking(void);
 
 /**
  * @brief Set LED brightness to 50%
@@ -63,13 +83,6 @@ void light_modes_set_50_percent(void);
  * LED runs at 50% duty cycle normally, and flashes to 80% for 100ms every second.
  */
 void light_modes_set_100_percent(void);
-
-/**
- * @brief Set LED brightness based on enum value
- * 
- * @param brightness Brightness level to set
- */
-void light_modes_set_brightness(enum led_brightness brightness);
 
 /**
  * @brief Initialize SMART_MODE
@@ -93,6 +106,27 @@ void light_modes_update_smart_pwm(void);
  * @return Current PWM pulse width in microseconds
  */
 uint32_t light_modes_get_current_pwm(void);
+
+/**
+ * @brief Set main LED to off
+ * 
+ * Sets LED PWM to 0% duty cycle.
+ */
+void light_modes_off_main_led(void);
+
+/**
+ * @brief Start the status LED timer
+ * 
+ * Starts the periodic timer that blinks the status LED.
+ */
+void light_modes_start_status_led(void);
+
+/**
+ * @brief Stop the status LED timer
+ * 
+ * Stops the status LED timer and turns off the LED.
+ */
+void light_modes_stop_status_led(void);
 
 #endif /* LIGHT_MODES_H */
 
