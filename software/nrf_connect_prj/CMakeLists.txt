@@ -6,6 +6,8 @@ project(nrf_connect_prj)
 # Option to enable debug features (I2C scanner and debug prints)
 option(DEBUG "Enable debug features (I2C scanner and debug prints)" ON)
 
+# Option to enable Bluetooth
+option(BLUETOOTH "Enable Bluetooth" OFF)
 # Option to enable BLE master mode
 option(BLE_MASTER "Enable BLE master mode" OFF)
 

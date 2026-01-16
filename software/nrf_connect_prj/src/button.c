@@ -41,11 +41,66 @@ static uint32_t current_time = 0;
 
 #define DEBOUNCE_MS 200  /* Minimum time between button events to filter bounce */
 
+/* Long press detection state */
+static struct k_timer long_press_timer;
+static uint8_t press_counter = 0;
+static bool timer_active = false;
+
+/**
+ * @brief Timer expiry callback for long press detection
+ * 
+ * Periodically samples the button state every 100ms.
+ * If button is released before 1s (counter > 10), triggers short press callback.
+ * If button is still pressed after 1s (counter > 10), triggers long press callback.
+ */
+static void long_press_timer_handler(struct k_timer *timer)
+{
+    ARG_UNUSED(timer);
+    
+    if (!initialized || !user_cb || !timer_active) {
+        return;
+    }
+    
+    /* Read current button state */
+    int val = gpio_pin_get_dt(&button);
+    if (val < 0) {
+        debug_printk("Error reading button state during sampling: %d\n", val);
+        /* Continue sampling anyway */
+        return;
+    }
+    
+    /* val == 1 means pressed, DT handles active low / active high differentiation */
+    if (val != 1) {
+        /* Button released - short press detected */
+        k_timer_stop(&long_press_timer);
+        timer_active = false;
+        press_counter = 0;
+        
+        debug_printk("Button released - short press detected\n");
+        user_cb(BUTTON_PRESS_SHORT);
+    } else {
+        /* Button still pressed - increment counter */
+        press_counter++;
+        debug_printk("Button still pressed - counter: %u\n", press_counter);
+        
+        if (press_counter > 10) {
+            /* Long press confirmed (1s elapsed) */
+            k_timer_stop(&long_press_timer);
+            timer_active = false;
+            press_counter = 0;
+            
+            debug_printk("Long press confirmed after %u samples\n", press_counter);
+            user_cb(BUTTON_PRESS_LONG);
+        }
+        /* Timer will auto-repeat every 100ms if still active */
+    }
+}
+
 /**
  * @brief GPIO interrupt callback for button press/release
  * 
- * Called when button state changes (press or release).
- * Detects the current state and triggers the user callback.
+ * Called when button is pressed (falling edge for active-low button).
+ * Starts periodic timer to detect short vs long press.
  */
 static void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
@@ -68,7 +123,18 @@ static void button_pressed(const struct device *dev, struct gpio_callback *cb, u
     /* Update last event time for debouncing */
     last_event_time = current_time;
     
-    user_cb();
+    /* Cancel any existing timer (if previous press wasn't handled) */
+    if (timer_active) {
+        k_timer_stop(&long_press_timer);
+        timer_active = false;
+    }
+    
+    /* Reset counter and start periodic sampling timer */
+    press_counter = 0;
+    timer_active = true;
+    k_timer_start(&long_press_timer, K_MSEC(100), K_MSEC(100));
+    
+    debug_printk("Button pressed - starting long press detection timer\n");
 }
 
 /**
@@ -147,8 +213,13 @@ int button_enable_interrupts(void)
     /* Small delay for hardware to settle */
     k_msleep(10);
     
-    /* Re-enable interrupt on rising edge (button release for active-low) */
-    err = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_RISING);
+    /* Initialize long press detection timer */
+    k_timer_init(&long_press_timer, long_press_timer_handler, NULL);
+    timer_active = false;
+    press_counter = 0;
+    
+    /* Re-enable interrupt on falling edge (button press for active-low) */
+    err = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_FALLING);
     if (err < 0) {
         debug_printk("Error %d: failed to configure interrupt on %s pin %d\n", 
                      err, button.port->name, button.pin);

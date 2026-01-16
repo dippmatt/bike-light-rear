@@ -33,6 +33,7 @@
 #include "main_state_machine.h"
 #include "utils.h"
 
+#ifdef BLUETOOTH
 #ifndef BLE_MASTER
 /* ========== SLAVE MODE IMPLEMENTATION ========== */
 
@@ -418,4 +419,4 @@ int bluetooth_master_send_button_press(void)
 }
 
 #endif /* BLE_MASTER */
-
+#endif /* BLUETOOTH */

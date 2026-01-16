@@ -24,7 +24,12 @@
  #ifndef _BUTTON_H_
  #define _BUTTON_H_
  
- typedef void (*button_event_handler_t)(void);
+ enum button_press_type {
+     BUTTON_PRESS_SHORT,
+     BUTTON_PRESS_LONG
+ };
+ 
+ typedef void (*button_event_handler_t)(enum button_press_type press_type);
  
  int button_init(button_event_handler_t handler);
  int button_enable_interrupts(void);
