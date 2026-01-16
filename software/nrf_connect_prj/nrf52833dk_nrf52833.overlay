@@ -44,7 +44,9 @@
 		io-channels = <&adc 0>;
 	};
 
-	/* BUTTON on SIO_38 (P1.06) - Active low with pullup */
+	/*
+	// Fake button after solder jumper fix for SIO_38 (P1.06)
+	//BUTTON on SIO_38 (P1.06) - Active low with pullup 
 	buttons {
 		compatible = "gpio-keys";
 		button0: button_0 {
@@ -52,7 +54,19 @@
 			label = "User Button";
 		};
 	};
+	*/
 
+
+	// BUTTON on SIO_32 (P1.00) - Active low with pullup 
+	buttons {
+		compatible = "gpio-keys";
+		button0: button_0 {
+			gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;
+			label = "User Button";
+		};
+	};
+ 	
+	
 	/* STATUS_LED on P0.11 (pin 11) - Active low */
 	led0_node: led0 {
 		compatible = "gpio-leds";

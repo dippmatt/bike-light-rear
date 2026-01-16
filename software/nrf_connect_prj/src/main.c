@@ -32,6 +32,7 @@
 #include "main_state_machine.h"
 #include "sensor_data_collector.h"
 #include "power_management.h"
+#include "bluetooth.h"
 #ifdef DEBUG
 #include "i2c_scanner.h"
 #endif
@@ -45,6 +46,11 @@ static void button_event_handler()
     /* Advance state machine on button press */
     main_state_machine_on_button_press();
     enum system_state new_state = main_state_machine_get_state();
+
+#ifdef BLE_MASTER
+    /* In master mode, also send button press to slave */
+    bluetooth_master_send_button_press();
+#endif /* BLE_MASTER */
 
     /* If we transitioned to LED_OFF, enter sleep mode */
     if (new_state == LED_OFF) {
@@ -75,6 +81,15 @@ int main(void)
     if (ret != 0) {
         /* State machine initialization failed */
         return -1;
+    }
+    
+    /* Initialize Bluetooth Low Energy */
+    ret = bluetooth_init();
+    if (ret != 0) {
+        debug_printk("BLE Init failed: %d\n", ret);
+        /* Continue anyway - BLE is optional */
+    } else {
+        debug_printk("BLE initialized successfully\n");
     }
     
     /* Initialize button GPIO (but don't enable interrupts yet) */

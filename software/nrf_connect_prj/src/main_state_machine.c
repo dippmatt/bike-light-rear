@@ -266,3 +266,29 @@ enum system_state main_state_machine_get_state(void)
 {
     return g_system_state;
 }
+
+/**
+ * @brief Set LED state directly (for external control, e.g., BLE)
+ * 
+ * Allows external modules to directly set the LED state.
+ * This bypasses the normal button press cycle.
+ * 
+ * @param new_state The state to transition to
+ * @return 0 on success, negative error code on failure
+ */
+int main_state_machine_set_state(enum system_state new_state)
+{
+    /* Validate state */
+    if (new_state > LED_SMART_MODE) {
+        return -EINVAL;
+    }
+    
+    enum system_state current_state = g_system_state;
+    
+    /* Only transition if state is different */
+    if (current_state != new_state) {
+        state_transition(current_state, new_state);
+    }
+    
+    return 0;
+}

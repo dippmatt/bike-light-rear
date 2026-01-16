@@ -6,6 +6,9 @@ project(nrf_connect_prj)
 # Option to enable debug features (I2C scanner and debug prints)
 option(DEBUG "Enable debug features (I2C scanner and debug prints)" ON)
 
+# Option to enable BLE master mode
+option(BLE_MASTER "Enable BLE master mode" OFF)
+
 target_sources(app PRIVATE 
     src/main.c
     src/sensor_data_collector.c
@@ -13,6 +16,7 @@ target_sources(app PRIVATE
     src/light_modes.c
     src/main_state_machine.c
     src/power_management.c
+    src/bluetooth.c
 )
 
 # Conditionally enable debug features
@@ -22,6 +26,13 @@ if(DEBUG)
     )
     target_compile_definitions(app PRIVATE 
         DEBUG=1
+    )
+endif()
+
+# Conditionally enable BLE master mode
+if(BLE_MASTER)
+    target_compile_definitions(app PRIVATE 
+        BLE_MASTER=1
     )
 endif()
 
