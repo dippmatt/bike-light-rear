@@ -25,9 +25,14 @@
 #include "light_modes.h"
 #include "sensor_data_collector.h"
 #include "utils.h"
+#include <zephyr/kernel.h>
 
 /* LED state - cycles through OFF -> 50% -> 50_80_FLASH -> SMART_MODE -> OFF */
 enum system_state g_system_state = LED_50_PERCENT;
+
+/* Button advance expire timer state */
+static bool button_advance_expire = false;
+static struct k_timer button_advance_timer;
 
 /* Forward declarations for state init/terminate functions */
 static void state_led_50_percent_init(void);
@@ -42,6 +47,19 @@ static void state_led_off_terminate(void);
 /* State function pointer types */
 typedef void (*state_init_func_t)(void);
 typedef void (*state_terminate_func_t)(void);
+
+/**
+ * @brief Timer expiry callback for button advance expire
+ * 
+ * Called when 10 seconds have passed without a button press.
+ * Sets button_advance_expire to true, causing next button press to go to LED_OFF.
+ */
+static void button_advance_timer_handler(struct k_timer *timer)
+{
+    ARG_UNUSED(timer);
+    button_advance_expire = true;
+    debug_printk("Button advance timer expired - next press will go to LED_OFF\n");
+}
 
 /* State function table */
 static const struct {
@@ -200,6 +218,12 @@ int main_state_machine_init(void)
         return ret;
     }
     
+    /* Initialize button advance expire timer */
+    button_advance_expire = false;
+    k_timer_init(&button_advance_timer, button_advance_timer_handler, NULL);
+    k_timer_start(&button_advance_timer, K_MSEC(10000), K_NO_WAIT);
+    debug_printk("Button advance timer started (10s)\n");
+    
     /* Initialize to LED_50_PERCENT state */
     g_system_state = LED_50_PERCENT;
     state_led_50_percent_init();
@@ -211,7 +235,8 @@ int main_state_machine_init(void)
  * @brief Handle button press event
  * 
  * Called by button module when a button press is detected.
- * This function cycles through LED brightness states.
+ * If button_advance_expire is true, goes directly to LED_OFF.
+ * Otherwise, cycles through LED brightness states normally.
  */
 void main_state_machine_on_button_press(void)
 {
@@ -220,7 +245,15 @@ void main_state_machine_on_button_press(void)
     
     debug_printk("State machine: Button press handler called, current state: %d\n", current_state);
     
-    /* Determine next state based on current state */
+    /* If timer expired, go directly to LED_OFF */
+    if (button_advance_expire) {
+        debug_printk("Button advance expired - going to LED_OFF\n");
+        next_state = LED_OFF;
+        state_transition(current_state, next_state);
+        return;
+    }
+    
+    /* Determine next state based on current state (normal cycling) */
     switch (current_state) {
         case LED_OFF:
             next_state = LED_50_PERCENT;
@@ -255,6 +288,27 @@ void main_state_machine_auto_off()
 {    
     debug_printk("State machine: Auto-off triggered, current state: %d\n", g_system_state);
     state_transition(LED_SMART_MODE, LED_OFF);
+}
+
+/**
+ * @brief Reset the button advance expire timer
+ * 
+ * Called when a button press occurs. Restarts the 10-second timer
+ * and sets button_advance_expire to false, allowing normal state cycling.
+ */
+void main_state_machine_reset_advance_timer(void)
+{
+    /* Only reset timer if it is not already expired.
+    If it is already expired, do nothing, we just go to LED_OFF directly.
+    */
+    if (!button_advance_expire) {
+        return;
+    }
+    
+    k_timer_stop(&button_advance_timer);
+    button_advance_expire = false;
+    k_timer_start(&button_advance_timer, K_MSEC(10000), K_NO_WAIT);
+    debug_printk("Button advance timer reset (10s)\n");
 }
 
 /**

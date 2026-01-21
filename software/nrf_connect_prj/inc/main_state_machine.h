@@ -53,6 +53,14 @@ void main_state_machine_on_button_press(void);
 void main_state_machine_auto_off(void);
 
 /**
+ * @brief Reset the button advance expire timer
+ * 
+ * Called when a button press occurs. Restarts the 10-second timer
+ * and sets button_advance_expire to false, allowing normal state cycling.
+ */
+void main_state_machine_reset_advance_timer(void);
+
+/**
  * @brief Get current LED state
  * 
  * @return Current LED brightness state
