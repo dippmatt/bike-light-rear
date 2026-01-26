@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
-project(rear_light_peripheral)
+project(front_light_central)
 
 # Option to enable debug features (I2C scanner and debug prints)
 option(DEBUG "Enable debug features (I2C scanner and debug prints)" ON)
@@ -13,8 +13,7 @@ target_sources(app PRIVATE
     src/light_modes.c
     src/main_state_machine.c
     src/power_management.c
-    src/ble_service.c
-    src/ble_peripheral.c
+    src/ble_central.c
 )
 
 # Conditionally enable debug features

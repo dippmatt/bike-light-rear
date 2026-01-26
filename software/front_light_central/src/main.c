@@ -32,7 +32,7 @@
 #include "main_state_machine.h"
 #include "sensor_data_collector.h"
 #include "power_management.h"
-#include "ble_peripheral.h"
+#include "ble_central.h"
 #ifdef DEBUG
 #include "i2c_scanner.h"
 #endif

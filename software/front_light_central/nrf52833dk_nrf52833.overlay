@@ -1,0 +1,172 @@
+// To get started, press Ctrl+Space to bring up the completion menu and view the available nodes.
+
+// You can also use the buttons in the sidebar to perform actions on nodes.
+// Actions currently available include:
+
+// * Enabling / disabling the node
+// * Adding the bus to a bus
+// * Removing the node
+// * Connecting ADC channels
+
+// For more help, browse the DeviceTree documentation at https://docs.zephyrproject.org/latest/guides/dts/index.html
+// You can also visit the nRF DeviceTree extension documentation at https://docs.nordicsemi.com/bundle/nrf-connect-vscode/page/guides/ncs_configure_app.html#devicetree-support-in-the-extension
+
+&uicr {
+	nfct-pins-as-gpios;
+};
+
+/* Disable base board LEDs since we're using custom hardware */
+&led0 {
+	status = "disabled";
+};
+
+&led1 {
+	status = "disabled";
+};
+
+&led2 {
+	status = "disabled";
+};
+
+&led3 {
+	status = "disabled";
+};
+
+/ {
+	aliases {
+		led0 = &led0_child;
+		main-led0 = &main_led0;
+		analog-button = &analog_button_node;
+		sw0 = &button0;
+	};
+
+	analog_button_node: zephyr,user {
+		io-channels = <&adc 0>;
+	};
+
+	/*
+	// Fake button after solder jumper fix for SIO_38 (P1.06)
+	//BUTTON on SIO_38 (P1.06) - Active low with pullup 
+	buttons {
+		compatible = "gpio-keys";
+		button0: button_0 {
+			gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
+			label = "User Button";
+		};
+	};
+	*/
+
+
+	// BUTTON on SIO_32 (P1.00) - Active low with pullup 
+	buttons {
+		compatible = "gpio-keys";
+		button0: button_0 {
+			gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;
+			label = "User Button";
+		};
+	};
+ 	
+	
+	/* STATUS_LED on P0.11 (pin 11) - Active low */
+	led0_node: led0 {
+		compatible = "gpio-leds";
+		led0_child: led_0 {
+			gpios = <&gpio0 11 GPIO_ACTIVE_LOW>;
+			label = "Status LED";
+		};
+	};
+
+	/* MAIN_LED on P0.09 (pin 9) - PWM controlled */
+	pwmleds {
+		compatible = "pwm-leds";
+		main_led0: main_led_0 {
+			pwms = <&pwm0 0 PWM_USEC(1000) PWM_POLARITY_NORMAL>;
+			label = "Main LED PWM";
+		};
+	};
+};
+&clock {
+	status = "okay";
+};
+
+/* Configure PWM0 for Main LED on P0.09 */
+&pwm0 {
+	status = "okay";
+	pinctrl-0 = <&pwm0_default>;
+	pinctrl-1 = <&pwm0_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pinctrl {
+	pwm0_default: pwm0_default {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 9)>;
+			nordic,invert;
+		};
+	};
+
+	pwm0_sleep: pwm0_sleep {
+		group1 {
+			psels = <NRF_PSEL(PWM_OUT0, 0, 9)>;
+			low-power-enable;
+		};
+	};
+
+	i2c0_default: i2c0_default {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 0, 26)>,
+				<NRF_PSEL(TWIM_SCL, 0, 27)>;
+		};
+	};
+
+	i2c0_sleep: i2c0_sleep {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 0, 26)>,
+				<NRF_PSEL(TWIM_SCL, 0, 27)>;
+			low-power-enable;
+		};
+	};
+};
+
+// Configure internal temperature sensor
+&temp {
+	status = "okay";
+};
+
+// Configure ADC for analog button on SIO_29 (P0.29/AIN5)
+&adc {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN5>; /* P0.29/AIN5 for SIO_29 */
+		zephyr,resolution = <12>;
+	};
+};
+
+// Configure I2C0 for sensors (SDA: P0.26, SCL: P0.27)
+&i2c0 {
+	status = "okay";
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-1 = <&i2c0_sleep>;
+	pinctrl-names = "default", "sleep";
+	clock-frequency = <400000>;
+
+	opt3001: opt3001@44 {
+		compatible = "ti,opt3001";
+		reg = <0x44>;
+		label = "OPT3001";
+	};
+
+	lis3dh: lis3dh@19 {
+		compatible = "st,lis3dh", "st,lis2dh";
+		reg = <0x19>;
+		label = "LIS3DH";
+		status = "okay";
+		/* Note: LIS3DH uses LIS2DH driver, SA0 pin connected to VDD gives address 0x19 */
+	};
+};
