@@ -7,8 +7,8 @@
 # Workaround is to rename the .git dire
 
 script_dir=$(dirname "$0")
-mv $script_dir/software/nrf_connect_prj/.git $script_dir/software/nrf_connect_prj/.git_backup
+mv $script_dir/software/rear_light_peripheral/.git $script_dir/software/rear_light_peripheral/.git_backup
 git add $script_dir/software/nrf_connect_prj
-mv $script_dir/software/nrf_connect_prj/.git_backup $script_dir/software/nrf_connect_prj/.git
+mv $script_dir/software/rear_light_peripheral/.git_backup $script_dir/software/rear_light_peripheral/.git
 
 exit 0

@@ -7,11 +7,14 @@
     "configurePresets": [
         {
             "name": "build",
-            "displayName": "nRF52833 Debug Build",
+            "displayName": "Build for nRF52833 Rear Bike Light application",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
-                "BOARD": "nrf52833dk/nrf52833"
+                "BOARD": "nrf52833dk/nrf52833",
+                "DEBUG_THREAD_INFO": true,
+                "CONFIG_DEBUG_THREAD_INFO": true,
+                "nrf_connect_prj_DEBUG_THREAD_INFO": true
             }
         }
     ]

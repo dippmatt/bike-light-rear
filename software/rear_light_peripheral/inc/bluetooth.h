@@ -24,9 +24,13 @@
 #ifndef BLUETOOTH_H
 #define BLUETOOTH_H
 
-/* Custom 128-bit UUID for Button Service */
-#define BT_UUID_BUTTON_SERVICE_VAL \
-    BT_UUID_128_ENCODE(0x12345678, 0x1234, 0x5678, 0x1234, 0x56789abcdef0)
+#ifdef BLUETOOTH
+
+
+#include <zephyr/bluetooth/conn.h>
+#include <zephyr/bluetooth/gatt.h>
+#include <stdint.h>
+#include <sys/types.h>
 
 /**
  * @brief Initialize Bluetooth Low Energy stack
@@ -38,16 +42,23 @@
  */
 int bluetooth_init(void);
 
-#ifdef BLE_MASTER
+#ifdef BLE_MASTER /* MASTER MODE */
 /**
- * @brief Send button press to slave device (Master mode only)
+ * @brief Send button press command to remote BLE device (Master mode only)
  * 
- * Sends a button press command to the connected slave.
+ * Scans for, connects to, and sends a button press command to a remote BLE device.
+ * The function writes a trigger value to the peripheral, which causes it to advance
+ * its state machine (simulating a button press on the peripheral device).
+ * The peripheral reads its own current state and advances to the next state in the cycle.
+ * If the operation is already in progress (semaphore taken), this function
+ * returns immediately without queuing a new operation.
  * 
- * @return 0 on success, negative error code on failure
+ * @return void (no return value)
  */
-int bluetooth_master_send_button_press(void);
-#endif /* BLE_MASTER */
+void ble_toogle_led();
+#endif /* END BLE_MASTER */
+
+#endif /* BLUETOOTH */
 
 #endif /* BLUETOOTH_H */
 

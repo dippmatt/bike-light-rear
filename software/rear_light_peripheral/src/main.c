@@ -47,16 +47,16 @@ static void button_event_handler(enum button_press_type press_type)
 {
     ARG_UNUSED(press_type);
     
+#ifdef BLUETOOTH
+#ifdef BLE_MASTER
+    /* In master mode: send button press command to peripheral */
+    debug_printk("Button pressed - sending command to peripheral\n");
+    ble_toogle_led();
+#else
+    /* In peripheral mode or no BLE master: handle locally */
     /* Advance state machine on button press */
     main_state_machine_on_button_press();
     enum system_state new_state = main_state_machine_get_state();
-
-#ifdef BLUETOOTH
-#ifdef BLE_MASTER
-    /* In master mode, also send button press to slave */
-    bluetooth_master_send_button_press();
-#endif /* BLE_MASTER */
-#endif /* BLUETOOTH */
 
     /* If we transitioned to LED_OFF, enter sleep mode */
     if (new_state == LED_OFF) {
@@ -65,6 +65,21 @@ static void button_event_handler(enum button_press_type press_type)
         k_msleep(100);
         power_management_enter_sleep();
     }
+#endif /* BLE_MASTER */
+#else
+    /* No Bluetooth: handle locally */
+    /* Advance state machine on button press */
+    main_state_machine_on_button_press();
+    enum system_state new_state = main_state_machine_get_state();
+
+    /* If we transitioned to LED_OFF, enter sleep mode */
+    if (new_state == LED_OFF) {
+        debug_printk("Transitioning to LED_OFF - entering sleep mode\n");
+        /* Give a short delay for user feedback (status LED off) */
+        k_msleep(100);
+        power_management_enter_sleep();
+    }
+#endif /* BLUETOOTH */
 }
 
 int main(void)
@@ -99,6 +114,7 @@ int main(void)
         debug_printk("BLE initialized successfully\n");
     }
 #endif /* BLUETOOTH */
+    debug_printk("Statement after BLE initialization\n");
     
     /* Initialize button GPIO (but don't enable interrupts yet) */
     int err = -1;
