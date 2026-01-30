@@ -25,6 +25,7 @@
 #define MAIN_STATE_MACHINE_H
 
 #include "light_modes.h"
+#include "button.h"
 
 /**
  * @brief Initialize the main state machine
@@ -42,6 +43,15 @@ int main_state_machine_init(void);
  * This function cycles through LED brightness states.
  */
 void main_state_machine_on_button_press(void);
+
+/**
+ * @brief Handle state advance based on source (button or BLE)
+ *
+ * BLE-triggered advances cycle only through active states and never sleep.
+ *
+ * @param source The source of the advance (button short/long or BLE)
+ */
+void main_state_machine_advance(enum button_press_type source);
 
 /**
  * @brief Automatically turn off LED
@@ -66,6 +76,13 @@ void main_state_machine_reset_advance_timer(void);
  * @return Current LED brightness state
  */
 enum system_state main_state_machine_get_state(void);
+
+/**
+ * @brief Get last LED state change timestamp (ms since boot)
+ *
+ * @return Timestamp of last state change
+ */
+int64_t main_state_machine_last_change_ms(void);
 
 /**
  * @brief Set LED state directly (for external control, e.g., BLE)

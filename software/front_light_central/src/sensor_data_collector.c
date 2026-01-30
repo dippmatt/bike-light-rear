@@ -286,12 +286,15 @@ K_THREAD_DEFINE(sensor_data_collector_id, SENSOR_THREAD_STACK_SIZE, sensor_data_
  */
 void sensor_data_collector_start(void)
 {
+    debug_printk("Sensor data collection start requested\n");
     if (!sensor_sampling_active) {
         sensor_sampling_active = true;
         debug_printk("Sensor data collection started\n");
         
         /* Give semaphore to wake up thread */
         k_sem_give(&sensor_sampling_sem);
+    } else {
+        debug_printk("Sensor data collection already active\n");
     }
 }
 

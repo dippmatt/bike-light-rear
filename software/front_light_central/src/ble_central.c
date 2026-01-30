@@ -10,6 +10,7 @@
 #include <zephyr/bluetooth/uuid.h>
 
 #include "ble_central.h"
+#include "main_state_machine.h"
 
 #define BLE_SERVICE_UUID       0xA000
 #define BLE_LED_STATUS_UUID    0xA001
@@ -26,6 +27,12 @@ static bool write_in_progress;
 static bool discovery_in_progress;
 static bool discovery_done;
 static uint8_t last_led_status;
+static bool state_synced;
+static uint8_t stable_value;
+static uint8_t stable_count;
+
+#define STABLE_REQUIRED 3U
+#define STABLE_WINDOW_MS 3000
 
 static atomic_t manual_pending;
 static uint8_t manual_value;
@@ -40,6 +47,11 @@ K_WORK_DELAYABLE_DEFINE(ble_work, ble_tick);
 
 void ble_central_send_control(uint8_t value)
 {
+	if (value > LED_SMART_MODE) {
+		printk("Ignoring invalid control value: 0x%02x\n", value);
+		return;
+	}
+
 	manual_value = value;
 	atomic_set(&manual_pending, 1);
 }
@@ -308,6 +320,9 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	discovery_done = false;
 	last_led_status = 0U;
 	atomic_set(&manual_pending, 0);
+	state_synced = false;
+	stable_value = 0U;
+	stable_count = 0U;
 
 	start_scan();
 }
@@ -346,19 +361,53 @@ static void ble_tick(struct k_work *work)
 		}
 
 		if (read_ready) {
-			uint8_t value;
-
 			read_ready = false;
 			printk("LED status read: 0x%02x\n", last_led_status);
 
-			if (atomic_cas(&manual_pending, 1, 0)) {
-				value = manual_value;
+			if (last_led_status <= LED_SMART_MODE) {
+				if (!state_synced) {
+					main_state_machine_set_state(
+						(enum system_state)last_led_status);
+					state_synced = true;
+					stable_value = last_led_status;
+					stable_count = 1U;
+				} else if (!atomic_get(&manual_pending)) {
+					enum system_state current_state = main_state_machine_get_state();
+
+					if (last_led_status == stable_value) {
+						if (stable_count < UINT8_MAX) {
+							stable_count++;
+						}
+					} else {
+						stable_value = last_led_status;
+						stable_count = 1U;
+					}
+
+					int64_t last_change = main_state_machine_last_change_ms();
+					bool state_stable = (k_uptime_get() - last_change) >= STABLE_WINDOW_MS;
+
+					if (state_stable && stable_count >= STABLE_REQUIRED &&
+					    current_state != (enum system_state)last_led_status) {
+						main_state_machine_set_state(
+							(enum system_state)last_led_status);
+					}
+				}
 			} else {
-				value = (uint8_t)(last_led_status + 1U);
+				printk("Ignoring invalid LED state: 0x%02x\n", last_led_status);
 			}
 
-			if (control_handle && !write_in_progress) {
-				write_control_value(conn, value);
+			if (state_synced && atomic_get(&manual_pending)) {
+				if (last_led_status == manual_value) {
+					atomic_set(&manual_pending, 0);
+				}
+			}
+
+			if (state_synced && control_handle && !write_in_progress) {
+				enum system_state current_state = main_state_machine_get_state();
+
+				if (current_state <= LED_SMART_MODE) {
+					write_control_value(conn, (uint8_t)current_state);
+				}
 			}
 		}
 

@@ -133,7 +133,6 @@ int status_led_init(void)
 void flash_timer_expiry(struct k_timer *timer)
 {
     ARG_UNUSED(timer);
-    
     /* Only update if blinking is still active - prevents interference with SMART_MODE */
     if (blinking_active) {
         if (flash_step == 0) {
@@ -172,7 +171,6 @@ void flash_timer_expiry(struct k_timer *timer)
 void blink_timer_expiry(struct k_timer *timer)
 {
     ARG_UNUSED(timer);
-    
     if (blinking_active) {
         /* Flash to 80% duty cycle (first flash) */
         pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_80_USEC));
@@ -214,6 +212,7 @@ void light_modes_stop_blinking(void)
 {
     /* Stop blinking if active */
     if (blinking_active) {
+        debug_printk("Stopping blinking timers\n");
         k_timer_stop(&blink_timer);
         k_timer_stop(&flash_timer);
         blinking_active = false;
@@ -261,13 +260,16 @@ void light_modes_set_100_percent(void)
  */
 void light_modes_set_smart_mode(void)
 {        
+    debug_printk("SMART_MODE: entering light_modes_set_smart_mode\n");
     /* Start with LED off - will be updated based on environmental state */
     pwm_set_pulse_dt(&main_led, 0);
     current_pwm_usec = 0;
     debug_printk("PWM duty cycle changed to %u us (SMART_MODE init)\n", current_pwm_usec);
     
     /* Initial update based on current environmental state */
+    debug_printk("SMART_MODE: before light_modes_update_smart_pwm\n");
     light_modes_update_smart_pwm();
+    debug_printk("SMART_MODE: after light_modes_update_smart_pwm\n");
 }
 
 /**
@@ -285,6 +287,7 @@ void light_modes_update_smart_pwm(void)
     if (main_state_machine_get_state() != LED_SMART_MODE) {
         return;
     }
+
     
     uint32_t target_pwm;
     
@@ -298,9 +301,13 @@ void light_modes_update_smart_pwm(void)
         target_pwm = 0;
     }
     
+    debug_printk("SMART_MODE update: target pwm %u, current %u\n",
+                 target_pwm, current_pwm_usec);
     /* Only update if changed to avoid unnecessary PWM writes */
     if (target_pwm != current_pwm_usec) {
+        debug_printk("SMART_MODE update: before pwm_set_pulse_dt\n");
         pwm_set_pulse_dt(&main_led, PWM_USEC(target_pwm));
+        debug_printk("SMART_MODE update: after pwm_set_pulse_dt\n");
         current_pwm_usec = target_pwm;
         debug_printk("PWM duty cycle changed to %u us (SMART_MODE update)\n", current_pwm_usec);
     }

@@ -29,6 +29,7 @@
 
 /* LED state - cycles through OFF -> 50% -> 50_80_FLASH -> SMART_MODE -> OFF */
 enum system_state g_system_state = LED_50_PERCENT;
+static int64_t last_state_change_ms;
 
 /* Button advance expire timer state */
 static bool button_advance_expire = false;
@@ -94,6 +95,7 @@ static void state_transition(enum system_state from_state, enum system_state to_
     
     /* Update global state */
     g_system_state = to_state;
+    last_state_change_ms = k_uptime_get();
     
     /* Initialize next state */
     if (to_state < sizeof(state_functions) / sizeof(state_functions[0]) &&
@@ -227,24 +229,46 @@ int main_state_machine_init(void)
     /* Initialize to LED_50_PERCENT state */
     g_system_state = LED_50_PERCENT;
     state_led_50_percent_init();
+    last_state_change_ms = k_uptime_get();
     
     return 0;
 }
 
+static enum system_state next_active_state(enum system_state current_state)
+{
+    switch (current_state) {
+        case LED_OFF:
+            return LED_50_PERCENT;
+        case LED_50_PERCENT:
+            return LED_50_80_FLASH;
+        case LED_50_80_FLASH:
+            return LED_SMART_MODE;
+        case LED_SMART_MODE:
+        default:
+            return LED_50_PERCENT;
+    }
+}
+
 /**
- * @brief Handle button press event
- * 
- * Called by button module when a button press is detected.
- * If button_advance_expire is true, goes directly to LED_OFF.
- * Otherwise, cycles through LED brightness states normally.
+ * @brief Handle state advance based on source (button or BLE)
+ *
+ * Button: normal cycle, but if advance timer expired, go to LED_OFF.
+ * BLE: cycle only through active states (no LED_OFF, no sleep).
  */
-void main_state_machine_on_button_press(void)
+void main_state_machine_advance(enum button_press_type source)
 {
     enum system_state current_state = g_system_state;
     enum system_state next_state;
-    
+
+    if (source == BUTTON_PRESS_BLE) {
+        next_state = next_active_state(current_state);
+        debug_printk("State machine: BLE advance, %d -> %d\n", current_state, next_state);
+        state_transition(current_state, next_state);
+        return;
+    }
+
     debug_printk("State machine: Button press handler called, current state: %d\n", current_state);
-    
+
     /* If timer expired, go directly to LED_OFF */
     if (button_advance_expire) {
         debug_printk("Button advance expired - going to LED_OFF\n");
@@ -252,7 +276,7 @@ void main_state_machine_on_button_press(void)
         state_transition(current_state, next_state);
         return;
     }
-    
+
     /* Determine next state based on current state (normal cycling) */
     switch (current_state) {
         case LED_OFF:
@@ -272,9 +296,14 @@ void main_state_machine_on_button_press(void)
             next_state = LED_50_PERCENT;
             break;
     }
-    
+
     /* Perform state transition */
     state_transition(current_state, next_state);
+}
+
+void main_state_machine_on_button_press(void)
+{
+    main_state_machine_advance(BUTTON_PRESS_SHORT);
 }
 
 /**
@@ -319,6 +348,11 @@ void main_state_machine_reset_advance_timer(void)
 enum system_state main_state_machine_get_state(void)
 {
     return g_system_state;
+}
+
+int64_t main_state_machine_last_change_ms(void)
+{
+    return last_state_change_ms;
 }
 
 /**

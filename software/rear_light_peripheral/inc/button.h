@@ -26,7 +26,8 @@
  
  enum button_press_type {
      BUTTON_PRESS_SHORT,
-     BUTTON_PRESS_LONG
+    BUTTON_PRESS_LONG,
+    BUTTON_PRESS_BLE
  };
  
  typedef void (*button_event_handler_t)(enum button_press_type press_type);

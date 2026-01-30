@@ -3,17 +3,24 @@
 #include <zephyr/bluetooth/gatt.h>
 
 #include "ble_service.h"
+#include "main_state_machine.h"
+#include "utils.h"
+
+#define STABLE_WINDOW_MS 3000
 
 static uint8_t led_status_value = 0x01;
 static uint8_t control_value = 0x00;
+static uint8_t last_control_value = 0x00;
 
 static ssize_t read_led_status(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 			       void *buf, uint16_t len, uint16_t offset)
 {
-	const uint8_t *value = attr->user_data;
+	uint8_t current_state = (uint8_t)main_state_machine_get_state();
+	led_status_value = current_state;
 
 	ARG_UNUSED(conn);
-	return bt_gatt_attr_read(conn, attr, buf, len, offset, value, sizeof(*value));
+	return bt_gatt_attr_read(conn, attr, buf, len, offset, &led_status_value,
+				 sizeof(led_status_value));
 }
 
 static ssize_t write_control(struct bt_conn *conn, const struct bt_gatt_attr *attr,
@@ -21,6 +28,9 @@ static ssize_t write_control(struct bt_conn *conn, const struct bt_gatt_attr *at
 			     uint8_t flags)
 {
 	uint8_t *value = attr->user_data;
+	enum system_state current_state;
+	int64_t last_change;
+	bool state_stable;
 
 	ARG_UNUSED(conn);
 	ARG_UNUSED(flags);
@@ -31,8 +41,38 @@ static ssize_t write_control(struct bt_conn *conn, const struct bt_gatt_attr *at
 
 	*value = ((const uint8_t *)buf)[0];
 	control_value = *value;
-	led_status_value = control_value;
-	printk("Control value written: 0x%02x\n", control_value);
+
+	if (control_value <= LED_SMART_MODE) {
+		current_state = main_state_machine_get_state();
+		if (control_value == current_state) {
+			last_control_value = control_value;
+			return len;
+		}
+
+		last_change = main_state_machine_last_change_ms();
+		state_stable = (k_uptime_get() - last_change) >= STABLE_WINDOW_MS;
+		if (!state_stable) {
+			if (control_value != last_control_value) {
+				printk("Control ignored (local change < %d ms): 0x%02x\n",
+				       STABLE_WINDOW_MS, control_value);
+				last_control_value = control_value;
+			}
+			return len;
+		}
+
+		if (control_value != last_control_value) {
+			printk("Control value changed: 0x%02x\n", control_value);
+			last_control_value = control_value;
+		}
+
+		if (control_value != current_state) {
+			main_state_machine_set_state((enum system_state)control_value);
+		}
+
+		led_status_value = (uint8_t)main_state_machine_get_state();
+	} else {
+		debug_printk("Invalid control value: 0x%02x\n", control_value);
+	}
 
 	return len;
 }

@@ -33,6 +33,7 @@
 #include "sensor_data_collector.h"
 #include "power_management.h"
 #include "ble_central.h"
+#include "ble_central.h"
 #ifdef DEBUG
 #include "i2c_scanner.h"
 #endif
@@ -54,7 +55,7 @@ static void button_event_handler(enum button_press_type press_type)
         debug_printk("Transitioning to LED_OFF - entering sleep mode\n");
         /* Give a short delay for user feedback (status LED off) */
         k_msleep(100);
-        power_management_enter_sleep();
+        /* power_management_enter_sleep(); */
     }
 }
 
