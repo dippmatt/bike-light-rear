@@ -45,6 +45,19 @@ static uint32_t current_time = 0;
 static struct k_timer long_press_timer;
 static uint8_t press_counter = 0;
 static bool timer_active = false;
+static struct k_work button_work;
+static enum button_press_type pending_press_type;
+
+static void button_work_handler(struct k_work *work)
+{
+    ARG_UNUSED(work);
+
+    if (!initialized || !user_cb) {
+        return;
+    }
+
+    user_cb(pending_press_type);
+}
 
 /**
  * @brief Timer expiry callback for long press detection
@@ -77,7 +90,8 @@ static void long_press_timer_handler(struct k_timer *timer)
         press_counter = 0;
         
         debug_printk("Button released - short press detected\n");
-        user_cb(BUTTON_PRESS_SHORT);
+        pending_press_type = BUTTON_PRESS_SHORT;
+        k_work_submit(&button_work);
     } else {
         /* Button still pressed - increment counter */
         press_counter++;
@@ -90,7 +104,8 @@ static void long_press_timer_handler(struct k_timer *timer)
             press_counter = 0;
             
             debug_printk("Long press confirmed after %u samples\n", press_counter);
-            user_cb(BUTTON_PRESS_LONG);
+            pending_press_type = BUTTON_PRESS_LONG;
+            k_work_submit(&button_work);
         }
         /* Timer will auto-repeat every 100ms if still active */
     }
@@ -154,6 +169,7 @@ int button_init(button_event_handler_t handler)
     }
 
     user_cb = handler;
+    k_work_init(&button_work, button_work_handler);
 
     /* Check if GPIO device is ready */
     if (!gpio_is_ready_dt(&button)) {

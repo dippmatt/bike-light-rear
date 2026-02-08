@@ -41,6 +41,17 @@
 sensor_buffer_t g_sensor_buffer;
 environmental_state_t g_env_state;
 
+/* Delayed work item for entering sleep mode.
+ * Avoids blocking the system workqueue with k_msleep() in button_event_handler. */
+static void sleep_work_handler(struct k_work *work);
+static K_WORK_DELAYABLE_DEFINE(sleep_work, sleep_work_handler);
+
+static void sleep_work_handler(struct k_work *work)
+{
+    ARG_UNUSED(work);
+    power_management_enter_sleep();
+}
+
 static void button_event_handler(enum button_press_type press_type)
 {
     ARG_UNUSED(press_type);
@@ -49,12 +60,11 @@ static void button_event_handler(enum button_press_type press_type)
     main_state_machine_on_button_press();
     enum system_state new_state = main_state_machine_get_state();
 
-    /* If we transitioned to LED_OFF, enter sleep mode */
+    /* If we transitioned to LED_OFF, schedule sleep after 100ms delay.
+     * Using k_work_delayable avoids blocking the system workqueue. */
     if (new_state == LED_OFF) {
-        debug_printk("Transitioning to LED_OFF - entering sleep mode\n");
-        /* Give a short delay for user feedback (status LED off) */
-        k_msleep(100);
-        power_management_enter_sleep();
+        debug_printk("Transitioning to LED_OFF - scheduling sleep mode\n");
+        k_work_schedule(&sleep_work, K_MSEC(100));
     }
 }
 

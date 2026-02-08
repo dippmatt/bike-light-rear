@@ -26,13 +26,14 @@
 #include "sensor_data_collector.h"
 #include "utils.h"
 #include <zephyr/kernel.h>
+#include <zephyr/sys/atomic.h>
 
 /* LED state - cycles through OFF -> 50% -> 50_80_FLASH -> SMART_MODE -> OFF */
 enum system_state g_system_state = LED_50_PERCENT;
 static int64_t last_state_change_ms;
 
-/* Button advance expire timer state */
-static bool button_advance_expire = false;
+/* Button advance expire timer state (written from timer ISR, read from thread context) */
+static atomic_t button_advance_expire = ATOMIC_INIT(0);
 static struct k_timer button_advance_timer;
 
 /* Forward declarations for state init/terminate functions */
@@ -58,7 +59,7 @@ typedef void (*state_terminate_func_t)(void);
 static void button_advance_timer_handler(struct k_timer *timer)
 {
     ARG_UNUSED(timer);
-    button_advance_expire = true;
+    atomic_set(&button_advance_expire, 1);
     debug_printk("Button advance timer expired - next press will go to LED_OFF\n");
 }
 
@@ -221,7 +222,7 @@ int main_state_machine_init(void)
     }
     
     /* Initialize button advance expire timer */
-    button_advance_expire = false;
+    atomic_set(&button_advance_expire, 0);
     k_timer_init(&button_advance_timer, button_advance_timer_handler, NULL);
     k_timer_start(&button_advance_timer, K_MSEC(10000), K_NO_WAIT);
     debug_printk("Button advance timer started (10s)\n");
@@ -270,7 +271,7 @@ void main_state_machine_advance(enum button_press_type source)
     debug_printk("State machine: Button press handler called, current state: %d\n", current_state);
 
     /* If timer expired, go directly to LED_OFF */
-    if (button_advance_expire) {
+    if (atomic_get(&button_advance_expire)) {
         debug_printk("Button advance expired - going to LED_OFF\n");
         next_state = LED_OFF;
         state_transition(current_state, next_state);
@@ -330,12 +331,12 @@ void main_state_machine_reset_advance_timer(void)
     /* Only reset timer if it is not already expired.
     If it is already expired, do nothing, we just go to LED_OFF directly.
     */
-    if (!button_advance_expire) {
+    if (!atomic_get(&button_advance_expire)) {
         return;
     }
     
     k_timer_stop(&button_advance_timer);
-    button_advance_expire = false;
+    atomic_set(&button_advance_expire, 0);
     k_timer_start(&button_advance_timer, K_MSEC(10000), K_NO_WAIT);
     debug_printk("Button advance timer reset (10s)\n");
 }

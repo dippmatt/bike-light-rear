@@ -33,7 +33,6 @@
 #include "sensor_data_collector.h"
 #include "power_management.h"
 #include "ble_central.h"
-#include "ble_central.h"
 #ifdef DEBUG
 #include "i2c_scanner.h"
 #endif
@@ -46,17 +45,11 @@ static void button_event_handler(enum button_press_type press_type)
 {
     ARG_UNUSED(press_type);
     
-    /* Advance state machine on button press */
+    /* Advance state machine on button press.
+     * Note: the actual state transition happens asynchronously via k_work
+     * in main_state_machine_on_button_press, so we cannot immediately check
+     * the new state here. Sleep/poweroff is not used on the front light central. */
     main_state_machine_on_button_press();
-    enum system_state new_state = main_state_machine_get_state();
-
-    /* If we transitioned to LED_OFF, enter sleep mode */
-    if (new_state == LED_OFF) {
-        debug_printk("Transitioning to LED_OFF - entering sleep mode\n");
-        /* Give a short delay for user feedback (status LED off) */
-        k_msleep(100);
-        /* power_management_enter_sleep(); */
-    }
 }
 
 int main(void)

@@ -25,6 +25,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/kernel.h>
+#include <zephyr/sys/atomic.h>
 
 #include "light_modes.h"
 #include "sensor_data_collector.h"
@@ -60,8 +61,16 @@ static const struct gpio_dt_spec status_led = GPIO_DT_SPEC_GET(STATUS_LED_NODE, 
 /* Timer for blinking mode */
 static struct k_timer blink_timer;
 static struct k_timer flash_timer;
-static bool blinking_active = false;
-static int flash_step = 0; /* Tracks flash sequence: 0=after first flash, 1=after gap, 2=after second flash */
+static atomic_t blinking_active = ATOMIC_INIT(0);
+static atomic_t flash_step = ATOMIC_INIT(0); /* Tracks flash sequence: 0=after first flash, 1=after gap, 2=after second flash */
+
+/* Work items to defer PWM writes from timer ISR to thread context.
+ * k_timer expiry callbacks run in ISR context where driver API calls
+ * (like pwm_set_pulse_dt) are not guaranteed to be safe. */
+static void flash_work_handler(struct k_work *work);
+static void blink_work_handler(struct k_work *work);
+static struct k_work flash_work;
+static struct k_work blink_work;
 
 /* Timer for STATUS_LED blinking */
 static struct k_timer status_led_timer;
@@ -89,11 +98,15 @@ int flash_timers_init(void)
         return ret;
     }
     
+    /* Initialize work items for deferred PWM writes from ISR */
+    k_work_init(&flash_work, flash_work_handler);
+    k_work_init(&blink_work, blink_work_handler);
+    
     /* Initialize blinking timers */
     k_timer_init(&blink_timer, blink_timer_expiry, NULL);
     k_timer_init(&flash_timer, flash_timer_expiry, NULL);
-    blinking_active = false;
-    flash_step = 0;
+    atomic_set(&blinking_active, 0);
+    atomic_set(&flash_step, 0);
     
     return 0;
 }
@@ -130,59 +143,82 @@ int status_led_init(void)
  * Handles the double-flash sequence: 80% (first) -> 50% (gap) -> 80% (second) -> 50% (done)
  * Only acts if blinking mode is still active.
  */
-void flash_timer_expiry(struct k_timer *timer)
+/**
+ * @brief Flash work handler (runs in system workqueue thread context)
+ * 
+ * Handles the double-flash sequence. Deferred from flash_timer_expiry ISR.
+ */
+static void flash_work_handler(struct k_work *work)
 {
-    ARG_UNUSED(timer);
-    /* Only update if blinking is still active - prevents interference with SMART_MODE */
-    if (blinking_active) {
-        if (flash_step == 0) {
-            /* After first flash (80%): return to 50% for gap */
-            pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_30_USEC));
-            current_pwm_usec = PWM_DUTY_CYCLE_30_USEC;
-            debug_printk("PWM duty cycle changed to %u us (flash timer - gap after first flash)\n", current_pwm_usec);
-            flash_step++;
-            /* Start flash timer again for second flash */
-            k_timer_start(&flash_timer, K_MSEC(BLINK_FLASH_DURATION_MS), K_NO_WAIT);
-        } else if (flash_step == 1) {
-            /* After gap (50%): flash to 80% for second flash */
-            pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_80_USEC));
-            current_pwm_usec = PWM_DUTY_CYCLE_80_USEC;
-            debug_printk("PWM duty cycle changed to %u us (flash timer - second flash)\n", current_pwm_usec);
-            flash_step++;
-            /* Start flash timer to return to 50% after second flash */
-            k_timer_start(&flash_timer, K_MSEC(BLINK_FLASH_DURATION_MS), K_NO_WAIT);
-        } else if (flash_step == 2) {
-            /* After second flash (80%): return to 50% and wait for blink timer */
-            pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_30_USEC));
-            current_pwm_usec = PWM_DUTY_CYCLE_30_USEC;
-            debug_printk("PWM duty cycle changed to %u us (flash timer - second flash done)\n", current_pwm_usec);
-            flash_step = 0;
-            /* Don't start flash timer - wait for blink_timer to start next cycle */
-        }
+    ARG_UNUSED(work);
+    
+    if (!atomic_get(&blinking_active)) {
+        return;
+    }
+
+    atomic_val_t step = atomic_get(&flash_step);
+    if (step == 0) {
+        pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_30_USEC));
+        current_pwm_usec = PWM_DUTY_CYCLE_30_USEC;
+        debug_printk("PWM duty cycle changed to %u us (flash timer - gap after first flash)\n", current_pwm_usec);
+        atomic_inc(&flash_step);
+        k_timer_start(&flash_timer, K_MSEC(BLINK_FLASH_DURATION_MS), K_NO_WAIT);
+    } else if (step == 1) {
+        pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_80_USEC));
+        current_pwm_usec = PWM_DUTY_CYCLE_80_USEC;
+        debug_printk("PWM duty cycle changed to %u us (flash timer - second flash)\n", current_pwm_usec);
+        atomic_inc(&flash_step);
+        k_timer_start(&flash_timer, K_MSEC(BLINK_FLASH_DURATION_MS), K_NO_WAIT);
+    } else if (step == 2) {
+        pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_30_USEC));
+        current_pwm_usec = PWM_DUTY_CYCLE_30_USEC;
+        debug_printk("PWM duty cycle changed to %u us (flash timer - second flash done)\n", current_pwm_usec);
+        atomic_set(&flash_step, 0);
     }
 }
 
 /**
- * @brief Blink timer expiry callback
+ * @brief Flash timer expiry callback (ISR context)
  * 
- * Triggers the first flash to 80% duty cycle every 1.5 seconds.
- * Resets flash_step to start a new double-flash sequence.
+ * Defers actual PWM work to flash_work_handler via system workqueue.
+ */
+void flash_timer_expiry(struct k_timer *timer)
+{
+    ARG_UNUSED(timer);
+    k_work_submit(&flash_work);
+}
+
+/**
+ * @brief Blink work handler (runs in system workqueue thread context)
+ * 
+ * Triggers the first flash to 80% duty cycle. Deferred from blink_timer_expiry ISR.
+ */
+static void blink_work_handler(struct k_work *work)
+{
+    ARG_UNUSED(work);
+    
+    if (!atomic_get(&blinking_active)) {
+        return;
+    }
+
+    pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_80_USEC));
+    current_pwm_usec = PWM_DUTY_CYCLE_80_USEC;
+    debug_printk("PWM duty cycle changed to %u us (blink timer - first flash)\n", current_pwm_usec);
+    
+    atomic_set(&flash_step, 0);
+    
+    k_timer_start(&flash_timer, K_MSEC(BLINK_FLASH_DURATION_MS), K_NO_WAIT);
+}
+
+/**
+ * @brief Blink timer expiry callback (ISR context)
+ * 
+ * Defers actual PWM work to blink_work_handler via system workqueue.
  */
 void blink_timer_expiry(struct k_timer *timer)
 {
     ARG_UNUSED(timer);
-    if (blinking_active) {
-        /* Flash to 80% duty cycle (first flash) */
-        pwm_set_pulse_dt(&main_led, PWM_USEC(PWM_DUTY_CYCLE_80_USEC));
-        current_pwm_usec = PWM_DUTY_CYCLE_80_USEC;
-        debug_printk("PWM duty cycle changed to %u us (blink timer - first flash)\n", current_pwm_usec);
-        
-        /* Reset flash step to start new double-flash sequence */
-        flash_step = 0;
-        
-        /* Start flash timer to return to 50% after 100ms */
-        k_timer_start(&flash_timer, K_MSEC(BLINK_FLASH_DURATION_MS), K_NO_WAIT);
-    }
+    k_work_submit(&blink_work);
 }
 
 /**
@@ -211,12 +247,12 @@ void status_led_timer_expiry(struct k_timer *timer)
 void light_modes_stop_blinking(void)
 {
     /* Stop blinking if active */
-    if (blinking_active) {
+    if (atomic_get(&blinking_active)) {
+        atomic_set(&blinking_active, 0);
         debug_printk("Stopping blinking timers\n");
         k_timer_stop(&blink_timer);
         k_timer_stop(&flash_timer);
-        blinking_active = false;
-        flash_step = 0;
+        atomic_set(&flash_step, 0);
     }
     
     pwm_set_pulse_dt(&main_led, 0);
@@ -247,7 +283,7 @@ void light_modes_set_100_percent(void)
     debug_printk("PWM duty cycle changed to %u us\n", current_pwm_usec);
     
     /* Start blinking mode */
-    blinking_active = true;
+    atomic_set(&blinking_active, 1);
     k_timer_start(&blink_timer, K_MSEC(BLINK_INTERVAL_MS), K_MSEC(BLINK_INTERVAL_MS));
 }
 

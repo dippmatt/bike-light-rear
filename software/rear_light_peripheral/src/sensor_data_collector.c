@@ -25,7 +25,7 @@
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/sensor.h>
-#include <math.h>
+#include <zephyr/sys/atomic.h>
 
 #include "sensor_data_collector.h"
 #include "utils.h"
@@ -34,7 +34,7 @@
 #include "power_management.h"
 
 #define SENSOR_THREAD_PRIORITY 7
-#define SENSOR_THREAD_STACK_SIZE 1024
+#define SENSOR_THREAD_STACK_SIZE 2048
 #define TIME_SAMPLING_INTERVAL_MS 500  /* Changed to 500ms for 360 samples = 3 minutes */
 
 /* Braking detection thresholds */
@@ -50,8 +50,8 @@ static bool prev_sample_braking = false;
 static uint8_t ambient_dark_sample_count = 0;
 static uint8_t ambient_bright_sample_count = 0;
 
-/* Sensor sampling control */
-static bool sensor_sampling_active = false;
+/* Sensor sampling control (shared between main thread and sensor thread) */
+static atomic_t sensor_sampling_active = ATOMIC_INIT(0);
 static struct k_thread *sensor_thread_handle = NULL;
 K_SEM_DEFINE(sensor_sampling_sem, 0, 1);
 
@@ -229,8 +229,8 @@ void sensor_data_collector()
         k_sem_take(&sensor_sampling_sem, K_FOREVER);
         
         /* Sample continuously while active */
-        while (sensor_sampling_active) {
-            sensor_readings_t value;
+        while (atomic_get(&sensor_sampling_active)) {
+            sensor_readings_t value = {0};
             
             if (temp_sensor != NULL) {
                 sensor_sample_fetch(temp_sensor);
@@ -286,8 +286,8 @@ K_THREAD_DEFINE(sensor_data_collector_id, SENSOR_THREAD_STACK_SIZE, sensor_data_
  */
 void sensor_data_collector_start(void)
 {
-    if (!sensor_sampling_active) {
-        sensor_sampling_active = true;
+    if (!atomic_get(&sensor_sampling_active)) {
+        atomic_set(&sensor_sampling_active, 1);
         debug_printk("Sensor data collection started\n");
         
         /* Give semaphore to wake up thread */
@@ -303,8 +303,8 @@ void sensor_data_collector_start(void)
  */
 void sensor_data_collector_stop(void)
 {
-    if (sensor_sampling_active) {
-        sensor_sampling_active = false;
+    if (atomic_get(&sensor_sampling_active)) {
+        atomic_set(&sensor_sampling_active, 0);
         debug_printk("Sensor data collection stopped\n");
         
         /* Thread will check flag and stop sampling on next iteration */
@@ -319,22 +319,27 @@ void sensor_data_collector_stop(void)
  */
 void stationary_monitor_thread(void)
 {
-    /* Stationary detection parameters */
-    const double GRAVITY = 9.81;  /* m/s^2 */
-    const double TOLERANCE = 0.10;  /* 10% tolerance */
-    const double MIN_MAGNITUDE = GRAVITY * (1.0 - TOLERANCE);  /* 8.829 m/s^2 */
-    const double MAX_MAGNITUDE = GRAVITY * (1.0 + TOLERANCE);  /* 10.791 m/s^2 */
+    /* Stationary detection using integer (milli) math to avoid double-precision
+     * floating point on nRF52 which has no double FPU.
+     * Compare squared magnitudes to avoid sqrt(). 
+     *
+     * Gravity ~= 9810 milli-m/s^2, 10% tolerance.
+     * MIN = 8829, MAX = 10791 (milli-m/s^2)
+     * MIN_SQ = 77,951,241, MAX_SQ = 116,445,681 (milli^2) */
+    const int64_t MIN_MAGNITUDE_SQ = (int64_t)8829 * 8829;  /* (9.81 * 0.90)^2 in milli^2 */
+    const int64_t MAX_MAGNITUDE_SQ = (int64_t)10791 * 10791; /* (9.81 * 1.10)^2 in milli^2 */
     const uint16_t SAMPLES_TO_CHECK = 300;  /* 2.5 minutes at 500ms sampling */
     
     /* Wait for initial buffer fill */
     k_sleep(K_SECONDS(150));  /* Wait 2.5 minutes for buffer to fill */
     
     while (1) {
-        /* Check every 60 seconds for stationary state */
+        /* Check every 2.5 minutes for stationary state */
         debug_printk("Stationary monitor: checking for stationary state\n");
         
         /* Only check if in SMART_MODE */
         if (main_state_machine_get_state() != LED_SMART_MODE) {
+            k_sleep(K_SECONDS(150));
             continue;
         }
         
@@ -345,10 +350,10 @@ void stationary_monitor_thread(void)
         uint16_t current_idx = g_sensor_buffer.write_index;
         
 #ifdef DEBUG
-        double min_magnitude = 999.0;
-        double max_magnitude = 0.0;
+        int64_t min_mag_sq = INT64_MAX;
+        int64_t max_mag_sq = 0;
         uint16_t samples_checked = 0;
-        double last_magnitude = 0.0;
+        int64_t last_mag_sq = 0;
 #endif
         
         /* Check last 300 samples (2.5 minutes) */
@@ -356,29 +361,29 @@ void stationary_monitor_thread(void)
             /* Calculate index going backwards in circular buffer */
             uint16_t idx = (current_idx + SENSOR_BUFFER_SIZE - 1 - i) % SENSOR_BUFFER_SIZE;
             
-            /* Get acceleration values */
-            double x = sensor_value_to_double(&g_sensor_buffer.accel_x[idx]);
-            double y = sensor_value_to_double(&g_sensor_buffer.accel_y[idx]);
-            double z = sensor_value_to_double(&g_sensor_buffer.accel_z[idx]);
+            /* Get acceleration values in milli-m/s^2 (integer) */
+            int64_t x = sensor_value_to_milli(&g_sensor_buffer.accel_x[idx]);
+            int64_t y = sensor_value_to_milli(&g_sensor_buffer.accel_y[idx]);
+            int64_t z = sensor_value_to_milli(&g_sensor_buffer.accel_z[idx]);
             
-            /* Calculate magnitude: sqrt(x^2 + y^2 + z^2) */
-            double magnitude = sqrt(x*x + y*y + z*z);
+            /* Calculate squared magnitude (avoids sqrt) */
+            int64_t mag_sq = x * x + y * y + z * z;
             
 #ifdef DEBUG
-            last_magnitude = magnitude;
+            last_mag_sq = mag_sq;
             samples_checked++;
             
             /* Track min/max */
-            if (magnitude < min_magnitude) {
-                min_magnitude = magnitude;
+            if (mag_sq < min_mag_sq) {
+                min_mag_sq = mag_sq;
             }
-            if (magnitude > max_magnitude) {
-                max_magnitude = magnitude;
+            if (mag_sq > max_mag_sq) {
+                max_mag_sq = mag_sq;
             }
 #endif
             
-            /* Check if within stationary range */
-            if (magnitude < MIN_MAGNITUDE || magnitude > MAX_MAGNITUDE) {
+            /* Check if within stationary range (squared comparison) */
+            if (mag_sq < MIN_MAGNITUDE_SQ || mag_sq > MAX_MAGNITUDE_SQ) {
                 is_stationary = false;
                 break;
             }
@@ -389,15 +394,15 @@ void stationary_monitor_thread(void)
 #ifdef DEBUG
         /* Debug: Print magnitude calculation results */
         debug_printk("Stationary check: samples_checked=%u, is_stationary=%s, "
-                     "min_magnitude=%.3f, max_magnitude=%.3f, last_magnitude=%.3f, "
-                     "range=[%.3f, %.3f]\n",
+                     "min_mag_sq=%lld, max_mag_sq=%lld, last_mag_sq=%lld, "
+                     "range=[%lld, %lld]\n",
                      samples_checked,
                      is_stationary ? "YES" : "NO",
-                     min_magnitude,
-                     max_magnitude,
-                     last_magnitude,
-                     MIN_MAGNITUDE,
-                     MAX_MAGNITUDE);
+                     min_mag_sq,
+                     max_mag_sq,
+                     last_mag_sq,
+                     MIN_MAGNITUDE_SQ,
+                     MAX_MAGNITUDE_SQ);
 #endif
         
         /* If stationary for 2.5 minutes, trigger auto-off and enter sleep */
@@ -413,7 +418,7 @@ void stationary_monitor_thread(void)
     }
 }
 
-#define STATIONARY_THREAD_STACK_SIZE 1024
+#define STATIONARY_THREAD_STACK_SIZE 2048
 #define STATIONARY_THREAD_PRIORITY 8  /* Lower priority than sensor thread */
 
 K_THREAD_DEFINE(stationary_monitor_id, STATIONARY_THREAD_STACK_SIZE, stationary_monitor_thread, 
