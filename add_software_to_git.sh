@@ -7,12 +7,12 @@
 # Workaround is to rename the .git dire
 
 script_dir=$(dirname "$0")
-mv $script_dir/software/rear_light_peripheral/.git $script_dir/software/rear_light_peripheral/.git_backup
+mv $script_dir/software/rear_light_peripheral/.git $script_dir/software/.git_backup_rear_light_peripheral
 git add $script_dir/software/rear_light_peripheral
-mv $script_dir/software/rear_light_peripheral/.git_backup $script_dir/software/rear_light_peripheral/.git
+mv $script_dir/software/.git_backup_rear_light_peripheral $script_dir/software/rear_light_peripheral/.git
 
-mv $script_dir/software/front_light_central/.git $script_dir/software/front_light_central/.git_backup
+mv $script_dir/software/front_light_central/.git $script_dir/software/.git_backup_front_light_central
 git add $script_dir/software/front_light_central
-mv $script_dir/software/front_light_central/.git_backup $script_dir/software/front_light_central/.git
+mv $script_dir/software/.git_backup_front_light_central $script_dir/software/front_light_central/.git
 
 exit 0
