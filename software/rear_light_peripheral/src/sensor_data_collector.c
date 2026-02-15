@@ -25,6 +25,7 @@
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/sensor.h>
+#include <zephyr/drivers/adc.h>
 #include <zephyr/sys/atomic.h>
 
 #include "sensor_data_collector.h"
@@ -36,6 +37,11 @@
 #define SENSOR_THREAD_PRIORITY 7
 #define SENSOR_THREAD_STACK_SIZE 2048
 #define TIME_SAMPLING_INTERVAL_MS 500  /* Changed to 500ms for 360 samples = 3 minutes */
+
+/* Battery voltage divider: 1M to VBATT, 100k to GND -> V_AIN5 = VBATT/11 */
+#define BATTERY_DIVIDER_RATIO 11U
+/* nRF SAADC internal ref 0.6V, 12-bit; (raw * 600 * 11) / 4096 = VBATT_mV */
+#define BATTERY_RAW_TO_MV(raw) ((uint32_t)(raw) * 600U * BATTERY_DIVIDER_RATIO / 4096U)
 
 /* Braking detection thresholds */
 #define BRAKING_ACCEL_THRESHOLD -3.0  /* m/s^2, negative z-axis for rear light */
@@ -97,6 +103,9 @@ static const struct device *get_light_sensor(void){
     return dev;
 }
 
+static const struct adc_dt_spec battery_adc_spec = ADC_DT_SPEC_GET(DT_ALIAS(battery_adc));
+static bool battery_adc_setup_done;
+
 static const struct device *get_accel_sensor(void){
 
     const struct device *const dev = DEVICE_DT_GET(DT_NODELABEL(lis3dh));
@@ -134,7 +143,8 @@ static void write_sensor_data(const sensor_readings_t *value)
     g_sensor_buffer.accel_x[idx] = value->accel_x;
     g_sensor_buffer.accel_y[idx] = value->accel_y;
     g_sensor_buffer.accel_z[idx] = value->accel_z;
-    
+    g_sensor_buffer.battery_mv[idx] = value->battery_mv;
+
     /* Increment write index (circular buffer) */
     g_sensor_buffer.write_index = (idx + 1) % SENSOR_BUFFER_SIZE;
     
@@ -215,7 +225,6 @@ void sensor_data_collector()
     const struct device *const temp_sensor = get_temp_sensor();
     const struct device *const light_sensor = get_light_sensor();
     const struct device *const accel_sensor = get_accel_sensor();
-
     if (temp_sensor == NULL && light_sensor == NULL && accel_sensor == NULL) {
         debug_printk("No sensors available\n");
         return;
@@ -260,7 +269,31 @@ void sensor_data_collector()
             else {
                 debug_printk("No accelerometer available\n");
             }
-            
+
+            /* Read battery voltage from AIN5 (1M/100k divider) */
+            if (!battery_adc_setup_done) {
+                if (adc_channel_setup_dt(&battery_adc_spec) == 0) {
+                    battery_adc_setup_done = true;
+                }
+            }
+            if (battery_adc_setup_done && adc_is_ready_dt(&battery_adc_spec)) {
+                int32_t raw = 0;
+                struct adc_sequence seq = {
+                    .buffer = &raw,
+                    .buffer_size = sizeof(raw),
+                    .channels = BIT(battery_adc_spec.channel_id),
+                    .resolution = battery_adc_spec.resolution,
+                };
+                if (adc_read_dt(&battery_adc_spec, &seq) == 0) {
+                    value.battery_mv = (uint16_t)BATTERY_RAW_TO_MV((uint32_t)raw);
+                    debug_printk("Battery: %u mV\n", value.battery_mv);
+                } else {
+                    value.battery_mv = 0;
+                }
+            } else {
+                value.battery_mv = 0;
+            }
+
             /* Write sensor data to circular buffer */
             write_sensor_data(&value);
             

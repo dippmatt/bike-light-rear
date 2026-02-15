@@ -36,12 +36,13 @@
 	aliases {
 		led0 = &led0_child;
 		main-led0 = &main_led0;
-		analog-button = &analog_button_node;
+		battery-adc = &battery_adc_node;
 		sw0 = &button0;
 	};
 
-	analog_button_node: zephyr,user {
-		io-channels = <&adc 0>;
+	/* Battery voltage via AIN5 (1M/100k divider to VBATT) */
+	battery_adc_node: zephyr,user {
+		io-channels = <&adc 1>;
 	};
 
 	/*
@@ -133,17 +134,18 @@
 	status = "okay";
 };
 
-// Configure ADC for analog button on SIO_29 (P0.29/AIN5)
+// Configure ADC: channel 1 = battery voltage (P0.29/AIN5, 1M/100k divider to VBATT)
 &adc {
 	#address-cells = <1>;
 	#size-cells = <0>;
 	status = "okay";
-	channel@0 {
-		reg = <0>;
-		zephyr,gain = "ADC_GAIN_1_6";
+	/* Battery: AIN5 with gain 1 (0.6V range); divider gives V_AIN5 = VBATT/11, max ~0.38V */
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
-		zephyr,input-positive = <NRF_SAADC_AIN5>; /* P0.29/AIN5 for SIO_29 */
+		zephyr,input-positive = <NRF_SAADC_AIN5>;
 		zephyr,resolution = <12>;
 	};
 };

@@ -27,6 +27,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/sensor.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <pthread.h>
 
 /* Sensor buffer size: 360 samples = 3 minutes at 500ms sampling rate */
@@ -38,6 +39,7 @@ typedef struct {
     struct sensor_value accel_x; // LIS3DH accelerometer X-axis
     struct sensor_value accel_y; // LIS3DH accelerometer Y-axis
     struct sensor_value accel_z; // LIS3DH accelerometer Z-axis
+    uint16_t battery_mv; // VBATT from AIN5 divider (1M/100k), 0 = not available
 } sensor_readings_t;
 
 /**
@@ -52,6 +54,7 @@ typedef struct {
     struct sensor_value accel_x[SENSOR_BUFFER_SIZE];
     struct sensor_value accel_y[SENSOR_BUFFER_SIZE];
     struct sensor_value accel_z[SENSOR_BUFFER_SIZE];
+    uint16_t battery_mv[SENSOR_BUFFER_SIZE];
     uint16_t write_index;  // Current write position in circular buffer
     pthread_rwlock_t lock;  // POSIX read-write lock for thread safety
 } sensor_buffer_t;
