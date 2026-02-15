@@ -33,7 +33,7 @@
 
 /**
  * @brief Enter system off (deep sleep) mode
- * 
+ *
  * Prepares the system for low-power system off mode and enters it.
  * The system will wake on button press (configured as wake source).
  * Note: System off is like a reset - upon wake, execution starts from main().
@@ -41,11 +41,12 @@
 void power_management_enter_sleep(void)
 {
 	int ret;
-	
+
 	debug_printk("Entering system off mode (deep sleep)...\n");
-	
-	// Turning off the main led and status led  is handled in the 
-	// init and terminate functions of the state machine
+
+	/* Turning off the main led and status led is handled in the
+	 * init and terminate functions of the state machine
+	 */
 
 	/* Configure button as wakeup source (level-active interrupt) */
 	ret = button_configure_wakeup();
@@ -53,7 +54,7 @@ void power_management_enter_sleep(void)
 		debug_printk("Error: Failed to configure button wakeup (%d)\n", ret);
 		return;
 	}
-	
+
 	/* Suspend console device to save power */
 	const struct device *const cons = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 	if (device_is_ready(cons)) {
@@ -62,12 +63,12 @@ void power_management_enter_sleep(void)
 			debug_printk("Warning: Could not suspend console (%d)\n", rc);
 		}
 	}
-	
+
 	/* Small delay to ensure debug message is sent */
 	k_msleep(50);
-	
+
 	/* Enter system off - button interrupt will wake the system */
 	sys_poweroff();
-	
+
 	/* Code never reaches here - system resets on wake */
 }

@@ -38,8 +38,11 @@ static button_event_handler_t user_cb;
 static bool initialized = false;
 static uint32_t last_event_time = 0;
 static uint32_t current_time = 0;
+/* Time when interrupts were last enabled; used to ignore spurious events after wake from system off */
+static uint32_t enable_time = 0;
 
-#define DEBOUNCE_MS 200  /* Minimum time between button events to filter bounce */
+#define DEBOUNCE_MS 200   /* Minimum time between button events to filter bounce */
+#define POST_ENABLE_IGNORE_MS 150  /* Ignore events this long after enable (swallow wake LATCH glitch) */
 
 /* Long press detection state */
 static struct k_timer long_press_timer;
@@ -128,6 +131,19 @@ static void button_pressed(const struct device *dev, struct gpio_callback *cb, u
     }
     
     current_time = k_uptime_get_32();
+    /* After wake from system off, nRF52 GPIO LATCH / driver can cause a spurious or delayed
+     * event; ignore any event in the first POST_ENABLE_IGNORE_MS so the first real press is not lost. */
+    if (enable_time != 0 && (current_time - enable_time < POST_ENABLE_IGNORE_MS)) {
+        return;
+    }
+    /* We use EDGE_BOTH so we see both press and release; only act on press (pin low).
+     * This avoids losing the first user press when the driver "consumes" the first edge
+     * after switching from level (wake) to edge (normal) on second boot. */
+    int val = gpio_pin_get_dt(&button);
+    if (val <= 0) {
+        /* Released or read error - ignore (we only start timer on press) */
+        return;
+    }
     /* Debounce: ignore events that occur too quickly after the last one */
     if (current_time - last_event_time < DEBOUNCE_MS) {
         debug_printk("Debouncing: ignoring event %u ms after last event\n", 
@@ -234,20 +250,23 @@ int button_enable_interrupts(void)
     timer_active = false;
     press_counter = 0;
     
-    /* Re-enable interrupt on falling edge (button press for active-low) */
-    err = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_FALLING);
+    /* Set debounce baseline and post-enable ignore window before enabling interrupt.
+     * Any spurious event from wake (LATCH) in the first POST_ENABLE_IGNORE_MS will be ignored. */
+    last_event_time = k_uptime_get_32();
+    enable_time = last_event_time;
+    
+    /* Add callback before enabling interrupt so the first edge is not lost */
+    gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
+    gpio_add_callback(button.port, &button_cb_data);
+    
+    /* Use BOTH edges so we see press and release; callback only acts on press (pin read).
+     * Avoids losing first user press when nRF52/driver consumes first edge after wake. */
+    err = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_BOTH);
     if (err < 0) {
         debug_printk("Error %d: failed to configure interrupt on %s pin %d\n", 
                      err, button.port->name, button.pin);
         return err;
     }
-
-    /* Initialize and add callback */
-    gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
-    gpio_add_callback(button.port, &button_cb_data);
-    
-    /* Initialize last event time */
-    last_event_time = k_uptime_get_32();
     
     debug_printk("Button interrupts enabled successfully on %s pin %d\n", 
                  button.port->name, button.pin);
@@ -258,8 +277,16 @@ int button_enable_interrupts(void)
 /**
  * @brief Configure button as wakeup source for system off mode
  * 
- * Reconfigures the button interrupt to use level-active triggering,
- * which is required to wake the system from system off (deep sleep).
+ * Cleanly shuts down normal button interrupt handling (edge-triggered callback),
+ * then configures the pin for level-active triggering required to wake the
+ * system from system off (deep sleep).
+ * 
+ * The GPIO callback is removed BEFORE switching to level-active to prevent
+ * an interrupt storm: level-active fires continuously while the pin is at the
+ * active level, and if the old edge-triggered callback is still registered it
+ * would be invoked on every such interrupt, flooding the system and potentially
+ * causing sys_poweroff() to abort (nRF52 aborts System OFF entry if a DETECT
+ * signal is already active).
  * 
  * @return 0 on success, negative error code on failure
  */
@@ -278,7 +305,25 @@ int button_configure_wakeup(void)
         return -EIO;
     }
     
-    /* Configure interrupt as level-active to wake from system off */
+    /* 1. Stop the long-press detection timer to prevent further ISR-context work */
+    if (timer_active) {
+        k_timer_stop(&long_press_timer);
+        timer_active = false;
+    }
+    
+    /* 2. Disable the current edge-triggered interrupt */
+    err = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_DISABLE);
+    if (err < 0) {
+        debug_printk("Error %d: failed to disable interrupt before wakeup config\n", err);
+        return err;
+    }
+    
+    /* 3. Remove the GPIO callback so level-active won't invoke button_pressed */
+    gpio_remove_callback(button.port, &button_cb_data);
+    
+    /* 4. Now safely configure level-active for System OFF wakeup.
+     *    The nRF52 SENSE mechanism will wake the chip from System OFF via
+     *    hardware DETECT — no software callback is needed for this. */
     err = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_LEVEL_ACTIVE);
     if (err < 0) {
         debug_printk("Error %d: failed to configure wakeup interrupt on %s pin %d\n", 
@@ -286,7 +331,7 @@ int button_configure_wakeup(void)
         return err;
     }
     
-    debug_printk("Button configured as wakeup source (level-active interrupt)\n");
+    debug_printk("Button configured as wakeup source (level-active, callback removed)\n");
     
     return 0;
 }
