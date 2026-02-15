@@ -38,11 +38,8 @@ static button_event_handler_t user_cb;
 static bool initialized = false;
 static uint32_t last_event_time = 0;
 static uint32_t current_time = 0;
-/* Time when interrupts were last enabled; used to ignore spurious events after wake from system off */
-static uint32_t enable_time = 0;
 
 #define DEBOUNCE_MS 200   /* Minimum time between button events to filter bounce */
-#define POST_ENABLE_IGNORE_MS 150  /* Ignore events this long after enable (swallow wake LATCH glitch) */
 
 /* Long press detection state */
 static struct k_timer long_press_timer;
@@ -131,11 +128,6 @@ static void button_pressed(const struct device *dev, struct gpio_callback *cb, u
     }
     
     current_time = k_uptime_get_32();
-    /* After wake from system off, nRF52 GPIO LATCH / driver can cause a spurious or delayed
-     * event; ignore any event in the first POST_ENABLE_IGNORE_MS so the first real press is not lost. */
-    if (enable_time != 0 && (current_time - enable_time < POST_ENABLE_IGNORE_MS)) {
-        return;
-    }
     /* We use EDGE_BOTH so we see both press and release; only act on press (pin low).
      * This avoids losing the first user press when the driver "consumes" the first edge
      * after switching from level (wake) to edge (normal) on second boot. */
@@ -250,15 +242,6 @@ int button_enable_interrupts(void)
     timer_active = false;
     press_counter = 0;
     
-    /* Set debounce baseline and post-enable ignore window before enabling interrupt.
-     * Any spurious event from wake (LATCH) in the first POST_ENABLE_IGNORE_MS will be ignored. */
-    last_event_time = k_uptime_get_32();
-    enable_time = last_event_time;
-    
-    /* Add callback before enabling interrupt so the first edge is not lost */
-    gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
-    gpio_add_callback(button.port, &button_cb_data);
-    
     /* Use BOTH edges so we see press and release; callback only acts on press (pin read).
      * Avoids losing first user press when nRF52/driver consumes first edge after wake. */
     err = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_BOTH);
@@ -267,6 +250,11 @@ int button_enable_interrupts(void)
                      err, button.port->name, button.pin);
         return err;
     }
+    
+    gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
+    gpio_add_callback(button.port, &button_cb_data);
+    
+    last_event_time = k_uptime_get_32();
     
     debug_printk("Button interrupts enabled successfully on %s pin %d\n", 
                  button.port->name, button.pin);
