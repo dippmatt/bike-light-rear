@@ -389,3 +389,18 @@ void light_modes_stop_status_led(void)
     gpio_pin_set_dt(&status_led, 0);
 }
 
+/**
+ * @brief Set status LED from battery state (only function of status LED)
+ *
+ * When low_battery is true, starts blinking; when false, stops and turns off.
+ */
+void light_modes_set_status_led_battery(bool low_battery)
+{
+    if (low_battery) {
+        k_timer_start(&status_led_timer, K_MSEC(STATUS_TIMER_INTERVAL), K_MSEC(STATUS_TIMER_INTERVAL));
+    } else {
+        k_timer_stop(&status_led_timer);
+        gpio_pin_set_dt(&status_led, 0);
+    }
+}
+

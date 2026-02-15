@@ -113,7 +113,6 @@ static void state_transition(enum system_state from_state, enum system_state to_
 static void state_led_50_percent_init(void)
 {
     debug_printk("State init: LED_50_PERCENT\n");
-    light_modes_start_status_led();
     light_modes_set_50_percent();
 }
 
@@ -181,9 +180,6 @@ static void state_led_smart_mode_terminate(void)
 static void state_led_off_init(void)
 {
     debug_printk("State init: LED_OFF\n");
-    debug_printk("Stopping status LED\n");
-    light_modes_stop_status_led();
-    debug_printk("Turning off main LED\n");
     light_modes_off_main_led();
 }
 
@@ -309,15 +305,14 @@ void main_state_machine_on_button_press(void)
 
 /**
  * @brief Automatically turn off LED
- * 
- * Called by stationary monitor when device has been stationary for too long.
- * Only acts if current state is SMART_MODE.
- * 
+ *
+ * Called by stationary monitor or battery monitor. Transitions from current
+ * state to LED_OFF (works in any mode).
  */
-void main_state_machine_auto_off()
-{    
+void main_state_machine_auto_off(void)
+{
     debug_printk("State machine: Auto-off triggered, current state: %d\n", g_system_state);
-    state_transition(LED_SMART_MODE, LED_OFF);
+    state_transition(g_system_state, LED_OFF);
 }
 
 /**

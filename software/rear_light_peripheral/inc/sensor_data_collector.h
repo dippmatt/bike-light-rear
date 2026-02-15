@@ -68,6 +68,7 @@ typedef struct {
     bool is_braking;  // True when braking detected (z-accel < -2.0 m/s²)
     bool ambient_dark;  // True when ambient light < 30 lux
     uint32_t previous_brightness;  // Previous PWM pulse width in microseconds
+    bool low_battery;  // True when 3 consecutive samples < 3500 mV, false when 3 consecutive >= 3500 mV
 } environmental_state_t;
 
 /* Global sensor buffer and environmental state */
@@ -89,5 +90,12 @@ void sensor_data_collector_start(void);
  * LED_SMART_MODE state.
  */
 void sensor_data_collector_stop(void);
+
+/**
+ * @brief Get last battery voltage from battery monitor (single ADC reader)
+ *
+ * @return Battery voltage in mV, or 0 if not yet available
+ */
+uint16_t battery_get_last_mv(void);
 
 #endif /* SENSOR_DATA_COLLECTOR_H */

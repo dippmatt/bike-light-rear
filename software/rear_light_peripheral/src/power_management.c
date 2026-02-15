@@ -44,9 +44,11 @@ void power_management_enter_sleep(void)
 
 	debug_printk("Entering system off mode (deep sleep)...\n");
 
-	/* Turning off the main led and status led is handled in the
-	 * init and terminate functions of the state machine
-	 */
+	/* Turning off the status led */
+	light_modes_stop_status_led();
+
+	/* Turning off the main led */
+	light_modes_off_main_led();
 
 	/* Configure button as wakeup source (level-active interrupt) */
 	ret = button_configure_wakeup();

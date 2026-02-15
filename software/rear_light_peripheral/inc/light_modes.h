@@ -128,5 +128,12 @@ void light_modes_start_status_led(void);
  */
 void light_modes_stop_status_led(void);
 
+/**
+ * @brief Set status LED from battery state (only function of status LED)
+ *
+ * When low_battery is true, starts blinking; when false, stops and turns off.
+ */
+void light_modes_set_status_led_battery(bool low_battery);
+
 #endif /* LIGHT_MODES_H */
 

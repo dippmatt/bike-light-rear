@@ -43,6 +43,12 @@
 /* nRF SAADC internal ref 0.6V, 12-bit; (raw * 600 * 11) / 4096 = VBATT_mV */
 #define BATTERY_RAW_TO_MV(raw) ((uint32_t)(raw) * 600U * BATTERY_DIVIDER_RATIO / 4096U)
 
+/* Battery monitor: safety sleep and low-battery status */
+#define BATTERY_CRITICAL_MV      3000
+#define BATTERY_LOW_MV           3400
+#define BATTERY_CONSECUTIVE      3
+#define BATTERY_SAMPLE_INTERVAL_MS 5000
+
 /* Braking detection thresholds */
 #define BRAKING_ACCEL_THRESHOLD -3.0  /* m/s^2, negative z-axis for rear light */
 #define AMBIENT_DARK_THRESHOLD 50.0   /* lux - threshold to enter dark mode */
@@ -105,6 +111,12 @@ static const struct device *get_light_sensor(void){
 
 static const struct adc_dt_spec battery_adc_spec = ADC_DT_SPEC_GET(DT_ALIAS(battery_adc));
 static bool battery_adc_setup_done;
+
+/* Battery monitor: single ADC reader, updated by battery_monitor_thread */
+static uint16_t last_battery_mv;
+static uint8_t consecutive_critical;
+static uint8_t consecutive_low;
+static uint8_t consecutive_high;
 
 static const struct device *get_accel_sensor(void){
 
@@ -270,28 +282,10 @@ void sensor_data_collector()
                 debug_printk("No accelerometer available\n");
             }
 
-            /* Read battery voltage from AIN5 (1M/100k divider) */
-            if (!battery_adc_setup_done) {
-                if (adc_channel_setup_dt(&battery_adc_spec) == 0) {
-                    battery_adc_setup_done = true;
-                }
-            }
-            if (battery_adc_setup_done && adc_is_ready_dt(&battery_adc_spec)) {
-                int32_t raw = 0;
-                struct adc_sequence seq = {
-                    .buffer = &raw,
-                    .buffer_size = sizeof(raw),
-                    .channels = BIT(battery_adc_spec.channel_id),
-                    .resolution = battery_adc_spec.resolution,
-                };
-                if (adc_read_dt(&battery_adc_spec, &seq) == 0) {
-                    value.battery_mv = (uint16_t)BATTERY_RAW_TO_MV((uint32_t)raw);
-                    debug_printk("Battery: %u mV\n", value.battery_mv);
-                } else {
-                    value.battery_mv = 0;
-                }
-            } else {
-                value.battery_mv = 0;
+            /* Battery from monitor (single ADC reader); buffer gets last reading */
+            value.battery_mv = battery_get_last_mv();
+            if (value.battery_mv != 0) {
+                debug_printk("Battery: %u mV\n", value.battery_mv);
             }
 
             /* Write sensor data to circular buffer */
@@ -343,6 +337,81 @@ void sensor_data_collector_stop(void)
         /* Thread will check flag and stop sampling on next iteration */
     }
 }
+
+uint16_t battery_get_last_mv(void)
+{
+    return last_battery_mv;
+}
+
+/**
+ * @brief Battery monitor thread (runs in all modes, single ADC reader)
+ *
+ * Samples battery every BATTERY_SAMPLE_INTERVAL_MS. On 3 consecutive samples
+ * below 3000 mV triggers auto-off and sleep. On 3 consecutive below 3500 mV
+ * sets low_battery and status LED blink; on 3 consecutive >= 3500 mV clears
+ * low_battery and turns status LED off.
+ */
+static void battery_monitor_thread(void)
+{
+    while (1) {
+        k_sleep(K_MSEC(BATTERY_SAMPLE_INTERVAL_MS));
+
+        uint16_t mv = 0;
+        if (!battery_adc_setup_done) {
+            if (adc_channel_setup_dt(&battery_adc_spec) == 0) {
+                battery_adc_setup_done = true;
+            }
+        }
+        if (battery_adc_setup_done && adc_is_ready_dt(&battery_adc_spec)) {
+            int32_t raw = 0;
+            struct adc_sequence seq = {
+                .buffer = &raw,
+                .buffer_size = sizeof(raw),
+                .channels = BIT(battery_adc_spec.channel_id),
+                .resolution = battery_adc_spec.resolution,
+            };
+            if (adc_read_dt(&battery_adc_spec, &seq) == 0) {
+                mv = (uint16_t)BATTERY_RAW_TO_MV((uint32_t)raw);
+                last_battery_mv = mv;
+            }
+        }
+
+        /* Critical: 3 consecutive below 3000 mV -> auto-off and sleep. 0 mV is a valid value. */
+        if (mv < BATTERY_CRITICAL_MV) {
+            consecutive_critical++;
+            if (consecutive_critical >= BATTERY_CONSECUTIVE) {
+                main_state_machine_auto_off();
+                k_msleep(100);
+                power_management_enter_sleep();
+            }
+        } else {
+            consecutive_critical = 0;
+        }
+
+        /* Low-battery state: 3 consecutive < 3500 -> low, 3 consecutive >= 3500 -> normal. 0 is valid. */
+        if (mv < BATTERY_LOW_MV) {
+            consecutive_low++;
+            consecutive_high = 0;
+            if (consecutive_low >= BATTERY_CONSECUTIVE && !g_env_state.low_battery) {
+                g_env_state.low_battery = true;
+                light_modes_set_status_led_battery(true);
+            }
+        } else {
+            consecutive_high++;
+            consecutive_low = 0;
+            if (consecutive_high >= BATTERY_CONSECUTIVE && g_env_state.low_battery) {
+                g_env_state.low_battery = false;
+                light_modes_set_status_led_battery(false);
+            }
+        }
+    }
+}
+
+#define BATTERY_MONITOR_STACK_SIZE 1024
+#define BATTERY_MONITOR_PRIORITY   6
+
+K_THREAD_DEFINE(battery_monitor_id, BATTERY_MONITOR_STACK_SIZE, battery_monitor_thread, NULL,
+                NULL, NULL, BATTERY_MONITOR_PRIORITY, 0, 0);
 
 /**
  * @brief Stationary monitor thread

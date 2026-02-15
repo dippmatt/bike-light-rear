@@ -30,6 +30,7 @@
 #include "utils.h"
 #include "button.h"
 #include "main_state_machine.h"
+#include "light_modes.h"
 #include "sensor_data_collector.h"
 #include "power_management.h"
 #include "ble_peripheral.h"
@@ -82,6 +83,7 @@ int main(void)
     g_env_state.is_braking = false;
     g_env_state.ambient_dark = false;
     g_env_state.previous_brightness = 0;
+    g_env_state.low_battery = false;
     
     /* Initialize main state machine (LED control) */
     ret = main_state_machine_init();
@@ -89,7 +91,10 @@ int main(void)
         /* State machine initialization failed */
         return -1;
     }
-    
+
+    /* Status LED off until battery monitor sets low_battery state */
+    light_modes_set_status_led_battery(false);
+
     /* Initialize Bluetooth Low Energy */
     ret = bluetooth_init();
     if (ret != 0) {
