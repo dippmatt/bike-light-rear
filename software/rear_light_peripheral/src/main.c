@@ -26,6 +26,8 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/pm/device.h>
 #include <zephyr/sys/poweroff.h>
+#include <zephyr/drivers/hwinfo.h>
+#include <hal/nrf_power.h>
 
 #include "utils.h"
 #include "button.h"
@@ -47,10 +49,120 @@ environmental_state_t g_env_state;
 static void sleep_work_handler(struct k_work *work);
 static K_WORK_DELAYABLE_DEFINE(sleep_work, sleep_work_handler);
 
+/* USB VBUS monitoring: track state for disconnect detection in IDLE_CHARGING */
+static bool usb_vbus_connected_prev = false;
+static void usb_monitor_work_handler(struct k_work *work);
+static K_WORK_DELAYABLE_DEFINE(usb_monitor_work, usb_monitor_work_handler);
+
+/**
+ * @brief Read current USB VBUS connection state from nRF52 POWER peripheral
+ */
+static bool check_usb_vbus_state(void)
+{
+    uint32_t usbregstatus = NRF_POWER->USBREGSTATUS;
+    return (usbregstatus & POWER_USBREGSTATUS_VBUSDETECT_Msk) != 0;
+}
+
+/**
+ * @brief Log reset reason for debugging
+ *
+ * Reads and logs the reset cause flags, then clears them.
+ * Should be called immediately at boot to capture reset reason.
+ * @param cause_out If non-NULL, reset cause is stored here before clearing
+ */
+static void log_reset_reason(uint32_t *cause_out)
+{
+    uint32_t cause = 0;
+    int ret = hwinfo_get_reset_cause(&cause);
+
+    if (cause_out != NULL) {
+        *cause_out = cause;
+    }
+
+    if (ret != 0) {
+        debug_printk("Failed to read reset cause: %d\n", ret);
+        return;
+    }
+
+    if (cause == 0) {
+        debug_printk("Reset reason: Unknown (no flags set)\n");
+        return;
+    }
+
+    debug_printk("Reset reason flags: 0x%08x\n", cause);
+
+    if (cause & RESET_POR) {
+        debug_printk("  - POR (Power-On Reset) - likely USB connect or power cycle\n");
+    }
+    if (cause & RESET_BROWNOUT) {
+        debug_printk("  - BROWNOUT (Brownout Reset) - likely USB disconnect voltage drop\n");
+    }
+    if (cause & RESET_SOFTWARE) {
+        debug_printk("  - SOFTWARE (Software Reset)\n");
+    }
+    if (cause & RESET_PIN) {
+        debug_printk("  - PIN (External Reset Pin)\n");
+    }
+    if (cause & RESET_WATCHDOG) {
+        debug_printk("  - WATCHDOG (Watchdog Timer Reset)\n");
+    }
+    if (cause & RESET_LOW_POWER_WAKE) {
+        debug_printk("  - LOW_POWER_WAKE (System OFF wake - button interrupt)\n");
+    }
+
+    /* Clear reset cause flags after reading */
+    hwinfo_clear_reset_cause();
+}
+
+/**
+ * @brief Log USB VBUS connection state for debugging
+ * 
+ * Reads USB VBUS status from nRF52 POWER peripheral registers
+ * to detect if USB cable is connected.
+ */
+static void log_usb_vbus_state(void)
+{
+    /* Read USBREGSTATUS register to check VBUS state */
+    uint32_t usbregstatus = NRF_POWER->USBREGSTATUS;
+    
+    /* Check VBUSDETECT bit (bit 0) */
+    if (usbregstatus & POWER_USBREGSTATUS_VBUSDETECT_Msk) {
+        debug_printk("USB VBUS: Connected (detected)\n");
+    } else {
+        debug_printk("USB VBUS: Not connected\n");
+    }
+    
+    /* Also log full register value for debugging */
+    debug_printk("USBREGSTATUS register: 0x%08x\n", usbregstatus);
+}
+
 static void sleep_work_handler(struct k_work *work)
 {
     ARG_UNUSED(work);
     power_management_enter_sleep();
+}
+
+/**
+ * @brief Periodic USB VBUS check: when in IDLE_CHARGING and USB disconnects,
+ * transition to LED_OFF and schedule sleep.
+ */
+static void usb_monitor_work_handler(struct k_work *work)
+{
+    ARG_UNUSED(work);
+
+    bool connected = check_usb_vbus_state();
+
+    if (main_state_machine_get_state() == IDLE_CHARGING &&
+        usb_vbus_connected_prev && !connected) {
+        debug_printk("USB disconnected in IDLE_CHARGING - transitioning to LED_OFF then sleep\n");
+        main_state_machine_set_state(LED_OFF);
+        k_work_schedule(&sleep_work, K_MSEC(100));
+    }
+
+    usb_vbus_connected_prev = connected;
+    main_state_machine_set_usb_connected(connected);
+    light_modes_set_status_led_charging(connected);
+    k_work_reschedule(&usb_monitor_work, K_SECONDS(1));
 }
 
 static void button_event_handler(enum button_press_type press_type)
@@ -72,9 +184,16 @@ static void button_event_handler(enum button_press_type press_type)
 int main(void)
 {
     int ret;
-    
+    uint32_t boot_reset_cause = 0;
+    bool boot_usb_connected;
+
     debug_printk("System starting...\n");
-    
+
+    /* Capture reset reason and USB state immediately at boot (before clearing) */
+    log_reset_reason(&boot_reset_cause);
+    boot_usb_connected = check_usb_vbus_state();
+    log_usb_vbus_state();
+
     /* Initialize global sensor buffer */
     pthread_rwlock_init(&g_sensor_buffer.lock, NULL);
     g_sensor_buffer.write_index = 0;
@@ -91,6 +210,15 @@ int main(void)
         /* State machine initialization failed */
         return -1;
     }
+
+    /* If boot was due to USB POR with USB connected, start in IDLE_CHARGING */
+    if ((boot_reset_cause & RESET_POR) && boot_usb_connected) {
+        debug_printk("USB POR with VBUS connected - entering IDLE_CHARGING\n");
+        main_state_machine_set_state(IDLE_CHARGING);
+    }
+    usb_vbus_connected_prev = check_usb_vbus_state();
+    main_state_machine_set_usb_connected(usb_vbus_connected_prev);
+    light_modes_set_status_led_charging(boot_usb_connected);
 
     /* Status LED off until battery monitor sets low_battery state */
     light_modes_set_status_led_battery(false);
@@ -133,7 +261,10 @@ int main(void)
         return err;
     }
     debug_printk("Button interrupts enabled. Ready for events...\n");
-    
+
+    /* Start USB VBUS monitoring (for IDLE_CHARGING -> LED_OFF on disconnect) */
+    k_work_schedule(&usb_monitor_work, K_SECONDS(1));
+
     /* Main loop (only reached if NOT in LED_OFF state) */
     while (1) {
         /* Sleep to save power - timers and interrupts will wake the CPU */

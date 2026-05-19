@@ -36,6 +36,9 @@ static int64_t last_state_change_ms;
 static atomic_t button_advance_expire = ATOMIC_INIT(0);
 static struct k_timer button_advance_timer;
 
+/* USB VBUS state: when true, SMART_MODE button press goes to IDLE_CHARGING instead of LED_OFF */
+static bool usb_connected = false;
+
 /* Forward declarations for state init/terminate functions */
 static void state_led_50_percent_init(void);
 static void state_led_50_percent_terminate(void);
@@ -45,6 +48,8 @@ static void state_led_smart_mode_init(void);
 static void state_led_smart_mode_terminate(void);
 static void state_led_off_init(void);
 static void state_led_off_terminate(void);
+static void state_idle_charging_init(void);
+static void state_idle_charging_terminate(void);
 
 /* State function pointer types */
 typedef void (*state_init_func_t)(void);
@@ -52,9 +57,10 @@ typedef void (*state_terminate_func_t)(void);
 
 /**
  * @brief Timer expiry callback for button advance expire
- * 
+ *
  * Called when 10 seconds have passed without a button press.
- * Sets button_advance_expire to true, causing next button press to go to LED_OFF.
+ * Sets button_advance_expire to true; next button press goes to LED_OFF
+ * or IDLE_CHARGING (if USB connected).
  */
 static void button_advance_timer_handler(struct k_timer *timer)
 {
@@ -72,6 +78,7 @@ static const struct {
     [LED_50_PERCENT] = {state_led_50_percent_init, state_led_50_percent_terminate},
     [LED_50_80_FLASH] = {state_led_50_80_flash_init, state_led_50_80_flash_terminate},
     [LED_SMART_MODE] = {state_led_smart_mode_init, state_led_smart_mode_terminate},
+    [IDLE_CHARGING] = {state_idle_charging_init, state_idle_charging_terminate},
 };
 
 /**
@@ -114,6 +121,7 @@ static void state_led_50_percent_init(void)
 {
     debug_printk("State init: LED_50_PERCENT\n");
     light_modes_set_50_percent();
+    light_modes_start_status_led();
 }
 
 /**
@@ -136,6 +144,7 @@ static void state_led_50_80_flash_init(void)
 {
     debug_printk("State init: LED_50_80_FLASH\n");
     light_modes_set_100_percent();
+    light_modes_start_status_led();
 }
 
 /**
@@ -159,6 +168,7 @@ static void state_led_smart_mode_init(void)
     debug_printk("State init: LED_SMART_MODE\n");
     light_modes_set_smart_mode();
     sensor_data_collector_start();
+    light_modes_start_status_led();
 }
 
 /**
@@ -181,17 +191,37 @@ static void state_led_off_init(void)
 {
     debug_printk("State init: LED_OFF\n");
     light_modes_off_main_led();
+    light_modes_stop_status_led();
 }
 
 /**
  * @brief Terminate LED_OFF state
- * 
+ *
  * No cleanup needed - LED is already off.
  */
 static void state_led_off_terminate(void)
 {
     debug_printk("State terminate: LED_OFF\n");
     /* LED is already off, no cleanup needed */
+}
+
+/**
+ * @brief Initialize IDLE_CHARGING state
+ *
+ * Main LED off. Status LED charging blink is driven by USB VBUS in main.c.
+ */
+static void state_idle_charging_init(void)
+{
+    debug_printk("State init: IDLE_CHARGING\n");
+    light_modes_off_main_led();
+}
+
+/**
+ * @brief Terminate IDLE_CHARGING state
+ */
+static void state_idle_charging_terminate(void)
+{
+    debug_printk("State terminate: IDLE_CHARGING\n");
 }
 
 /**
@@ -236,6 +266,8 @@ static enum system_state next_active_state(enum system_state current_state)
     switch (current_state) {
         case LED_OFF:
             return LED_50_PERCENT;
+        case IDLE_CHARGING:
+            return LED_50_PERCENT;
         case LED_50_PERCENT:
             return LED_50_80_FLASH;
         case LED_50_80_FLASH:
@@ -266,10 +298,13 @@ void main_state_machine_advance(enum button_press_type source)
 
     debug_printk("State machine: Button press handler called, current state: %d\n", current_state);
 
-    /* If timer expired, go directly to LED_OFF */
-    if (atomic_get(&button_advance_expire)) {
-        debug_printk("Button advance expired - going to LED_OFF\n");
-        next_state = LED_OFF;
+    /* If timer expired and we're in an active light state, go to LED_OFF or IDLE_CHARGING.
+     * If we're already in IDLE_CHARGING or LED_OFF, use normal cycle so one press turns light on. */
+    if (atomic_get(&button_advance_expire) &&
+        current_state != IDLE_CHARGING && current_state != LED_OFF) {
+        next_state = usb_connected ? IDLE_CHARGING : LED_OFF;
+        debug_printk("Button advance expired - going to %s\n",
+                     next_state == IDLE_CHARGING ? "IDLE_CHARGING" : "LED_OFF");
         state_transition(current_state, next_state);
         return;
     }
@@ -279,6 +314,9 @@ void main_state_machine_advance(enum button_press_type source)
         case LED_OFF:
             next_state = LED_50_PERCENT;
             break;
+        case IDLE_CHARGING:
+            next_state = LED_50_PERCENT;
+            break;
         case LED_50_PERCENT:
             next_state = LED_50_80_FLASH;
             break;
@@ -286,7 +324,7 @@ void main_state_machine_advance(enum button_press_type source)
             next_state = LED_SMART_MODE;
             break;
         case LED_SMART_MODE:
-            next_state = LED_OFF;
+            next_state = usb_connected ? IDLE_CHARGING : LED_OFF;
             break;
         default:
             /* Invalid state, reset to LED_50_PERCENT */
@@ -296,6 +334,13 @@ void main_state_machine_advance(enum button_press_type source)
 
     /* Perform state transition */
     state_transition(current_state, next_state);
+
+    /* After waking up to LED_50_PERCENT from IDLE_CHARGING or LED_OFF, reset the
+     * advance timer so the next press cycles to blink mode instead of back to off. */
+    if ((current_state == IDLE_CHARGING || current_state == LED_OFF) &&
+        next_state == LED_50_PERCENT) {
+        main_state_machine_reset_advance_timer();
+    }
 }
 
 void main_state_machine_on_button_press(void)
@@ -363,16 +408,21 @@ int64_t main_state_machine_last_change_ms(void)
 int main_state_machine_set_state(enum system_state new_state)
 {
     /* Validate state */
-    if (new_state > LED_SMART_MODE) {
+    if (new_state > IDLE_CHARGING) {
         return -EINVAL;
     }
-    
+
     enum system_state current_state = g_system_state;
-    
+
     /* Only transition if state is different */
     if (current_state != new_state) {
         state_transition(current_state, new_state);
     }
-    
+
     return 0;
+}
+
+void main_state_machine_set_usb_connected(bool connected)
+{
+    usb_connected = connected;
 }

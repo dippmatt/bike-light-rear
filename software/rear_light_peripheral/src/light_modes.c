@@ -37,12 +37,13 @@
 #define STATUS_LED_NODE     DT_ALIAS(led0)
 
 /* Timer interval for STATUS_LED blinking */
-#define STATUS_TIMER_INTERVAL 500
+#define STATUS_TIMER_INTERVAL 500         /* Low battery: 500ms */
+#define STATUS_TIMER_INTERVAL_CHARGING 300 /* Charging (VBUS): 300ms, faster than low battery */
 
 /* PWM period for 1kHz = 1000 microseconds (1ms) */
 #define PWM_PERIOD_USEC 1000
 /* 50% duty cycle - scaled for 1ms period */
-#define PWM_DUTY_CYCLE_30_USEC 300
+#define PWM_DUTY_CYCLE_30_USEC 200
 /* 80% duty cycle - scaled for 1ms period */
 #define PWM_DUTY_CYCLE_80_USEC 800
 /* 100% duty cycle - scaled for 1ms period */
@@ -72,8 +73,16 @@ static void blink_work_handler(struct k_work *work);
 static struct k_work flash_work;
 static struct k_work blink_work;
 
+/* Forward declaration for status LED update function */
+static void update_status_led_state(void);
+
 /* Timer for STATUS_LED blinking */
 static struct k_timer status_led_timer;
+
+/* Low battery state for status LED control */
+static bool status_led_low_battery = false;
+/* Charging state for status LED (VBUS connected, fast blink) */
+static bool status_led_charging = false;
 
 /* Current PWM pulse width in microseconds */
 static uint32_t current_pwm_usec = 0;
@@ -229,20 +238,15 @@ void blink_timer_expiry(struct k_timer *timer)
 
 /**
  * @brief STATUS_LED timer expiry callback
- * 
- * Toggles the LED on every timer tick, but only if not in LED_OFF mode.
- * When in LED_OFF mode, the LED stays off.
+ *
+ * Toggles the LED for blinking. Timer runs for low battery (500ms) or charging (300ms).
  */
 void status_led_timer_expiry(struct k_timer *timer)
 {
     ARG_UNUSED(timer);
-    
-    /* Only blink if not in LED_OFF mode */
-    if (main_state_machine_get_state() != LED_OFF) {
+
+    if (status_led_low_battery || status_led_charging) {
         gpio_pin_toggle_dt(&status_led);
-    } else {
-        /* Ensure LED stays off in LED_OFF state */
-        gpio_pin_set_dt(&status_led, 0);
     }
 }
 
@@ -371,36 +375,79 @@ void light_modes_off_main_led(void)
 /**
  * @brief Start the status LED timer
  * 
- * Starts the periodic timer that blinks the status LED.
+ * Updates status LED based on current device state and battery condition.
  */
 void light_modes_start_status_led(void)
 {
-    k_timer_start(&status_led_timer, K_MSEC(STATUS_TIMER_INTERVAL), K_MSEC(STATUS_TIMER_INTERVAL));
+    update_status_led_state();
 }
 
 /**
  * @brief Stop the status LED timer
  * 
- * Stops the status LED timer and turns off the LED.
+ * Updates status LED based on current device state and battery condition.
+ * If device is off, turns off the LED.
  */
 void light_modes_stop_status_led(void)
 {
-    k_timer_stop(&status_led_timer);
-    gpio_pin_set_dt(&status_led, 0);
+    update_status_led_state();
 }
 
 /**
- * @brief Set status LED from battery state (only function of status LED)
+ * @brief Update status LED based on current device state, battery and charging
  *
- * When low_battery is true, starts blinking; when false, stops and turns off.
+ * Priority: Low battery (500ms blink) > Charging (300ms blink) > Device on (solid) > Off.
  */
-void light_modes_set_status_led_battery(bool low_battery)
+static void update_status_led_state(void)
 {
-    if (low_battery) {
-        k_timer_start(&status_led_timer, K_MSEC(STATUS_TIMER_INTERVAL), K_MSEC(STATUS_TIMER_INTERVAL));
+    enum system_state current_state = main_state_machine_get_state();
+
+    /* Low battery has highest priority - start timer for blinking */
+    if (status_led_low_battery) {
+        k_timer_start(&status_led_timer, K_MSEC(STATUS_TIMER_INTERVAL),
+                      K_MSEC(STATUS_TIMER_INTERVAL));
+        return;
+    }
+
+    /* Charging (VBUS) - fast blink, lower priority than low battery */
+    if (status_led_charging) {
+        k_timer_start(&status_led_timer, K_MSEC(STATUS_TIMER_INTERVAL_CHARGING),
+                      K_MSEC(STATUS_TIMER_INTERVAL_CHARGING));
+        return;
+    }
+
+    /* Not low battery, not charging - stop timer and set LED based on device state */
+    k_timer_stop(&status_led_timer);
+
+    if (current_state == LED_SMART_MODE ||
+        current_state == LED_50_PERCENT ||
+        current_state == LED_50_80_FLASH) {
+        /* Device is on - turn LED solid ON */
+        gpio_pin_set_dt(&status_led, 1);
     } else {
-        k_timer_stop(&status_led_timer);
+        /* Device is off or IDLE_CHARGING (charging handled above) - turn LED OFF */
         gpio_pin_set_dt(&status_led, 0);
     }
 }
 
+/**
+ * @brief Set status LED from battery state
+ *
+ * When low_battery is true, starts blinking (highest priority).
+ * When false, updates status LED based on current device state.
+ */
+void light_modes_set_status_led_battery(bool low_battery)
+{
+    status_led_low_battery = low_battery;
+    update_status_led_state();
+}/**
+ * @brief Set status LED charging state
+ *
+ * When charging is true (VBUS connected), status LED blinks fast (300ms).
+ * Lower priority than low battery blink.
+ */
+void light_modes_set_status_led_charging(bool charging)
+{
+    status_led_charging = charging;
+    update_status_led_state();
+}

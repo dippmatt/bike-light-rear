@@ -35,7 +35,8 @@ enum system_state {
     LED_OFF = 0,     /* 0% duty cycle */
     LED_50_PERCENT,  /* 50% duty cycle */
     LED_50_80_FLASH, /* High visibility mode: 50% with periodic 80% flashes */
-    LED_SMART_MODE   /* Smart mode: adaptive brightness based on braking and ambient light */
+    LED_SMART_MODE,  /* Smart mode: adaptive brightness based on braking and ambient light */
+    IDLE_CHARGING    /* USB connected, main LED off, status LED fast blink (charging) */
 };
 
 /** @brief Timer expiry callback for the flash timer */
@@ -129,11 +130,19 @@ void light_modes_start_status_led(void);
 void light_modes_stop_status_led(void);
 
 /**
- * @brief Set status LED from battery state (only function of status LED)
+ * @brief Set status LED from battery state
  *
  * When low_battery is true, starts blinking; when false, stops and turns off.
  */
 void light_modes_set_status_led_battery(bool low_battery);
+
+/**
+ * @brief Set status LED charging state
+ *
+ * When charging is true (VBUS connected), status LED blinks fast (300ms).
+ * Lower priority than low battery blink.
+ */
+void light_modes_set_status_led_charging(bool charging);
 
 #endif /* LIGHT_MODES_H */
 

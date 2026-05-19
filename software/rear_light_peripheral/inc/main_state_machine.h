@@ -24,6 +24,7 @@
 #ifndef MAIN_STATE_MACHINE_H
 #define MAIN_STATE_MACHINE_H
 
+#include <stdbool.h>
 #include "light_modes.h"
 #include "button.h"
 
@@ -86,14 +87,19 @@ int64_t main_state_machine_last_change_ms(void);
 
 /**
  * @brief Set LED state directly (for external control, e.g., BLE)
- * 
+ *
  * Allows external modules to directly set the LED state.
  * This bypasses the normal button press cycle.
- * 
+ *
  * @param new_state The state to transition to
  * @return 0 on success, negative error code on failure
  */
 int main_state_machine_set_state(enum system_state new_state);
+
+/**
+ * @brief Set USB VBUS connected state (used for SMART_MODE -> IDLE_CHARGING vs LED_OFF)
+ */
+void main_state_machine_set_usb_connected(bool connected);
 
 /* Global LED state */
 extern enum system_state g_system_state;

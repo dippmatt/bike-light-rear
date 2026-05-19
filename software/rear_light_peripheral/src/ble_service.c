@@ -42,7 +42,7 @@ static ssize_t write_control(struct bt_conn *conn, const struct bt_gatt_attr *at
 	*value = ((const uint8_t *)buf)[0];
 	control_value = *value;
 
-	if (control_value <= LED_SMART_MODE) {
+	if (control_value <= IDLE_CHARGING) {
 		current_state = main_state_machine_get_state();
 		if (control_value == current_state) {
 			last_control_value = control_value;

@@ -15,7 +15,6 @@ OFF → 50% → 50/80 Flash → Smart Mode → OFF
 ### Mode 1: OFF
 - **Description**: Light is completely off
 - **Power Consumption**: Minimal (sensor monitoring continues)
-- **Activation**: Press button from Smart Mode
 
 ### Mode 2: 50% Continuous
 - **Description**: Steady illumination at 50% brightness
@@ -40,6 +39,16 @@ OFF → 50% → 50/80 Flash → Smart Mode → OFF
   - Automatic power-off when stationary
 - **Activation**: Press button from 50/80 Flash mode
 - **See detailed behavior below**
+
+### Button behavior summary
+
+- **Short press** (normal click):
+  - Cycles modes in this order:
+    - `OFF → 50% → 50/80 Flash → Smart Mode → OFF` (when USB is not connected)
+  - When USB is connected, the internal state machine also supports an **IDLE_CHARGING** state (see “Charging & Battery”), but as a rider you can think of it as:
+    - Light on (any mode) → short press after some inactivity may send it to a charging/idle state when plugged in.
+- **Wake from sleep**:
+  - After the light has turned itself fully off and entered deep sleep, a short press wakes it and starts at 50% continuous.
 
 ## Smart Mode Detailed Behavior
 
@@ -77,8 +86,28 @@ Smart Mode adapts LED brightness based on three environmental factors:
 - Only activates if currently in Smart Mode
 
 **When Auto-Off Triggers:**
-- Light switches to OFF mode
-- Requires manual button press to reactivate
+- Light switches to OFF mode and then enters a deep sleep state to save battery.
+- Requires a manual button press to wake and reactivate (starts in 50% continuous).
+
+## Charging & Battery Behavior
+
+### Normal charging
+
+- **USB‑C port** on the light is used for charging the 18350 cell.
+- When you **plug in USB**:
+  - The light may enter an internal **IDLE_CHARGING** state where the main LED is off.
+  - A **small status LED** blinks to show charging activity.
+- When you **unplug USB**:
+  - The light leaves the charging state; one short press will bring it back to the normal lighting modes.
+
+### Low-battery indication and shut‑off
+
+- The firmware continuously monitors battery voltage.
+- As the voltage drops, the **status LED** will change its blink pattern to signal **low battery** so you know to recharge soon.
+- When the battery goes below a safe threshold (around 3.0 V), the light will:
+  - Turn the main LED off,
+  - Enter a low-power state to protect the cell.
+- To use the light again, **recharge the battery** and then press the button to wake it.
 
 ## Technical Specifications
 
@@ -190,32 +219,17 @@ stateDiagram-v2
 - Automatic brightness adjustment reduces manual intervention
 - Auto-off prevents battery drain if bike is left stationary
 
-### Long-Term Storage
-- Switch to **OFF mode** to minimize power consumption
-- Charge battery to ~50% for optimal storage
-- Disconnect battery if storing for extended periods (>3 months)
+## Optional Bluetooth Control (for advanced users)
 
-## Troubleshooting
+The rear light includes a simple Bluetooth Low Energy (BLE) interface:
 
-### Light doesn't turn on
-- Check battery charge level
-- Verify battery protection circuit hasn't tripped (cycle charge)
-- Ensure firmware is loaded correctly
+- A phone app, bike computer, or another BLE device can:
+  - **Read the current mode** (e.g., OFF, 50%, 50/80 Flash, Smart Mode, charging).
+  - **Request a mode change** by writing a small control value.
+- The light always prioritizes safe local behavior:
+  - Button presses and safety features (braking, auto‑off, low battery) still work even if no BLE device is connected.
 
-### Smart Mode not responding to braking
-- Verify accelerometer orientation (Z-axis must face rear)
-- Check sensor I²C connection (use DEBUG mode)
-- Confirm sampling period is 500ms
-
-### Premature auto-off in Smart Mode
-- May indicate excessive vibration/noise in accelerometer
-- Try adjusting stationary threshold tolerance
-- Verify sensor mounting is secure
-
-### LED flickers in Smart Mode
-- Normal during rapid ambient light changes
-- May indicate marginal light threshold (~30 lux)
-- Consider adjusting AMBIENT_DARK_THRESHOLD
+For developers or integrators who want to use BLE control, see the firmware source and `ble_service` documentation in the main repository.
 
 ## Firmware Information
 
@@ -235,21 +249,6 @@ stateDiagram-v2
 - `AMBIENT_DARK_THRESHOLD`: 30.0 lux (in `sensor_data_collector.c`)
 - `SENSOR_BUFFER_SIZE`: 360 samples (in `sensor_data_collector.h`)
 - `TIME_SAMPLING_INTERVAL_MS`: 500ms (in `sensor_data_collector.c`)
-
-## Safety Notes
-
-- This light is designed as a supplementary safety device
-- Always use in conjunction with other bicycle lighting
-- Ensure light is securely mounted to prevent detachment
-- Regularly inspect mounting hardware for wear
-- Replace battery according to manufacturer specifications
-- Do not attempt to charge damaged or swollen batteries
-
-## Compliance
-
-**Electrical Safety:** Designed for low-voltage DC operation (3.0-4.2V)  
-**EMC:** Bluetooth 5.1 compliant (2.4GHz ISM band)  
-**Environmental:** Not waterproof - use in dry conditions or with protective cover
 
 ## License
 
