@@ -29,12 +29,30 @@ High-visibility rear bicycle light with Bluetooth Low Energy (BLE) control, feat
 - **Design tool** – KiCad 9.0 (schema version `20250114`)
 - **Test points** – Critical nets labeled for bring-up and debugging (+BATT, +VSYS, +VDD_nRF, GND, I2C_SDA, I2C_SCL)
 
+### Hardware photos
+
+Assembled PCB on the 18350 battery holder (angled view).
+
+<img src="docs/IMG_2938_small.JPG" width="400" alt="Assembled PCB on battery pack">
+
+Top of the populated PCB: BL653 (nRF52833), USB-C, tactile switch, RGB status LED, SWD header (J2), and I2C test point pads for the accelerometer and ambient light sensor.
+
+<img src="docs/IMG_2939_small.JPG" width="400" alt="PCB top view">
+
+Front of the 3D-printed enclosure with the Cree red main LED and status indicator.
+
+<img src="docs/IMG_2942_small.JPG" width="400" alt="Enclosure front, LEDs on">
+
+Side of the enclosure showing the USB charge port.
+
+<img src="docs/IMG_2943_small.JPG" width="400" alt="Enclosure side, charge port and mount">
+
 ## Repository layout
 - `hardware/` – KiCad project, fabrication-toolkit config, custom libs (`kicad_symbols/`, `kicad_footprints/`, `kicad_3d_models/`), datasheets (markdown format), and generated BOM
 - `software/rear_light_peripheral/` – main rear light firmware (Zephyr/nRF Connect SDK), including Smart Mode, BLE peripheral control, charging/idle state, and low-power sleep
 - `software/front_light_central/` – proof-of-concept central/front-light firmware (experimental; will evolve later)
 - `software/` *(other folders)* – development history and experiments (central/peripheral prototypes, refactors, test projects)
-- `docs/` *(planned)* – rendered schematics, mechanical notes, test plans, and user-facing manuals
+- `docs/` – photos, rendered schematics, mechanical notes, and user-facing manuals
 - `LICENSE` – GPLv3 with NonCommercial clause
 
 ## Hardware workflow
