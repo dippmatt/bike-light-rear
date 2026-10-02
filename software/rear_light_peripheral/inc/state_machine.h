@@ -57,6 +57,16 @@ enum system_state {
 void sm_init(enum system_state boot_state, bool usb_present);
 
 /**
+ * @brief Get the first Active Mode of the Mode Cycle
+ *
+ * The state entered by a wake or boot that turns the light on and by a
+ * short press from Off or Idle Charging.
+ *
+ * @return First Active Mode
+ */
+enum system_state sm_first_active_mode(void);
+
+/**
  * @brief Run the state machine event loop (never returns)
  */
 void sm_run(void);

@@ -25,6 +25,7 @@
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/hwinfo.h>
+#include <zephyr/sys/reboot.h>
 
 #include "app_events.h"
 #include "state_machine.h"
@@ -39,6 +40,26 @@
 #ifdef DEBUG
 #include "i2c_scanner.h"
 #endif
+
+/* Time to let the last debug message drain before a software reset */
+#define RESET_FLUSH_DELAY_MS 100
+
+/**
+ * @brief Recover from a failed essential initialization by resetting
+ *
+ * Returning from main() would leave the device dead (no light, no button).
+ * A software reset gives a transient fault another chance, and the boot
+ * policy brings the light back on afterwards (fail operational).
+ */
+static FUNC_NORETURN void fatal_reset(const char *what, int err)
+{
+    debug_printk("%s failed: %d - resetting\n", what, err);
+
+    /* Give the debug output time to drain before the reset */
+    k_msleep(RESET_FLUSH_DELAY_MS);
+
+    sys_reboot(SYS_REBOOT_COLD);
+}
 
 int main(void)
 {
@@ -57,14 +78,12 @@ int main(void)
      * boot state */
     err = light_init();
     if (err != 0) {
-        debug_printk("Main LED init failed: %d\n", err);
-        return err;
+        fatal_reset("Main LED init", err);
     }
 
     err = status_led_init();
     if (err != 0) {
-        debug_printk("Status LED init failed: %d\n", err);
-        return err;
+        fatal_reset("Status LED init", err);
     }
 
     /* Non-fatal: battery sampling retries its ADC setup, and the light
@@ -86,8 +105,7 @@ int main(void)
 
     err = button_init();
     if (err != 0) {
-        debug_printk("Button init failed: %d\n", err);
-        return err;
+        fatal_reset("Button init", err);
     }
 
 #ifdef DEBUG
@@ -103,8 +121,9 @@ int main(void)
 #endif
 
     /* Boot into IDLE_CHARGING only on a power-on reset with USB present;
-     * a wake from System OFF (button press) always turns the light on */
-    enum system_state boot_state = LED_50_PERCENT;
+     * any other boot (including a wake from System OFF) turns the light on
+     * in the first Active Mode */
+    enum system_state boot_state = sm_first_active_mode();
 
     if ((boot_reset_cause & RESET_POR) && boot_usb_connected) {
         debug_printk("USB POR with VBUS connected - booting into IDLE_CHARGING\n");
@@ -119,8 +138,7 @@ int main(void)
      * spurious events are queued during boot/wake-up */
     err = button_enable();
     if (err != 0) {
-        debug_printk("Button interrupt enable failed: %d\n", err);
-        return err;
+        fatal_reset("Button interrupt enable", err);
     }
 
     debug_printk("Initialization complete. Ready for events...\n");

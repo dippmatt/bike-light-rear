@@ -36,7 +36,7 @@
 #define SAMPLING_INTERVAL_MS     500
 
 /* Braking: z-acceleration below this for 2 consecutive samples (milli-m/s^2) */
-#define BRAKING_ACCEL_THRESHOLD_MILLI (-3000)
+#define BRAKING_ACCEL_THRESHOLD_MILLI (-6000)
 
 /* Ambient light hysteresis (milli-lux): enter dark below 50 lx,
  * exit dark at or above 150 lx, 2 consecutive samples each */

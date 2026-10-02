@@ -51,6 +51,17 @@
 #define POWEROFF_RELEASE_WAIT_MS   10000
 #define POWEROFF_RELEASE_POLL_MS   20
 
+/* Mode Cycle: the Active Modes in short-press order. This is the only place
+ * that knows the order - the end of the cycle (Idle Charging or Deep Sleep)
+ * and the entry point (first mode) are derived from it. */
+static const enum system_state mode_cycle[] = {
+    LED_50_PERCENT,
+    LED_50_80_FLASH,
+    LED_SMART_MODE,
+};
+
+#define MODE_CYCLE_LEN ARRAY_SIZE(mode_cycle)
+
 /* All of the following is owned exclusively by the state machine thread. */
 static enum system_state state;
 static atomic_t published_state = ATOMIC_INIT(LED_OFF);
@@ -71,9 +82,21 @@ static void flash_timer_expiry(struct k_timer *timer)
     app_event_post(EVT_FLASH_STEP, 0);
 }
 
+/* Position of a state in the Mode Cycle, or -1 if it is not an Active Mode */
+static int cycle_index(enum system_state s)
+{
+    for (size_t i = 0; i < MODE_CYCLE_LEN; i++) {
+        if (mode_cycle[i] == s) {
+            return (int)i;
+        }
+    }
+
+    return -1;
+}
+
 static bool light_is_on(enum system_state s)
 {
-    return s == LED_50_PERCENT || s == LED_50_80_FLASH || s == LED_SMART_MODE;
+    return cycle_index(s) >= 0;
 }
 
 static void status_refresh(void)
@@ -193,31 +216,30 @@ static void do_poweroff(void)
 
 static void handle_button_short(void)
 {
-    switch (state) {
-    case LED_OFF:
-        transition(LED_50_PERCENT);
-        break;
-    case LED_50_PERCENT:
-        transition(LED_50_80_FLASH);
-        break;
-    case LED_50_80_FLASH:
-        transition(LED_SMART_MODE);
-        break;
-    case LED_SMART_MODE:
-        if (usb_present) {
-            transition(IDLE_CHARGING);
-        } else {
-            do_poweroff();
-        }
-        break;
-    case IDLE_CHARGING:
-        transition(LED_50_PERCENT);
-        break;
+    int idx = cycle_index(state);
+
+    if (idx < 0) {
+        /* Off or Idle Charging: enter the first Active Mode */
+        transition(mode_cycle[0]);
+    } else if ((size_t)idx + 1 < MODE_CYCLE_LEN) {
+        transition(mode_cycle[idx + 1]);
+    } else if (usb_present) {
+        /* Past the last Active Mode with USB power present */
+        transition(IDLE_CHARGING);
+    } else {
+        do_poweroff();
     }
 }
 
 static void handle_ble_set_state(uint8_t requested)
 {
+    /* Only Off and the Active Modes can be requested; Idle Charging is set
+     * by USB power alone. Invalid requests are ignored. */
+    if (requested != LED_OFF && cycle_index((enum system_state)requested) < 0) {
+        printk("Control ignored (not requestable): 0x%02x\n", requested);
+        return;
+    }
+
     if (requested == (uint8_t)state) {
         return;
     }
@@ -376,6 +398,11 @@ void sm_run(void)
             handle_event(&evt);
         }
     }
+}
+
+enum system_state sm_first_active_mode(void)
+{
+    return mode_cycle[0];
 }
 
 uint8_t sm_current_state(void)

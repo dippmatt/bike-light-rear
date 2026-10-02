@@ -38,7 +38,7 @@
 enum app_event_type {
     EVT_BUTTON_SHORT,       /* button released before long-press threshold */
     EVT_BUTTON_LONG,        /* button held for >= 1 s */
-    EVT_BLE_SET_STATE,      /* arg = requested system_state (pre-validated 0..4) */
+    EVT_BLE_SET_STATE,      /* arg = requested system_state (range-checked 0..4; the state machine ignores non-requestable states) */
     EVT_FLASH_STEP,         /* flash-pattern timer tick (only used in FLASH mode) */
     EVT_BATTERY_TICK,       /* 5 s battery sampling tick */
     EVT_USB_CONNECTED,      /* VBUS appeared (edge) */
