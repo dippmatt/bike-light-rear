@@ -21,18 +21,29 @@
  * explicit written permission from the copyright holder.
  */
 
-#ifndef POWER_MANAGEMENT_H
-#define POWER_MANAGEMENT_H
+#include <zephyr/kernel.h>
+#include <zephyr/sys/printk.h>
 
-/**
- * @brief Enter system off (deep sleep) mode
- * 
- * Prepares the system for low-power system off mode and enters it.
- * The system will wake on button press (configured as wake source).
- * Note: System off is like a reset - upon wake, execution starts from main().
- */
-void power_management_enter_sleep(void);
+#include "app_events.h"
 
-#endif /* POWER_MANAGEMENT_H */
+#define APP_EVENT_QUEUE_DEPTH 16
 
+K_MSGQ_DEFINE(app_msgq, sizeof(struct app_event), APP_EVENT_QUEUE_DEPTH, 2);
 
+void app_event_post(uint8_t type, uint8_t arg)
+{
+    struct app_event evt = {
+        .type = type,
+        .arg = arg,
+    };
+
+    int ret = k_msgq_put(&app_msgq, &evt, K_NO_WAIT);
+    if (ret != 0) {
+        printk("Event queue full, dropped event %u\n", type);
+    }
+}
+
+int app_event_get(struct app_event *evt, k_timeout_t timeout)
+{
+    return k_msgq_get(&app_msgq, evt, timeout);
+}

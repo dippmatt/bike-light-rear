@@ -21,19 +21,63 @@
  * explicit written permission from the copyright holder.
  */
 
- #ifndef _BUTTON_H_
- #define _BUTTON_H_
- 
- enum button_press_type {
-     BUTTON_PRESS_SHORT,
-    BUTTON_PRESS_LONG,
-    BUTTON_PRESS_BLE
- };
- 
- typedef void (*button_event_handler_t)(enum button_press_type press_type);
- 
- int button_init(button_event_handler_t handler);
- int button_enable_interrupts(void);
- int button_configure_wakeup(void);
- 
- #endif /* _BUTTON_H_ */
+#ifndef BUTTON_H
+#define BUTTON_H
+
+#include <stdbool.h>
+
+/**
+ * User button input.
+ *
+ * Posts EVT_BUTTON_SHORT (released before 1 s) or EVT_BUTTON_LONG
+ * (held for 1 s) to the central event queue. No callbacks, no state
+ * machine knowledge.
+ */
+
+/**
+ * @brief Configure the button GPIO as input (interrupts not yet enabled)
+ *
+ * @return 0 on success, negative error code on failure
+ */
+int button_init(void);
+
+/**
+ * @brief Enable button edge interrupts
+ *
+ * Call after slow initialization tasks (e.g. I2C scanning) to avoid
+ * spurious button events during boot.
+ *
+ * @return 0 on success, negative error code on failure
+ */
+int button_enable(void);
+
+/**
+ * @brief Check whether the button is currently pressed
+ *
+ * @return true if pressed
+ */
+bool button_is_pressed(void);
+
+/**
+ * @brief Configure the button as System OFF wake source
+ *
+ * Stops press detection, disables the edge interrupt, removes the GPIO
+ * callback and switches to a level-active interrupt so the nRF52 SENSE
+ * mechanism can wake the chip from System OFF.
+ *
+ * @return 0 on success, negative error code on failure
+ */
+int button_prepare_wake(void);
+
+/**
+ * @brief Restore normal button operation after a failed power-off
+ *
+ * Undoes button_prepare_wake(): re-registers the GPIO callback and
+ * re-enables the edge interrupt so the button keeps working if the
+ * system could not enter System OFF.
+ *
+ * @return 0 on success, negative error code on failure
+ */
+int button_reenable(void);
+
+#endif /* BUTTON_H */

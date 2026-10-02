@@ -21,24 +21,33 @@
  * explicit written permission from the copyright holder.
  */
 
-#ifndef UTILS_H
-#define UTILS_H
-
-#include <zephyr/kernel.h>
+#ifndef BLE_H
+#define BLE_H
 
 /**
- * @brief Debug print function that conditionally uses printk
- * 
- * When DEBUG is enabled, this function behaves like printk().
- * When DEBUG is disabled, this function does nothing (no code generated).
- * 
- * Usage: debug_printk("format string", args...)
+ * BLE peripheral: advertising and the light-control GATT service.
+ *
+ * Contract (the front light central depends on this):
+ *   - Advertises 16-bit service UUID 0xA000
+ *   - 0xA001: READ, one byte = current system state (0..4)
+ *   - 0xA002: WRITE, one byte = requested system state (0..4)
+ *
+ * A valid write posts EVT_BLE_SET_STATE; the state machine applies its
+ * stable-window guard and performs the transition.
  */
-#ifdef DEBUG
-#define debug_printk(...) printk(__VA_ARGS__)
-#else
-#define debug_printk(...) ((void)0)
-#endif
 
-#endif /* UTILS_H */
+#define BLE_SERVICE_UUID    0xA000
+#define BLE_LED_STATUS_UUID 0xA001
+#define BLE_CONTROL_UUID    0xA002
 
+/**
+ * @brief Enable Bluetooth and start advertising
+ *
+ * Advertising failures are retried every second; a disconnect restarts
+ * advertising.
+ *
+ * @return 0 on success, negative error code on failure
+ */
+int ble_init(void);
+
+#endif /* BLE_H */
