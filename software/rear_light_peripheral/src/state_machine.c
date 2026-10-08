@@ -39,6 +39,17 @@
  * less than this long ago, so a remote cannot fight a just-pressed button. */
 #define BLE_STABLE_WINDOW_MS 3000
 
+/* Selection window: after the light goes from an inactive state (Deep Sleep,
+ * Off, Idle Charging) to an Active Mode, short presses cycle through the
+ * Active Modes only for this many battery ticks. Afterwards a short press
+ * leaves the Active Modes for the end state of the cycle (Idle Charging or
+ * Deep Sleep).
+ *
+ * The window is counted in battery ticks (the existing free-running 5 s
+ * sampling tick) instead of a dedicated timer. The tick phase is random
+ * relative to the switch-on, so 4 ticks last between 15 and 20 s. */
+#define MODE_SELECT_WINDOW_BATTERY_TICKS 4
+
 /* FLASH mode: double flash every 1.5 s
  * (peak 70 ms, base 70 ms, peak 70 ms, base for the rest of the cycle) */
 #define FLASH_CYCLE_MS 1500
@@ -55,9 +66,9 @@
  * that knows the order - the end of the cycle (Idle Charging or Deep Sleep)
  * and the entry point (first mode) are derived from it. */
 static const enum system_state mode_cycle[] = {
+    LED_SMART_MODE,
     LED_50_PERCENT,
     LED_50_80_FLASH,
-    LED_SMART_MODE,
 };
 
 #define MODE_CYCLE_LEN ARRAY_SIZE(mode_cycle)
@@ -66,6 +77,10 @@ static const enum system_state mode_cycle[] = {
 static enum system_state state;
 static atomic_t published_state = ATOMIC_INIT(LED_OFF);
 static int64_t last_change_ms;
+
+/* Battery ticks since the light was last switched on from an inactive state;
+ * saturates at MODE_SELECT_WINDOW_BATTERY_TICKS (window closed) */
+static uint8_t selection_ticks = MODE_SELECT_WINDOW_BATTERY_TICKS;
 
 static bool usb_present;
 static bool low_battery;
@@ -164,11 +179,20 @@ static void transition(enum system_state to)
 
     debug_printk("State transition: %d -> %d\n", state, to);
 
+    bool was_active = light_is_on(state);
+
     state_exit(state);
     state = to;
     state_enter(to);
 
     last_change_ms = k_uptime_get();
+
+    /* Only an inactive -> Active Mode transition opens the selection window;
+     * changes between Active Modes neither open nor restart it */
+    if (!was_active && light_is_on(to)) {
+        selection_ticks = 0;
+    }
+
     atomic_set(&published_state, to);
     status_refresh();
 }
@@ -221,10 +245,13 @@ static void handle_button_short(void)
     if (idx < 0) {
         /* Off or Idle Charging: enter the first Active Mode */
         transition(mode_cycle[0]);
-    } else if ((size_t)idx + 1 < MODE_CYCLE_LEN) {
+    } else if (selection_ticks < MODE_SELECT_WINDOW_BATTERY_TICKS &&
+               (size_t)idx + 1 < MODE_CYCLE_LEN) {
+        /* Inside the selection window: next Active Mode */
         transition(mode_cycle[idx + 1]);
     } else if (usb_present) {
-        /* Past the last Active Mode with USB power present */
+        /* After the last Active Mode, or after the selection window closed,
+         * with USB power present */
         transition(IDLE_CHARGING);
     } else {
         do_poweroff();
@@ -288,6 +315,11 @@ static void handle_flash_step(void)
 
 static void handle_battery_tick(void)
 {
+    /* The battery tick also times the selection window */
+    if (selection_ticks < MODE_SELECT_WINDOW_BATTERY_TICKS) {
+        selection_ticks++;
+    }
+
     enum battery_level level = battery_sample_and_process();
 
     if (level == BATTERY_CRITICAL) {
@@ -382,6 +414,12 @@ void sm_init(enum system_state boot_state, bool usb)
     state_enter(boot_state);
 
     last_change_ms = k_uptime_get();
+
+    /* Booting into an Active Mode counts as inactive -> active */
+    if (light_is_on(boot_state)) {
+        selection_ticks = 0;
+    }
+
     atomic_set(&published_state, boot_state);
     status_refresh();
 

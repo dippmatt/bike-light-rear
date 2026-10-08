@@ -40,6 +40,10 @@ _Avoid_: lit mode, light mode (too broad: includes Off)
 The ordered list of Active Modes that short presses step through. Its order is a single configuration point, and no other behaviour may depend on a specific order.
 _Avoid_: mode ring, mode sequence
 
+**Selection Window**:
+The period right after the light goes from an inactive state (Deep Sleep, Off, Idle Charging) to an Active Mode, in which short presses still step through the Mode Cycle. Changing between Active Modes never starts or restarts it. Its length is about 15 to 20 seconds, because it is counted in battery ticks.
+_Avoid_: mode timeout, cycle timeout
+
 **Charging**:
 The condition that USB power is present. The charger is autonomous hardware, so the firmware treats USB power present as charging in every awake state, and has no charge-complete knowledge.
 _Avoid_: USB connected (for the condition), charge state

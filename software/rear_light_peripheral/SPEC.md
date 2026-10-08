@@ -7,7 +7,7 @@ Each requirement has an ID so external test lists can reference it.
 ## 1. System and states
 
 - **SYS-1** The firmware shall have exactly five states: Off, Steady, Flash, Smart and Idle Charging. Their numeric values (0..4 in that order) are part of the BLE contract and shall not change.
-- **SYS-2** The Mode Cycle shall be a single configuration point listing the Active Modes in short-press order (currently Steady, Flash, Smart). No other behaviour shall depend on that order or on a specific mode being first or last.
+- **SYS-2** The Mode Cycle shall be a single configuration point listing the Active Modes in short-press order (currently Smart, Steady, Flash). No other behaviour shall depend on that order or on a specific mode being first or last.
 - **SYS-3** All inputs (button, BLE, battery tick, USB edges, sensor detections, flash timer) shall be delivered as events to one queue consumed by a single state machine thread. Only that thread shall change the state or the main LED output. `[APP_EVENT_QUEUE_DEPTH]`
 - **SYS-4** If the event queue is full, the new event shall be dropped and a message logged. No retry is made.
 - **SYS-5** If initialization of the main LED, the status LED or the button fails, the firmware shall perform a software reset instead of returning from `main()`. Failure of the battery ADC, the sensors or BLE initialization shall not stop startup. See ADR-0003.
@@ -28,12 +28,13 @@ Each requirement has an ID so external test lists can reference it.
 - **BTN-4** A short press shall act as follows:
   - Off: enter the first Active Mode.
   - Idle Charging: enter the first Active Mode.
-  - An Active Mode that is not the last in the Mode Cycle: enter the next Active Mode.
-  - The last Active Mode: enter Idle Charging if USB power is present, otherwise enter Deep Sleep.
+  - An Active Mode that is not the last in the Mode Cycle, inside the Selection Window (BTN-8): enter the next Active Mode.
+  - The last Active Mode, or any Active Mode after the Selection Window has closed: enter Idle Charging if USB power is present, otherwise enter Deep Sleep.
 - **BTN-5** A long press in any state shall enter Deep Sleep, whether or not USB power is present.
 - **BTN-6** Before entering Deep Sleep the firmware shall wait for the button to be released, up to a limit, so that a still-held button does not wake the device immediately. If the limit is exceeded it proceeds anyway. `[POWEROFF_RELEASE_WAIT_MS, POWEROFF_RELEASE_POLL_MS]`
 - **BTN-7** If the Deep Sleep wake configuration fails, the firmware shall stay awake in Off with the button working instead of sleeping.
-
+- **BTN-8** Every transition from an inactive state (Deep Sleep, Off, Idle Charging) to an Active Mode shall open the Selection Window, whether caused by the button, a boot or reset, or a BLE request. Changes between Active Modes, by button or by BLE, shall neither open nor restart it. The window shall be counted in battery ticks (no dedicated timer), so its length is between (N-1) and N tick periods, about 15 to 20 s. `[MODE_SELECT_WINDOW_BATTERY_TICKS, BATTERY_SAMPLE_INTERVAL_MS]`
+- **BTN-9** Closing the Selection Window shall have no visible effect. Only the effect of the next short press changes (BTN-4). USB power is evaluated at the time of that press. A long press is unaffected.
 ## 4. Power states
 
 - **PWR-1** In Deep Sleep the main LED and the status LED shall be off, and BLE shall be unreachable. Only the button (or USB power appearing, see BOOT-3) wakes the device.
@@ -50,13 +51,17 @@ Each requirement has an ID so external test lists can reference it.
 
 ## 6. Smart
 
-- **SMART-1** On entering Smart the main LED shall be off, and the braking and dark flags shall be cleared. Sensor sampling shall start. Sampling shall stop when Smart is left. `[SAMPLING_INTERVAL_MS]`
+- **SMART-1** On entering Smart the main LED shall be off, and the braking and dark flags shall be cleared. Sensor sampling shall start. Sampling shall stop when Smart is left. The accelerometer and the light sensor shall be sampled on independent schedules. `[ACCEL_SAMPLING_INTERVAL_MS, LIGHT_SAMPLING_INTERVAL_MS, SENSOR_TICK_MS]`
 - **SMART-2** Brightness in Smart shall be chosen by priority: braking gives Peak, otherwise dark gives Base, otherwise off.
-- **SMART-3** Braking starts after 2 consecutive samples with Z acceleration below the threshold, and ends after 2 consecutive samples not below it. The sensor is mounted with Z along the direction of travel and negative Z means decelerating. `[BRAKING_ACCEL_THRESHOLD_MILLI]`
+- **SMART-3** Braking is judged on the filtered Z acceleration (SMART-8, SMART-9). The sensor is mounted with Z along the direction of travel and positive Z means decelerating and negative Z means accelerating. Braking shall start when the filtered value stays above the threshold for the start confirm time, and end when it stays at or below the same threshold for the stop confirm time plus the hold time, so the light keeps shining for the hold time after the braking phase has ended. Braking again within that time keeps the light on without a gap. The threshold is +5.0 m/s^2 (not g). `[BRAKING_ACCEL_THRESHOLD_MILLI, BRAKING_START_CONFIRM_MS, BRAKING_STOP_CONFIRM_MS, BRAKING_HOLD_MS]`
 - **SMART-4** Darkness starts after consecutive samples below the dark threshold and ends after consecutive samples at or above the bright threshold. The two thresholds differ (hysteresis). `[AMBIENT_DARK_THRESHOLD_MILLILUX, AMBIENT_BRIGHT_THRESHOLD_MILLILUX, AMBIENT_SAMPLES_REQUIRED]`
-- **SMART-5** After enough consecutive samples with acceleration magnitude within the tolerance band around 1g, the firmware shall enter Deep Sleep (auto-off). Any sample outside the band resets the count. See ADR-0002. `[STATIONARY_SAMPLES, STATIONARY_MIN_MAGNITUDE_SQ, STATIONARY_MAX_MAGNITUDE_SQ]`
+- **SMART-5** After the stationary timeout of uninterrupted samples with acceleration magnitude within the tolerance band around 1g, the firmware shall enter Deep Sleep (auto-off). Any sample outside the band resets the count. A failed accelerometer read neither counts nor resets. See ADR-0002. `[STATIONARY_TIMEOUT_MS, STATIONARY_MIN_MAGNITUDE_SQ, STATIONARY_MAX_MAGNITUDE_SQ]`
 - **SMART-6** Braking, darkness and auto-off events arriving in any state other than Smart shall be ignored.
 - **SMART-7** If a sensor failed initialization, Smart shall continue with the remaining one. No light sensor means the LED stays off. No accelerometer means no braking and no auto-off.
+- **SMART-8** The filtered Z acceleration shall be the raw Z acceleration minus a slow baseline (removes the gravity component from mounting tilt and slope). The baseline shall be seeded from the first accelerometer sample after entering Smart, follow Z with a first-order low-pass, and be frozen while braking is active or a braking start is being confirmed. `[BRAKING_BASELINE_TAU_MS]`
+- **SMART-9** The baseline-corrected Z acceleration shall be averaged over a short window before it is compared to the threshold. A window of one sample disables the smoothing. `[BRAKING_SMOOTHING_MS]`
+- **SMART-10** The accelerometer output data rate shall be set explicitly at start-up (not left at the driver default) and shall not be lower than the polling rate. If setting it fails, a message is logged and the driver default is used. `[ACCEL_ODR_HZ]`
+- **SMART-11** Detection times (braking confirm, smoothing, baseline, stationary timeout) shall be defined in milliseconds, and the sample counts derived from them rounded up, so changing a sampling interval does not change a detection time. Ambient light detection is defined in light sensor samples. `[MS_TO_SAMPLES]`
 
 ## 7. USB power and charging
 
@@ -99,5 +104,5 @@ Each requirement has an ID so external test lists can reference it.
 
 - **HW-1** The charger is autonomous hardware that charges in Deep Sleep and with a flat battery.
 - **HW-2** Appearing USB power resets the MCU in hardware while in Deep Sleep.
-- **HW-3** The accelerometer is mounted with Z along the direction of travel.
+- **HW-3** The accelerometer is mounted with Z along the direction of travel, with +Z pointing backward (against the direction of travel), so braking reads positive and accelerating reads negative.
 - **HW-4** The status LED is visible to the rider.

@@ -28,9 +28,11 @@
  * Environmental sensing for SMART mode (LIS3DH accelerometer + OPT3001
  * ambient light sensor).
  *
- * A dedicated thread samples every 500 ms while started. All detection
- * hysteresis lives inside this module; only edge events are posted to
- * the central event queue:
+ * A dedicated thread samples both sensors on their own schedule while
+ * started (accelerometer and light sensor intervals are independent of
+ * the detection times, which are specified in milliseconds). All
+ * detection hysteresis lives inside this module; only edge events are
+ * posted to the central event queue:
  *   EVT_BRAKE_START / EVT_BRAKE_STOP
  *   EVT_AMBIENT_DARK / EVT_AMBIENT_BRIGHT
  *   EVT_STATIONARY_TIMEOUT

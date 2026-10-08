@@ -9,15 +9,15 @@ The bike light rear is a high-visibility intelligent bicycle tail light featurin
 The light steps through its modes via short button press:
 
 ```
-Deep Sleep → Steady → Flash → Smart → Deep Sleep
+Deep Sleep → Smart → Steady → Flash → Deep Sleep
 ```
 
-The three light modes (Steady, Flash, Smart) are the **Active Modes**. After the last one, a short press enters Deep Sleep, or Idle Charging when USB power is present (see below).
+The three light modes (Smart, Steady, Flash) are the **Active Modes**. After the last one, a short press enters Deep Sleep, or Idle Charging when USB power is present (see below).
 
 ### Deep Sleep
 - **Description**: Light is completely off; the device is in deep sleep (System OFF)
 - **Power Consumption**: Minimal (only the button wake circuit is active)
-- **Wake**: Press the button to wake; the light starts in Steady
+- **Wake**: Press the button to wake; the light starts in Smart
 - **Bluetooth**: Not reachable while in Deep Sleep
 
 ### Steady
@@ -25,7 +25,7 @@ The three light modes (Steady, Flash, Smart) are the **Active Modes**. After the
 - **PWM Frequency**: 1 kHz
 - **Duty Cycle**: 20% (200µs pulse width)
 - **Use Case**: General visibility in moderate traffic
-- **Activation**: Press button from Deep Sleep (wake)
+- **Activation**: Press button from Smart
 
 ### Flash (High Visibility)
 - **Description**: Enhanced visibility mode with a periodic double flash
@@ -41,22 +41,22 @@ The three light modes (Steady, Flash, Smart) are the **Active Modes**. After the
   - Automatic braking detection
   - Ambient light sensing
   - Automatic power-off when stationary
-- **Activation**: Press button from Flash
+- **Activation**: Press button from Deep Sleep (wake), Idle Charging or Off
 - **See detailed behavior below**
 
 ### Off (Bluetooth only)
 
-The light can also be put into **Off** over Bluetooth: the light is dark but the device stays awake and connectable. Off is never entered with the button. A short press in Off starts the first light mode (Steady). Off has no timeout.
+The light can also be put into **Off** over Bluetooth: the light is dark but the device stays awake and connectable. Off is never entered with the button. A short press in Off starts the first light mode (Smart). Off has no timeout.
 
 ### Button behavior summary
 
 - **Short press** (released within 1 second):
-  - Steps through the light modes: `Steady → Flash → Smart`
-  - After the last light mode (Smart), the light enters **Deep Sleep**, or **Idle Charging** when USB power is present. A short press in Idle Charging (or in Off) starts the first light mode again (Steady).
-- **Long press** (held for 1 second or longer):
+  - Steps through the light modes: `Smart → Steady → Flash`
+  - After the last light mode (Flash), the light enters **Deep Sleep**, or **Idle Charging** when USB power is present. A short press in Idle Charging (or in Off) starts the first light mode again (Smart).
+  - **Selection window (about 15 to 20 seconds):** you can step through the light modes only for a short time after the light was switched on (from Deep Sleep, Off or Idle Charging, also after a restart). After that, a short press in any light mode switches the light off (Deep Sleep, or Idle Charging when USB power is present) instead of going to the next mode. For example, in Steady after the window, a press goes to Deep Sleep, not to Flash. Nothing signals the end of the window. To change the mode later, switch the light off and on again. The length varies by up to 5 seconds because the window is counted in battery sampling ticks.- **Long press** (held for 1 second or longer):
   - Turns the light **off immediately from any mode** (including with USB power present) and enters Deep Sleep. It acts at the 1 second mark; you do not have to release first.
 - **Wake from sleep**:
-  - After the light has turned itself fully off and entered Deep Sleep, a press wakes it and starts in Steady. The wake press does nothing else; keep holding it and nothing more happens, and the next press counts as a new press.
+  - After the light has turned itself fully off and entered Deep Sleep, a press wakes it and starts in Smart. The wake press does nothing else; keep holding it and nothing more happens, and the next press counts as a new press.
 
 ## Smart Mode Detailed Behavior
 
@@ -68,15 +68,16 @@ When Smart starts, the LED is off until the first dark detection (about one seco
 ### 1. Braking Detection
 
 **Detection Criteria:**
-- Z-axis acceleration < -3.0 m/s² for **2 consecutive samples** (1 second total)
-- Rear-facing sensor orientation: negative Z indicates deceleration
+- The Z-axis acceleration (positive = decelerating, negative = accelerating, sensor mounted with Z along the direction of travel) is corrected for gravity with a slow baseline (time constant 8 s) and averaged over 150 ms
+- Braking starts when this value stays above **+5.0 m/s²** for **100 ms** (2 samples at 50 ms)
 
 **Behavior When Braking:**
 - LED immediately switches to **Peak brightness** (800µs PWM)
 - Overrides ambient light settings
+- The baseline stops adapting while braking, so a long brake does not cancel itself out
 
 **Braking End Detection:**
-- Z-axis acceleration returns above -3.0 m/s² for **2 consecutive samples**
+- The value stays at or below +5.0 m/s² for **150 ms**, and the light keeps shining for **1 more second** (`BRAKING_HOLD_MS`) after the braking phase has ended. Braking again during that second keeps the light on without a gap
 - LED returns to the brightness dictated by ambient light
 
 ### 2. Ambient Light Control
@@ -89,10 +90,10 @@ When Smart starts, the LED is off until the first dark detection (about one seco
 **Stationary Detection:**
 - Monitors acceleration magnitude: √(x² + y² + z²)
 - Expected value when stationary: ~9.81 m/s² (Earth's gravity)
-- Tolerance: ±10% (8.829 - 10.791 m/s²)
+- Tolerance: ±100% (0 - 19.62 m/s²)
 
 **Auto-Off Criteria:**
-- **300 consecutive samples** (2.5 minutes at 500ms sampling) within the stationary range
+- **2.5 minutes** (150 s) of uninterrupted samples within the stationary range
 - Any sample outside the range (road vibration, movement) resets the counter
 - Only active in Smart
 
@@ -135,7 +136,8 @@ If a sensor does not start, Smart keeps working with the other one. Without the 
 
 **Accelerometer (LIS3DH):**
 - 3-axis motion detection
-- Sampling Rate: 500ms (2 Hz), only while in Smart
+- Polling interval: 50ms (20 Hz), only while in Smart
+- Output data rate: 25 Hz
 - Range: ±2g typical
 - Interface: I²C
 
@@ -184,12 +186,13 @@ If a sensor does not start, Smart keeps working with the other one. Without the 
 ```mermaid
 stateDiagram-v2
     [*] --> Deep_Sleep
-    Deep_Sleep --> Steady: Button Press (wake)
+    Deep_Sleep --> Smart: Button Press (wake)
+    Smart --> Steady: Short Press
     Steady --> Flash: Short Press
-    Flash --> Smart: Short Press
-    Smart --> Deep_Sleep: Short Press (no USB) OR Auto-Off
-    Smart --> Idle_Charging: Short Press (USB present)
-    Idle_Charging --> Steady: Short Press
+    Flash --> Deep_Sleep: Short Press (no USB)
+    Flash --> Idle_Charging: Short Press (USB present)
+    Smart --> Deep_Sleep: Auto-Off
+    Idle_Charging --> Smart: Short Press
     Idle_Charging --> Deep_Sleep: USB unplugged
     Steady --> Deep_Sleep: Long Press
     Flash --> Deep_Sleep: Long Press
@@ -216,7 +219,7 @@ stateDiagram-v2
     }
 ```
 
-"Steady → Flash → Smart" is the configured mode order. A different order changes the arrows between the light modes, but Idle Charging (or Deep Sleep) always follows the last one. Off (Bluetooth only) is not shown.
+"Smart → Steady → Flash" is the configured mode order. The mode arrows apply only within the selection window of about 15 to 20 seconds after switching on; after it, a short press in any light mode goes to Deep Sleep (or Idle Charging with USB power present). A different order changes the arrows between the light modes, but Idle Charging (or Deep Sleep) always follows the last one. Off (Bluetooth only) is not shown.
 
 ## Usage Recommendations
 
@@ -257,15 +260,18 @@ For developers or integrators who want to use BLE control, see `src/ble.c` in th
 **Software Architecture:**
 - Event-driven central state machine: every input (button, BLE write, battery tick, USB plug/unplug, sensor detections) is posted as an event into one message queue
 - Main thread runs the state machine event loop and is the only writer of system state and light output
-- Sensor thread: 500ms sampling in Smart, posts edge events (brake start/stop, dark/bright, stationary timeout)
+- Sensor thread: accelerometer (50ms) and light sensor (500ms) sampled on independent schedules in Smart, posts edge events (brake start/stop, dark/bright, stationary timeout). Detection times are defined in milliseconds, independent of the sampling intervals
 - Timer ISRs and BLE callbacks only post events - no state is modified outside the state machine thread
 - If the main LED, status LED or button fails to initialize at boot, the firmware resets instead of stopping
 - There is no watchdog
 
 **Key Configuration Options:**
-- `BRAKING_ACCEL_THRESHOLD_MILLI`: -3000 milli-m/s² (in `src/sensors.c`)
+- `MODE_SELECT_WINDOW_BATTERY_TICKS`: 4 battery ticks (5 s each) = 15 to 20 s (in `src/state_machine.c`)
+- `BRAKING_ACCEL_THRESHOLD_MILLI`: +5000 milli-m/s² (in `src/sensors.c`)
+- `BRAKING_START_CONFIRM_MS` / `BRAKING_STOP_CONFIRM_MS` / `BRAKING_HOLD_MS` / `BRAKING_SMOOTHING_MS` / `BRAKING_BASELINE_TAU_MS`: 100 / 150 / 1000 / 150 / 8000 ms (in `src/sensors.c`)
+- `ACCEL_SAMPLING_INTERVAL_MS` / `LIGHT_SAMPLING_INTERVAL_MS` / `ACCEL_ODR_HZ`: 50 / 500 ms / 25 Hz (in `src/sensors.c`)
 - `AMBIENT_DARK_THRESHOLD_MILLILUX` / `AMBIENT_BRIGHT_THRESHOLD_MILLILUX`: 50 / 150 lux (in `src/sensors.c`)
-- `STATIONARY_SAMPLES`: 300 samples = 2.5 minutes (in `src/sensors.c`)
+- `STATIONARY_TIMEOUT_MS`: 150000 ms = 2.5 minutes (in `src/sensors.c`)
 - `BATTERY_CRITICAL_MV` / `BATTERY_LOW_MV`: 3000 / 3400 mV (in `src/battery.c`)
 - `LIGHT_PULSE_BASE` / `LIGHT_PULSE_PEAK`: 200 / 800 µs (in `inc/light.h`)
 
