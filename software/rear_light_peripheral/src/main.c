@@ -121,7 +121,7 @@ int main(void)
 #endif
 
     /* Boot into IDLE_CHARGING only on a power-on reset with USB present;
-     * any other boot (including a wake from System OFF) turns the light on
+     * any other boot turns the light on
      * in the first Active Mode */
     enum system_state boot_state = sm_first_active_mode();
 

@@ -16,9 +16,9 @@ Each requirement has an ID so external test lists can reference it.
 ## 2. Boot
 
 - **BOOT-1** At boot the firmware shall enter Idle Charging if the reset cause is a power-on reset and USB power is present.
-- **BOOT-2** For every other reset cause (button wake from Deep Sleep, power-on reset without USB power, brownout, watchdog, software or pin reset, or a non-power-on reset with USB power) the firmware shall enter the first Active Mode of the Mode Cycle.
-- **BOOT-3** Plugging in USB power while in Deep Sleep resets the MCU in hardware, so by BOOT-1 the light shall come up in Idle Charging.
-- **BOOT-4** The press that wakes the light from Deep Sleep shall only wake it. It shall produce no short or long press event. A button still held after boot produces no event, and the next press edge counts as a new press.
+- **BOOT-2** For every other reset cause (power-on reset without USB power, brownout, watchdog, software or pin reset, or a non-power-on reset with USB power) the firmware shall enter the first Active Mode of the Mode Cycle.
+- **BOOT-3** Plugging in USB power while in Deep Sleep shall wake the device into Idle Charging. The wake is detected by the USB poll (USB-1), so it may take up to one poll interval. It is a wake, not a reset.
+- **BOOT-4** The press that wakes the light from Deep Sleep shall only wake it (the device then behaves as after a boot: first Active Mode, Selection Window open). It shall produce no short or long press event. A button still held after waking produces no event, and the next press edge counts as a new press.
 
 ## 3. Button
 
@@ -31,13 +31,13 @@ Each requirement has an ID so external test lists can reference it.
   - An Active Mode that is not the last in the Mode Cycle, inside the Selection Window (BTN-8): enter the next Active Mode.
   - The last Active Mode, or any Active Mode after the Selection Window has closed: enter Idle Charging if USB power is present, otherwise enter Deep Sleep.
 - **BTN-5** A long press in any state shall enter Deep Sleep, whether or not USB power is present.
-- **BTN-6** Before entering Deep Sleep the firmware shall wait for the button to be released, up to a limit, so that a still-held button does not wake the device immediately. If the limit is exceeded it proceeds anyway. `[POWEROFF_RELEASE_WAIT_MS, POWEROFF_RELEASE_POLL_MS]`
-- **BTN-7** If the Deep Sleep wake configuration fails, the firmware shall stay awake in Off with the button working instead of sleeping.
+- **BTN-6** Before entering Deep Sleep the firmware shall wait until the button has read released for several polls in a row (contact bounce on release has settled), up to a limit, so that a still-held or bouncing button does not wake the device immediately. If the limit is exceeded it proceeds anyway. `[SLEEP_RELEASE_WAIT_MS, SLEEP_RELEASE_POLL_MS, SLEEP_RELEASE_STABLE_POLLS]`
+- **BTN-7** If the Deep Sleep wake interrupt cannot be armed, the firmware shall stay awake in Off with the button working instead of sleeping.
 - **BTN-8** Every transition from an inactive state (Deep Sleep, Off, Idle Charging) to an Active Mode shall open the Selection Window, whether caused by the button, a boot or reset, or a BLE request. Changes between Active Modes, by button or by BLE, shall neither open nor restart it. The window shall be counted in battery ticks (no dedicated timer), so its length is between (N-1) and N tick periods, about 15 to 20 s. `[MODE_SELECT_WINDOW_BATTERY_TICKS, BATTERY_SAMPLE_INTERVAL_MS]`
 - **BTN-9** Closing the Selection Window shall have no visible effect. Only the effect of the next short press changes (BTN-4). USB power is evaluated at the time of that press. A long press is unaffected.
 ## 4. Power states
 
-- **PWR-1** In Deep Sleep the main LED and the status LED shall be off, and BLE shall be unreachable. Only the button (or USB power appearing, see BOOT-3) wakes the device.
+- **PWR-1** In Deep Sleep the main LED and the status LED shall be off, sensor sampling and battery sampling shall be stopped, and BLE shall not advertise and shall have no connection (unreachable). Deep Sleep is the CPU idling in System ON (ADR-0004), not System OFF, so waking causes no reset. Only the button (or USB power appearing, see BOOT-3) wakes the device.
 - **PWR-2** Off shall be entered only by a BLE request (BLE-3). It shall have no timeout and shall not enter Deep Sleep on its own.
 - **PWR-3** In Off and Idle Charging the main LED shall be off.
 - **PWR-4** Every automatic power-off (Smart stationary auto-off, critical battery, USB removal in Idle Charging) and the long press shall enter Deep Sleep. Only the short-press cycle (BTN-4) has a USB-dependent end.
@@ -66,7 +66,7 @@ Each requirement has an ID so external test lists can reference it.
 ## 7. USB power and charging
 
 - **USB-1** USB power presence shall be polled, and an event posted only on a change. A newly plugged or unplugged cable may therefore be noticed up to one poll interval late. `[USB_POLL_INTERVAL_MS]`
-- **USB-2** Plugging in USB power shall never change the state. Only the status LED changes.
+- **USB-2** Plugging in USB power shall never change the state while the device is awake. Only the status LED changes. The one exception is Deep Sleep (BOOT-3).
 - **USB-3** Removing USB power while in Idle Charging shall enter Deep Sleep. In any other state it shall only change the status LED.
 - **USB-4** The firmware shall treat USB power present as Charging in every awake state. It has no knowledge of charge completion, and charging itself is done by autonomous hardware.
 
@@ -103,6 +103,6 @@ Each requirement has an ID so external test lists can reference it.
 ## 11. Hardware assumptions
 
 - **HW-1** The charger is autonomous hardware that charges in Deep Sleep and with a flat battery.
-- **HW-2** Appearing USB power resets the MCU in hardware while in Deep Sleep.
+- **HW-2** USB power appearing is detected by software polling of the VBUS status while in Deep Sleep. No hardware reset or wake from it is assumed.
 - **HW-3** The accelerometer is mounted with Z along the direction of travel, with +Z pointing backward (against the direction of travel), so braking reads positive and accelerating reads negative.
 - **HW-4** The status LED is visible to the rider.

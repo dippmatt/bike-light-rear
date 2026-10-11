@@ -50,4 +50,17 @@
  */
 int ble_init(void);
 
+/**
+ * @brief Stop advertising and drop any connection (Deep Sleep)
+ *
+ * The stack stays enabled but idle, so ble_start() resumes quickly.
+ * Advertising is not restarted after the disconnect until ble_start().
+ */
+void ble_stop(void);
+
+/**
+ * @brief Resume advertising after ble_stop()
+ */
+void ble_start(void);
+
 #endif /* BLE_H */

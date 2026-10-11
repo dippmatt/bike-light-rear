@@ -25,7 +25,6 @@
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/pm/device.h>
-#include <zephyr/sys/poweroff.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <hal/nrf_power.h>
 
@@ -113,23 +112,34 @@ void power_log_reset_cause(uint32_t *cause_out)
     hwinfo_clear_reset_cause();
 }
 
-FUNC_NORETURN void power_off_finalize(void)
+static const struct device *const console_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
+
+void power_sleep_enter(void)
 {
-    debug_printk("Entering system off mode (deep sleep)...\n");
-
-    /* Suspend console device to save power */
-    const struct device *const cons = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
-
-    if (device_is_ready(cons)) {
-        int rc = pm_device_action_run(cons, PM_DEVICE_ACTION_SUSPEND);
-        if (rc < 0) {
-            debug_printk("Warning: Could not suspend console (%d)\n", rc);
-        }
-    }
+    debug_printk("Entering deep sleep...\n");
 
     /* Small delay to ensure the last debug message is sent */
     k_msleep(50);
 
-    /* Wake-up (button level interrupt) resets the system into main() */
-    sys_poweroff();
+    /* Suspend console device to save power */
+    if (device_is_ready(console_dev)) {
+        int rc = pm_device_action_run(console_dev, PM_DEVICE_ACTION_SUSPEND);
+
+        if (rc < 0 && rc != -EALREADY) {
+            debug_printk("Warning: Could not suspend console (%d)\n", rc);
+        }
+    }
+}
+
+void power_sleep_exit(void)
+{
+    if (device_is_ready(console_dev)) {
+        int rc = pm_device_action_run(console_dev, PM_DEVICE_ACTION_RESUME);
+
+        if (rc < 0 && rc != -EALREADY) {
+            debug_printk("Warning: Could not resume console (%d)\n", rc);
+        }
+    }
+
+    debug_printk("Woke from deep sleep\n");
 }

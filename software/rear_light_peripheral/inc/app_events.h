@@ -48,6 +48,7 @@ enum app_event_type {
     EVT_AMBIENT_DARK,       /* ambient light below dark threshold */
     EVT_AMBIENT_BRIGHT,     /* ambient light above bright threshold */
     EVT_STATIONARY_TIMEOUT, /* device stationary for the auto-off period */
+    EVT_BUTTON_WAKE,        /* button pressed while in Deep Sleep (wake request) */
 };
 
 struct app_event {

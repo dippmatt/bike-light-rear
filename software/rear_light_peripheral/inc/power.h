@@ -29,7 +29,7 @@
 #include <zephyr/toolchain.h>
 
 /**
- * Power: USB VBUS detection, reset-cause logging, System OFF entry.
+ * Power: USB VBUS detection, reset-cause logging, Deep Sleep console handling.
  */
 
 /**
@@ -57,11 +57,17 @@ void power_usb_poll_start(void);
 void power_log_reset_cause(uint32_t *cause_out);
 
 /**
- * @brief Suspend the console and enter System OFF (deep sleep)
+ * @brief Suspend the console before Deep Sleep
  *
- * The button must already be configured as wake source
- * (button_prepare_wake()). Wake-up resets the system into main().
+ * Deep Sleep is System ON with every peripheral idle, not System OFF: the
+ * CPU simply sits in the kernel idle loop until the button interrupt wakes
+ * it, so no reset happens on wake.
  */
-FUNC_NORETURN void power_off_finalize(void);
+void power_sleep_enter(void);
+
+/**
+ * @brief Resume the console after Deep Sleep
+ */
+void power_sleep_exit(void);
 
 #endif /* POWER_H */

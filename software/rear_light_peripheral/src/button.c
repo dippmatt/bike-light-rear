@@ -38,9 +38,11 @@
 
 static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios, {0});
 static struct gpio_callback button_cb_data;
+static struct gpio_callback wake_cb_data;
 
 static bool initialized;
 static bool callback_added;
+static bool wake_callback_added;
 static uint32_t last_event_time;
 
 /* Press-length detection: samples the pin every 100 ms while pressed */
@@ -91,6 +93,22 @@ static void sample_timer_expiry(struct k_timer *timer)
         debug_printk("Button held - long press\n");
         app_event_post(EVT_BUTTON_LONG, 0);
     }
+}
+
+/**
+ * @brief One-shot level interrupt callback used while in Deep Sleep
+ *
+ * A level-active interrupt re-fires for as long as the button is held, so
+ * the interrupt is disarmed first and the wake request is posted once.
+ */
+static void wake_isr(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+{
+    ARG_UNUSED(dev);
+    ARG_UNUSED(cb);
+    ARG_UNUSED(pins);
+
+    (void)gpio_pin_interrupt_configure_dt(&button, GPIO_INT_DISABLE);
+    app_event_post(EVT_BUTTON_WAKE, 0);
 }
 
 /**
@@ -155,6 +173,7 @@ int button_init(void)
 
     k_timer_init(&sample_timer, sample_timer_expiry, NULL);
     gpio_init_callback(&button_cb_data, button_isr, BIT(button.pin));
+    gpio_init_callback(&wake_cb_data, wake_isr, BIT(button.pin));
 
     initialized = true;
 
@@ -182,6 +201,11 @@ static int enable_edge_interrupt(void)
     if (err < 0) {
         debug_printk("Error %d: failed to disable button interrupt\n", err);
         return err;
+    }
+
+    if (wake_callback_added) {
+        gpio_remove_callback(button.port, &wake_cb_data);
+        wake_callback_added = false;
     }
 
     if (!callback_added) {
@@ -220,12 +244,12 @@ bool button_is_pressed(void)
     return gpio_pin_get_dt(&button) == 1;
 }
 
-int button_prepare_wake(void)
+int button_arm_wake(void)
 {
     int err;
 
     if (!initialized) {
-        debug_printk("Button not initialized, cannot configure for wakeup\n");
+        debug_printk("Button not initialized, cannot arm wake\n");
         return -EINVAL;
     }
 
@@ -233,32 +257,35 @@ int button_prepare_wake(void)
     if (timer_active) {
         k_timer_stop(&sample_timer);
         timer_active = false;
+        press_counter = 0;
     }
 
     /* 2. Disable the current edge-triggered interrupt */
     err = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_DISABLE);
     if (err < 0) {
-        debug_printk("Error %d: failed to disable interrupt before wakeup config\n", err);
+        debug_printk("Error %d: failed to disable interrupt before wake arming\n", err);
         return err;
     }
 
-    /* 3. Remove the GPIO callback so level-active won't invoke button_isr.
-     *    Level-active fires continuously while the pin is at the active level
-     *    and would otherwise flood the system with callback invocations. */
+    /* 3. Swap the press callback for the one-shot wake callback */
     if (callback_added) {
         gpio_remove_callback(button.port, &button_cb_data);
         callback_added = false;
     }
 
-    /* 4. Configure level-active for System OFF wakeup. The nRF52 SENSE
-     *    mechanism wakes the chip from System OFF via hardware DETECT -
-     *    no software callback is needed. */
+    if (!wake_callback_added) {
+        gpio_add_callback(button.port, &wake_cb_data);
+        wake_callback_added = true;
+    }
+
+    /* 4. Level-active uses the nRF SENSE / PORT event: no GPIOTE channel
+     *    and no extra current while the CPU sleeps. */
     err = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_LEVEL_ACTIVE);
     if (err < 0) {
-        debug_printk("Error %d: failed to configure wakeup interrupt\n", err);
+        debug_printk("Error %d: failed to arm wake interrupt\n", err);
         return err;
     }
 
-    debug_printk("Button configured as wakeup source (level-active, callback removed)\n");
+    debug_printk("Button armed as wake source (level-active, one-shot)\n");
     return 0;
 }

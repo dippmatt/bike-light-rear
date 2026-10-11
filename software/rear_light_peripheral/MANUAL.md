@@ -15,8 +15,8 @@ Deep Sleep → Smart → Steady → Flash → Deep Sleep
 The three light modes (Smart, Steady, Flash) are the **Active Modes**. After the last one, a short press enters Deep Sleep, or Idle Charging when USB power is present (see below).
 
 ### Deep Sleep
-- **Description**: Light is completely off; the device is in deep sleep (System OFF)
-- **Power Consumption**: Minimal (only the button wake circuit is active)
+- **Description**: Light is completely off; the processor idles and everything else is stopped (no sensors, no battery sampling, no Bluetooth advertising)
+- **Power Consumption**: Very low (a few µA expected; to be confirmed by measurement)
 - **Wake**: Press the button to wake; the light starts in Smart
 - **Bluetooth**: Not reachable while in Deep Sleep
 
@@ -110,7 +110,7 @@ If a sensor does not start, Smart keeps working with the other one. Without the 
 ### Normal charging
 
 - **USB-C port** on the light is used for charging the 18350 cell. Charging is done by autonomous hardware, also while the light is in Deep Sleep.
-- Powering up (or plugging in USB while in Deep Sleep) with **USB power** boots the light into **Idle Charging** (main LED off).
+- Powering up with **USB power** boots the light into **Idle Charging** (main LED off). Plugging in USB while in Deep Sleep also wakes it into Idle Charging, within about a second.
 - **Plugging in USB while the light is on never changes the mode**, so the light stays on, for example if a power bank is connected mid-ride. Only the status LED changes.
 - While USB power is present, the **status LED blinks fast (300ms)** to show charging activity, in every awake state.
 - **Unplugging USB** while in Idle Charging powers the light off (Deep Sleep); press the button to turn it back on.
@@ -198,7 +198,7 @@ stateDiagram-v2
     Flash --> Deep_Sleep: Long Press
     Smart --> Deep_Sleep: Long Press
     Idle_Charging --> Deep_Sleep: Long Press
-    Deep_Sleep --> Idle_Charging: USB plugged in (reset)
+    Deep_Sleep --> Idle_Charging: USB plugged in (wake)
 
     state Smart {
         [*] --> Bright_Daylight

@@ -24,6 +24,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/atomic.h>
 #include <zephyr/sys/printk.h>
+#include <zephyr/sys/reboot.h>
 
 #include "state_machine.h"
 #include "app_events.h"
@@ -32,6 +33,7 @@
 #include "button.h"
 #include "sensors.h"
 #include "battery.h"
+#include "ble.h"
 #include "power.h"
 #include "debug.h"
 
@@ -56,11 +58,14 @@
 #define FLASH_STEP_MS  70
 #define FLASH_REST_MS  (FLASH_CYCLE_MS - 3 * FLASH_STEP_MS)
 
-/* Maximum time to wait for button release before entering System OFF.
- * Entering System OFF with the wake level already active would wake
- * (reset) the system immediately. */
-#define POWEROFF_RELEASE_WAIT_MS   10000
-#define POWEROFF_RELEASE_POLL_MS   20
+/* Maximum time to wait for button release before entering Deep Sleep.
+ * Arming the wake interrupt with the button still pressed (or bouncing)
+ * would wake the system again immediately. The button must read released
+ * for SLEEP_RELEASE_STABLE_POLLS polls in a row so contact bounce on
+ * release has settled. */
+#define SLEEP_RELEASE_WAIT_MS      10000
+#define SLEEP_RELEASE_POLL_MS      20
+#define SLEEP_RELEASE_STABLE_POLLS 3
 
 /* Mode Cycle: the Active Modes in short-press order. This is the only place
  * that knows the order - the end of the cycle (Idle Charging or Deep Sleep)
@@ -81,6 +86,9 @@ static int64_t last_change_ms;
 /* Battery ticks since the light was last switched on from an inactive state;
  * saturates at MODE_SELECT_WINDOW_BATTERY_TICKS (window closed) */
 static uint8_t selection_ticks = MODE_SELECT_WINDOW_BATTERY_TICKS;
+
+/* True while in Deep Sleep: only wake requests and USB edges are handled */
+static bool sleeping;
 
 static bool usb_present;
 static bool low_battery;
@@ -198,44 +206,108 @@ static void transition(enum system_state to)
 }
 
 /**
- * @brief Shut everything down and enter System OFF (deep sleep)
+ * @brief Shut everything down and enter Deep Sleep
+ *
+ * Deep Sleep is System ON with all outputs, sensors, BLE advertising and
+ * the battery tick stopped. The state machine thread then simply blocks on
+ * the event queue (kernel idle) until the button interrupt posts
+ * EVT_BUTTON_WAKE. There is no reset on wake, so no System OFF wake source
+ * can get lost.
  *
  * Called only from the state machine thread, synchronously - there is no
- * delayed sleep work that a button press could race against. If the button
- * wake configuration fails, the device stays awake in LED_OFF with a
+ * delayed sleep work that a button press could race against. If the wake
+ * interrupt cannot be armed, the device stays awake in LED_OFF with a
  * working button instead of ending up with dead inputs.
  */
-static void do_poweroff(void)
+static void do_deep_sleep(void)
 {
-    debug_printk("Powering off...\n");
+    debug_printk("Entering Deep Sleep...\n");
 
     state_exit(state); /* stops flash timer / sensor sampling */
+    state = LED_OFF;
     light_set(LIGHT_PULSE_OFF);
     status_led_off();
 
-    /* Wait for button release: the long press that triggered this fires
-     * while the button is still held, and System OFF would wake (reset)
-     * immediately with the wake level already active. A genuinely stuck
-     * button proceeds after the timeout and causes a visible wake+reboot
-     * instead of a dead device. */
-    for (int i = 0; i < POWEROFF_RELEASE_WAIT_MS / POWEROFF_RELEASE_POLL_MS &&
-                    button_is_pressed(); i++) {
-        k_msleep(POWEROFF_RELEASE_POLL_MS);
+    /* Wait for a stable button release: the long press that triggered this
+     * fires while the button is still held. A genuinely stuck button
+     * proceeds after the timeout and causes a visible wake instead of a
+     * dead device. */
+    uint8_t released_polls = 0;
+
+    for (int i = 0; i < SLEEP_RELEASE_WAIT_MS / SLEEP_RELEASE_POLL_MS &&
+                    released_polls < SLEEP_RELEASE_STABLE_POLLS; i++) {
+        released_polls = button_is_pressed() ? 0 : released_polls + 1;
+        k_msleep(SLEEP_RELEASE_POLL_MS);
     }
 
-    if (button_prepare_wake() != 0) {
+    if (button_arm_wake() != 0) {
         /* Recover instead of sleeping with a dead button: restore edge
          * interrupts and stay awake in LED_OFF so the user can retry. */
-        debug_printk("Wake configuration failed - staying awake in LED_OFF\n");
+        debug_printk("Wake arming failed - staying awake in LED_OFF\n");
         (void)button_reenable();
-        state = LED_OFF;
         last_change_ms = k_uptime_get();
         atomic_set(&published_state, LED_OFF);
         status_refresh();
         return;
     }
 
-    power_off_finalize(); /* does not return */
+    battery_tick_stop();
+    ble_stop();
+    low_battery = false;
+    atomic_set(&published_state, LED_OFF);
+    sleeping = true;
+
+    power_sleep_enter();
+}
+
+/**
+ * @brief Leave Deep Sleep into the given state
+ *
+ * Restores everything do_deep_sleep() stopped, in the same way a boot
+ * would: the selection window opens (via transition()) and the battery
+ * logic starts from a clean slate.
+ */
+static void wake_from_sleep(enum system_state to)
+{
+    sleeping = false;
+
+    power_sleep_exit();
+
+    /* A button that is still held produces no event; only a new press
+     * edge counts (the wake press only wakes). */
+    if (button_reenable() != 0) {
+        debug_printk("Button re-enable failed - resetting\n");
+        k_msleep(100);
+        sys_reboot(SYS_REBOOT_COLD);
+    }
+
+    battery_tick_start();
+    ble_start();
+
+    transition(to);
+}
+
+/* While sleeping, everything is ignored except the wake sources. USB edges
+ * are still tracked (the poll timer keeps running), so the wake state and
+ * the status LED are right afterwards. */
+static void handle_sleeping_event(const struct app_event *evt)
+{
+    switch (evt->type) {
+    case EVT_BUTTON_WAKE:
+        debug_printk("Wake by button\n");
+        wake_from_sleep(mode_cycle[0]);
+        break;
+    case EVT_USB_CONNECTED:
+        debug_printk("Wake by USB power\n");
+        usb_present = true;
+        wake_from_sleep(IDLE_CHARGING);
+        break;
+    case EVT_USB_DISCONNECTED:
+        usb_present = false;
+        break;
+    default:
+        break;
+    }
 }
 
 static void handle_button_short(void)
@@ -254,7 +326,7 @@ static void handle_button_short(void)
          * with USB power present */
         transition(IDLE_CHARGING);
     } else {
-        do_poweroff();
+        do_deep_sleep();
     }
 }
 
@@ -323,9 +395,9 @@ static void handle_battery_tick(void)
     enum battery_level level = battery_sample_and_process();
 
     if (level == BATTERY_CRITICAL) {
-        debug_printk("Battery critically low (%u mV) - powering off\n",
+        debug_printk("Battery critically low (%u mV) - entering Deep Sleep\n",
                      battery_last_mv());
-        do_poweroff();
+        do_deep_sleep();
         return;
     }
 
@@ -340,12 +412,17 @@ static void handle_battery_tick(void)
 
 static void handle_event(const struct app_event *evt)
 {
+    if (sleeping) {
+        handle_sleeping_event(evt);
+        return;
+    }
+
     switch (evt->type) {
     case EVT_BUTTON_SHORT:
         handle_button_short();
         break;
     case EVT_BUTTON_LONG:
-        do_poweroff();
+        do_deep_sleep();
         break;
     case EVT_BLE_SET_STATE:
         handle_ble_set_state(evt->arg);
@@ -363,8 +440,8 @@ static void handle_event(const struct app_event *evt)
     case EVT_USB_DISCONNECTED:
         usb_present = false;
         if (state == IDLE_CHARGING) {
-            debug_printk("USB disconnected in IDLE_CHARGING - powering off\n");
-            do_poweroff();
+            debug_printk("USB disconnected in IDLE_CHARGING - entering Deep Sleep\n");
+            do_deep_sleep();
         } else {
             status_refresh();
         }
@@ -393,10 +470,12 @@ static void handle_event(const struct app_event *evt)
             apply_smart_pwm();
         }
         break;
+    case EVT_BUTTON_WAKE:
+        break; /* stale wake request (device is already awake) */
     case EVT_STATIONARY_TIMEOUT:
         if (state == LED_SMART_MODE) {
-            debug_printk("Stationary timeout in SMART mode - powering off\n");
-            do_poweroff();
+            debug_printk("Stationary timeout in SMART mode - entering Deep Sleep\n");
+            do_deep_sleep();
         }
         break;
     default:

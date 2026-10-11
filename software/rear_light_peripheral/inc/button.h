@@ -59,22 +59,25 @@ int button_enable(void);
 bool button_is_pressed(void);
 
 /**
- * @brief Configure the button as System OFF wake source
+ * @brief Arm the button as wake source for Deep Sleep
  *
- * Stops press detection, disables the edge interrupt, removes the GPIO
- * callback and switches to a level-active interrupt so the nRF52 SENSE
- * mechanism can wake the chip from System OFF.
+ * Stops press detection and switches from the edge interrupt to a
+ * one-shot level-active interrupt (nRF SENSE / PORT event, no GPIOTE
+ * channel, lowest current). The first press posts EVT_BUTTON_WAKE and
+ * disarms the interrupt again; if the button is already pressed the
+ * event follows immediately.
  *
  * @return 0 on success, negative error code on failure
  */
-int button_prepare_wake(void);
+int button_arm_wake(void);
 
 /**
- * @brief Restore normal button operation after a failed power-off
+ * @brief Restore normal button operation
  *
- * Undoes button_prepare_wake(): re-registers the GPIO callback and
- * re-enables the edge interrupt so the button keeps working if the
- * system could not enter System OFF.
+ * Removes the wake interrupt (if armed), re-registers the press callback
+ * and re-enables the edge interrupt. Used after waking from Deep Sleep
+ * and to recover if the wake interrupt could not be armed. A button that
+ * is still held produces no event; only a new press edge counts.
  *
  * @return 0 on success, negative error code on failure
  */

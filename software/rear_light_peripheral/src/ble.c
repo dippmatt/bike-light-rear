@@ -46,6 +46,9 @@ static const struct bt_data sd[] = {
             sizeof(CONFIG_BT_DEVICE_NAME) - 1),
 };
 
+/* Cleared while in Deep Sleep: no (re)start of advertising, no connections */
+static atomic_t adv_enabled = ATOMIC_INIT(1);
+
 static void adv_start_work(struct k_work *work);
 static K_WORK_DELAYABLE_DEFINE(adv_work, adv_start_work);
 
@@ -55,10 +58,18 @@ static void adv_start_work(struct k_work *work)
 
     ARG_UNUSED(work);
 
+    if (!atomic_get(&adv_enabled)) {
+        return;
+    }
+
     err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, ad, ARRAY_SIZE(ad),
                           sd, ARRAY_SIZE(sd));
     if (!err) {
         printk("Advertising started\n");
+        if (!atomic_get(&adv_enabled)) {
+            /* ble_stop() ran while this work item was starting */
+            (void)bt_le_adv_stop();
+        }
         return;
     }
 
@@ -73,11 +84,16 @@ static void adv_start_work(struct k_work *work)
 
 static void connected(struct bt_conn *conn, uint8_t err)
 {
-    ARG_UNUSED(conn);
     if (err) {
         printk("Connection failed (err 0x%02x)\n", err);
     } else {
         printk("Connected\n");
+
+        if (!atomic_get(&adv_enabled)) {
+            /* Connection raced with ble_stop(): drop it, a connection
+             * must never keep the sleeping device busy */
+            (void)bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+        }
     }
 }
 
@@ -86,7 +102,9 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
     ARG_UNUSED(conn);
     printk("Disconnected (reason 0x%02x)\n", reason);
 
-    k_work_reschedule(&adv_work, K_NO_WAIT);
+    if (atomic_get(&adv_enabled)) {
+        k_work_reschedule(&adv_work, K_NO_WAIT);
+    }
 }
 
 BT_CONN_CB_DEFINE(conn_callbacks) = {
@@ -159,4 +177,26 @@ int ble_init(void)
     k_work_schedule(&adv_work, K_NO_WAIT);
 
     return 0;
+}
+
+static void disconnect_one(struct bt_conn *conn, void *data)
+{
+    ARG_UNUSED(data);
+    (void)bt_conn_disconnect(conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+}
+
+void ble_stop(void)
+{
+    atomic_set(&adv_enabled, 0);
+    (void)k_work_cancel_delayable(&adv_work);
+    (void)bt_le_adv_stop();
+    bt_conn_foreach(BT_CONN_TYPE_LE, disconnect_one, NULL);
+
+    printk("Advertising stopped\n");
+}
+
+void ble_start(void)
+{
+    atomic_set(&adv_enabled, 1);
+    k_work_reschedule(&adv_work, K_NO_WAIT);
 }

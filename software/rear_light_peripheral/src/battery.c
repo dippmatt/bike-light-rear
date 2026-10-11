@@ -68,10 +68,27 @@ int battery_init(void)
     }
 
     k_timer_init(&sample_tick_timer, sample_tick_expiry, NULL);
-    k_timer_start(&sample_tick_timer, K_MSEC(BATTERY_SAMPLE_INTERVAL_MS),
-                  K_MSEC(BATTERY_SAMPLE_INTERVAL_MS));
+    battery_tick_start();
 
     return ret;
+}
+
+void battery_tick_start(void)
+{
+    /* Start from a clean slate, like after a boot: stale counters from before
+     * a sleep must not shorten the time to the critical cut-off */
+    consecutive_critical = 0;
+    consecutive_low = 0;
+    consecutive_high = 0;
+    low_battery = false;
+
+    k_timer_start(&sample_tick_timer, K_MSEC(BATTERY_SAMPLE_INTERVAL_MS),
+                  K_MSEC(BATTERY_SAMPLE_INTERVAL_MS));
+}
+
+void battery_tick_stop(void)
+{
+    k_timer_stop(&sample_tick_timer);
 }
 
 enum battery_level battery_sample_and_process(void)

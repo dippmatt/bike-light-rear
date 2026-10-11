@@ -50,6 +50,18 @@ enum battery_level {
 int battery_init(void);
 
 /**
+ * @brief (Re)start the 5 s sampling tick with cleared hysteresis state
+ *
+ * Used after Deep Sleep so the battery logic starts as after a boot.
+ */
+void battery_tick_start(void);
+
+/**
+ * @brief Stop the sampling tick (Deep Sleep); no ticks are posted afterwards
+ */
+void battery_tick_stop(void);
+
+/**
  * @brief Sample the battery voltage and update the level hysteresis
  *
  * Must only be called from the state machine thread (on EVT_BATTERY_TICK).

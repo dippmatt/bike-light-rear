@@ -9,8 +9,8 @@ The main LED is dark but the controller is awake and reachable over BLE. Entered
 _Avoid_: "OFF" for the sleep step of the mode cycle, standby, idle
 
 **Deep Sleep**:
-The lowest power state (System OFF). Nothing runs and BLE is unreachable. Only a button press wakes it.
-_Avoid_: Sleep, power-off, shutdown, System OFF (hardware term only)
+The lowest power state. Outputs, sensors, battery sampling and BLE advertising are stopped and the CPU idles (System ON, not System OFF, see ADR-0004). BLE is unreachable. Only a button press or USB power appearing wakes it, without a reset.
+_Avoid_: Sleep, power-off, shutdown, System OFF (a different hardware mode that the firmware no longer uses)
 
 **Idle Charging**:
 The main LED is dark and the controller is awake while Charging. Reached by stepping past the last Active Mode while USB power is present, or by plugging in USB power while in Deep Sleep.
