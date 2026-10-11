@@ -37,7 +37,11 @@
  *   EVT_AMBIENT_DARK / EVT_AMBIENT_BRIGHT
  *   EVT_STATIONARY_TIMEOUT
  *
- * The thread never touches the light output.
+ * The thread never chooses the brightness. Its only access to the light
+ * output is the blank: while the LED is lit, ambient light is measured
+ * with the main LED briefly off (light_blank_begin() / light_blank_end(),
+ * about 120 ms every 30 s), so the LED's own light cannot reach the
+ * sensor. The state machine's requested level is restored afterwards.
  */
 
 /**

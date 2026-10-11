@@ -21,6 +21,7 @@
  * explicit written permission from the copyright holder.
  */
 
+#include <zephyr/kernel.h>
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/devicetree.h>
 
@@ -31,18 +32,15 @@
 
 static const struct pwm_dt_spec main_led = PWM_DT_SPEC_GET(MAIN_LED_PWM_NODE);
 
-int light_init(void)
-{
-    if (!pwm_is_ready_dt(&main_led)) {
-        debug_printk("Error: main LED PWM device not ready\n");
-        return -ENODEV;
-    }
+/* Blank gate: light_set() always records the level requested by the state
+ * machine, but the PWM only follows it while the output is not blanked.
+ * light_blank_end() applies the latest request, so a request that arrives
+ * during a blank is never lost and a stale level is never restored. */
+static K_MUTEX_DEFINE(light_lock);
+static uint32_t requested_pulse_usec;
+static bool blanked;
 
-    /* Set period and start with the LED off */
-    return pwm_set_dt(&main_led, PWM_USEC(LIGHT_PWM_PERIOD_USEC), 0);
-}
-
-void light_set(uint32_t pulse_usec)
+static void apply_pulse(uint32_t pulse_usec)
 {
     int ret = pwm_set_pulse_dt(&main_led, PWM_USEC(pulse_usec));
 
@@ -51,4 +49,50 @@ void light_set(uint32_t pulse_usec)
         return;
     }
     debug_printk("Main LED pulse set to %u us\n", pulse_usec);
+}
+
+int light_init(void)
+{
+    if (!pwm_is_ready_dt(&main_led)) {
+        debug_printk("Error: main LED PWM device not ready\n");
+        return -ENODEV;
+    }
+
+    requested_pulse_usec = LIGHT_PULSE_OFF;
+    blanked = false;
+
+    /* Set period and start with the LED off */
+    return pwm_set_dt(&main_led, PWM_USEC(LIGHT_PWM_PERIOD_USEC), 0);
+}
+
+void light_set(uint32_t pulse_usec)
+{
+    k_mutex_lock(&light_lock, K_FOREVER);
+
+    requested_pulse_usec = pulse_usec;
+    if (!blanked) {
+        apply_pulse(pulse_usec);
+    }
+
+    k_mutex_unlock(&light_lock);
+}
+
+void light_blank_begin(void)
+{
+    k_mutex_lock(&light_lock, K_FOREVER);
+
+    blanked = true;
+    apply_pulse(LIGHT_PULSE_OFF);
+
+    k_mutex_unlock(&light_lock);
+}
+
+void light_blank_end(void)
+{
+    k_mutex_lock(&light_lock, K_FOREVER);
+
+    blanked = false;
+    apply_pulse(requested_pulse_usec);
+
+    k_mutex_unlock(&light_lock);
 }

@@ -13,7 +13,7 @@ The lowest power state. Outputs, sensors, battery sampling and BLE advertising a
 _Avoid_: Sleep, power-off, shutdown, System OFF (a different hardware mode that the firmware no longer uses)
 
 **Idle Charging**:
-The main LED is dark and the controller is awake while Charging. Reached by stepping past the last Active Mode while USB power is present, or by plugging in USB power while in Deep Sleep.
+The main LED is dark and the controller is awake while Charging. Reached instead of Deep Sleep whenever the light is powered off (short press past the last Active Mode, long press, auto-off, critical battery) while USB power is present, or by plugging in USB power while in Deep Sleep. Removing USB power in Idle Charging enters Deep Sleep.
 _Avoid_: Charging mode, charge mode
 
 ## Light modes
@@ -47,6 +47,10 @@ _Avoid_: mode timeout, cycle timeout
 **Charging**:
 The condition that USB power is present. The charger is autonomous hardware, so the firmware treats USB power present as charging in every awake state, and has no charge-complete knowledge.
 _Avoid_: USB connected (for the condition), charge state
+
+**Blank**:
+The short window (about 120 ms) in which Smart switches the lit main LED off to measure ambient light without the LED's own light. The brightness requested by the state machine is restored right after.
+_Avoid_: dropout, dark pulse, LED off-on cycle
 
 ## Brightness levels
 

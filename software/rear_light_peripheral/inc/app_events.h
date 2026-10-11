@@ -45,8 +45,8 @@ enum app_event_type {
     EVT_USB_DISCONNECTED,   /* VBUS vanished (edge) */
     EVT_BRAKE_START,        /* braking detected (2-sample hysteresis) */
     EVT_BRAKE_STOP,         /* braking ended (2-sample hysteresis) */
-    EVT_AMBIENT_DARK,       /* ambient light below dark threshold */
-    EVT_AMBIENT_BRIGHT,     /* ambient light above bright threshold */
+    EVT_AMBIENT_DARK,       /* ambient light below the ambient threshold */
+    EVT_AMBIENT_BRIGHT,     /* ambient light at or above threshold + off offset */
     EVT_STATIONARY_TIMEOUT, /* device stationary for the auto-off period */
     EVT_BUTTON_WAKE,        /* button pressed while in Deep Sleep (wake request) */
 };

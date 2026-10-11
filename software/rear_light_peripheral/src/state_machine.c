@@ -261,6 +261,26 @@ static void do_deep_sleep(void)
 }
 
 /**
+ * @brief Power the light off: Idle Charging with USB power, else Deep Sleep
+ *
+ * Used by the long press and the automatic power-offs (stationary timeout,
+ * critical battery). With USB power present the device stays awake in Idle
+ * Charging so the status LED keeps showing that it is charging. Already
+ * being in Idle Charging makes this a no-op (transition() ignores an
+ * unchanged state). The USB poll can lag by one interval; a stale answer is
+ * corrected by the following USB event (removal in Idle Charging enters
+ * Deep Sleep).
+ */
+static void power_off(void)
+{
+    if (usb_present) {
+        transition(IDLE_CHARGING);
+    } else {
+        do_deep_sleep();
+    }
+}
+
+/**
  * @brief Leave Deep Sleep into the given state
  *
  * Restores everything do_deep_sleep() stopped, in the same way a boot
@@ -395,9 +415,9 @@ static void handle_battery_tick(void)
     enum battery_level level = battery_sample_and_process();
 
     if (level == BATTERY_CRITICAL) {
-        debug_printk("Battery critically low (%u mV) - entering Deep Sleep\n",
+        debug_printk("Battery critically low (%u mV) - powering off\n",
                      battery_last_mv());
-        do_deep_sleep();
+        power_off();
         return;
     }
 
@@ -422,7 +442,7 @@ static void handle_event(const struct app_event *evt)
         handle_button_short();
         break;
     case EVT_BUTTON_LONG:
-        do_deep_sleep();
+        power_off();
         break;
     case EVT_BLE_SET_STATE:
         handle_ble_set_state(evt->arg);
@@ -474,8 +494,8 @@ static void handle_event(const struct app_event *evt)
         break; /* stale wake request (device is already awake) */
     case EVT_STATIONARY_TIMEOUT:
         if (state == LED_SMART_MODE) {
-            debug_printk("Stationary timeout in SMART mode - entering Deep Sleep\n");
-            do_deep_sleep();
+            debug_printk("Stationary timeout in SMART mode - powering off\n");
+            power_off();
         }
         break;
     default:

@@ -54,7 +54,7 @@ The light can also be put into **Off** over Bluetooth: the light is dark but the
   - Steps through the light modes: `Smart → Steady → Flash`
   - After the last light mode (Flash), the light enters **Deep Sleep**, or **Idle Charging** when USB power is present. A short press in Idle Charging (or in Off) starts the first light mode again (Smart).
   - **Selection window (about 15 to 20 seconds):** you can step through the light modes only for a short time after the light was switched on (from Deep Sleep, Off or Idle Charging, also after a restart). After that, a short press in any light mode switches the light off (Deep Sleep, or Idle Charging when USB power is present) instead of going to the next mode. For example, in Steady after the window, a press goes to Deep Sleep, not to Flash. Nothing signals the end of the window. To change the mode later, switch the light off and on again. The length varies by up to 5 seconds because the window is counted in battery sampling ticks.- **Long press** (held for 1 second or longer):
-  - Turns the light **off immediately from any mode** (including with USB power present) and enters Deep Sleep. It acts at the 1 second mark; you do not have to release first.
+  - Turns the light **off immediately from any mode**. It enters Deep Sleep, or **Idle Charging** when USB power is present (the status LED then keeps blinking to show charging). In Idle Charging a long press does nothing. It acts at the 1 second mark; you do not have to release first.
 - **Wake from sleep**:
   - After the light has turned itself fully off and entered Deep Sleep, a press wakes it and starts in Smart. The wake press does nothing else; keep holding it and nothing more happens, and the next press counts as a new press.
 
@@ -82,8 +82,11 @@ When Smart starts, the LED is off until the first dark detection (about one seco
 
 ### 2. Ambient Light Control
 
-- **Darkness threshold**: < 50 lux for 2 consecutive samples → LED at base brightness
-- **Brightness threshold**: ≥ 150 lux for 2 consecutive samples → LED off (hysteresis prevents flicker from the light's own output)
+- **Ambient threshold**: < 30 lux for 2 consecutive samples → LED at base brightness
+- **Off point**: ≥ 40 lux (threshold + 10 lux offset) for 2 consecutive samples → LED off. The offset only prevents flicker around the toggle point
+- **LED blanking**: the LED's own light reflects into the light sensor inside the housing and would end the darkness by itself. While the LED is lit at base brightness, the ambient light is therefore measured with the LED switched off for about 120 ms, once every **30 s**. This is a short, visible dropout of the light. If such a measurement shows daylight, it is confirmed after 0.5 s (a second short dropout) and the LED then stays off
+- No measurement is taken while braking (the LED is at peak). The first one follows 0.5 s after braking ended
+- While the LED is off, the light sensor is read every 0.5 s without any blanking
 
 ### 3. Automatic Power-Off
 
@@ -98,8 +101,8 @@ When Smart starts, the LED is off until the first dark detection (about one seco
 - Only active in Smart
 
 **When Auto-Off Triggers:**
-- Light switches off and enters Deep Sleep to save battery, also when USB power is present.
-- Requires a manual button press to wake and reactivate (starts in Steady).
+- Light switches off and enters Deep Sleep to save battery, or Idle Charging when USB power is present (the status LED then blinks to show charging).
+- Requires a manual button press to reactivate (starts in Smart).
 
 ### Sensor failure
 
@@ -119,7 +122,7 @@ If a sensor does not start, Smart keeps working with the other one. Without the 
 
 - Battery voltage is sampled every 5 seconds in all modes.
 - **Low battery** (below ~3.4V for 3 consecutive samples): the status LED blinks slowly (500ms) to signal that a recharge is due. Recovers automatically when the voltage stays at or above 3.4V. **The status LED is the only low-battery warning**: it is meant to be seen by the rider, and the main light is not changed in any way until the battery is critical.
-- **Critical battery** (below ~3.0V for 3 consecutive samples): the light turns off and enters Deep Sleep to protect the cell.
+- **Critical battery** (below ~3.0V for 3 consecutive samples): the light turns off and enters Deep Sleep to protect the cell, or Idle Charging when USB power is present.
 - To use the light again, **recharge the battery** and press the button to wake it. Waking with a critical battery turns the light on briefly until the critical shut-off triggers again.
 - Battery readings are not reliable while USB power is present.
 
@@ -144,7 +147,8 @@ If a sensor does not start, Smart keeps working with the other one. Without the 
 **Light Sensor (OPT3001):**
 - Range: 0.01 - 83,000 lux
 - Human-eye spectral matching
-- Sampling Rate: 500ms (2 Hz), only while in Smart
+- Conversion time: 100 ms, set by the firmware (the driver default is 800 ms)
+- Sampling Rate: 500ms (2 Hz) while the LED is off, once every 30 s (with the LED blanked) while the LED is lit at base brightness, only while in Smart
 - Interface: I²C
 
 ### LED Driver
@@ -202,8 +206,8 @@ stateDiagram-v2
 
     state Smart {
         [*] --> Bright_Daylight
-        Bright_Daylight --> Dark: Light < 50 lux (2 samples)
-        Dark --> Bright_Daylight: Light >= 150 lux (2 samples)
+        Bright_Daylight --> Dark: Light < 30 lux (2 samples)
+        Dark --> Bright_Daylight: Light >= 40 lux (2 samples, measured with LED blanked)
 
         state Bright_Daylight {
             [*] --> LED_Off
@@ -270,7 +274,8 @@ For developers or integrators who want to use BLE control, see `src/ble.c` in th
 - `BRAKING_ACCEL_THRESHOLD_MILLI`: +5000 milli-m/s² (in `src/sensors.c`)
 - `BRAKING_START_CONFIRM_MS` / `BRAKING_STOP_CONFIRM_MS` / `BRAKING_HOLD_MS` / `BRAKING_SMOOTHING_MS` / `BRAKING_BASELINE_TAU_MS`: 100 / 150 / 1000 / 150 / 8000 ms (in `src/sensors.c`)
 - `ACCEL_SAMPLING_INTERVAL_MS` / `LIGHT_SAMPLING_INTERVAL_MS` / `ACCEL_ODR_HZ`: 50 / 500 ms / 25 Hz (in `src/sensors.c`)
-- `AMBIENT_DARK_THRESHOLD_MILLILUX` / `AMBIENT_BRIGHT_THRESHOLD_MILLILUX`: 50 / 150 lux (in `src/sensors.c`)
+- `AMBIENT_THRESHOLD_MILLILUX` / `AMBIENT_OFF_OFFSET_MILLILUX`: 30 / 10 lux (in `src/sensors.c`)
+- `LIGHT_BLANK_INTERVAL_MS` / `AMBIENT_BLANK_SETTLE_MS` / `AMBIENT_BLANK_TIMEOUT_MS`: 30000 / 2 / 250 ms (in `src/sensors.c`)
 - `STATIONARY_TIMEOUT_MS`: 150000 ms = 2.5 minutes (in `src/sensors.c`)
 - `BATTERY_CRITICAL_MV` / `BATTERY_LOW_MV`: 3000 / 3400 mV (in `src/battery.c`)
 - `LIGHT_PULSE_BASE` / `LIGHT_PULSE_PEAK`: 200 / 800 µs (in `inc/light.h`)

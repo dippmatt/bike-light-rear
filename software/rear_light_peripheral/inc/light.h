@@ -30,8 +30,13 @@
  * Main LED PWM driver (PAM2804 dimming input).
  *
  * OWNERSHIP: only the state machine thread (state_machine.c) may call
- * light_set(). This keeps all light output changes serialized in one
- * context and race-free by construction.
+ * light_set(), so it alone decides what the light shows.
+ *
+ * The one exception is the blank: the sensor thread may switch the output
+ * off for a short time to measure ambient light without the LED's own
+ * light (light_blank_begin() / light_blank_end()). While blanked,
+ * light_set() only records the requested level; light_blank_end() applies
+ * the latest request. The gate is serialized by a mutex.
  */
 
 /* PWM period: 1 kHz */
@@ -55,5 +60,19 @@ int light_init(void);
  * @param pulse_usec Pulse width in microseconds (0 = off)
  */
 void light_set(uint32_t pulse_usec);
+
+/**
+ * @brief Switch the main LED off for an ambient light measurement
+ *
+ * Only for the sensor thread. The level requested through light_set()
+ * is kept and restored by light_blank_end(). Every call must be paired
+ * with light_blank_end(), also on errors.
+ */
+void light_blank_begin(void);
+
+/**
+ * @brief End a blank and apply the latest level requested via light_set()
+ */
+void light_blank_end(void);
 
 #endif /* LIGHT_H */
