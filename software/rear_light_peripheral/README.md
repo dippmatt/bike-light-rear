@@ -1,5 +1,7 @@
 # Rear Light Peripheral
 
+> **Superseded.** The rear light is now controlled over ANT+ by the firmware in [`../rear_light_ant`](../rear_light_ant) (ADR-0005 there). This Zephyr/BLE firmware is kept as the behavioural reference and for the BLE front light, until the physical checks in `../rear_light_ant/VERIFY.md` are done; it is not developed any further.
+
 Firmware for the bicycle rear light (nRF52833, Zephyr / nRF Connect SDK). It is the BLE peripheral that the front light central talks to.
 
 ## Where to read what

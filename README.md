@@ -1,11 +1,11 @@
 # bike-light-rear
 
-High-visibility rear bicycle light with Bluetooth Low Energy (BLE) control, featuring smart motion detection, ambient light sensing, and efficient single-cell Li-ion power management. Designed for hybrid assembly (pick-and-place for 0402/0603 passives, hand-soldering for connectors and high-value components).
+High-visibility rear bicycle light controlled from an ANT+ bike computer (ANT+ Bike Lights profile), featuring smart motion detection, ambient light sensing, and efficient single-cell Li-ion power management. Designed for hybrid assembly (pick-and-place for 0402/0603 passives, hand-soldering for connectors and high-value components).
 
 ## Hardware architecture
 
 ### Compute & wireless
-- **BL653 module** (453-00039R) – Nordic nRF52833 SoC with integrated PCB trace antenna, Bluetooth 5.1, and 64 MHz Arm Cortex-M4F
+- **BL653 module** (453-00039R) – Nordic nRF52833 SoC with integrated PCB trace antenna, ANT/Bluetooth radio, and 64 MHz Arm Cortex-M4F (the firmware uses the ANT SoftDevice, so the radio runs ANT+)
 - **Programming** – 2×3 1.27mm SWD header for firmware flashing and debugging
 - **System power** – 2.7V from NPM1100 buck regulator optimized for 90-95% battery capacity utilization (3.11V cutoff)
 
@@ -49,8 +49,9 @@ Side of the enclosure showing the USB charge port.
 
 ## Repository layout
 - `hardware/` – KiCad project, fabrication-toolkit config, custom libs (`kicad_symbols/`, `kicad_footprints/`, `kicad_3d_models/`), datasheets (markdown format), and generated BOM
-- `software/rear_light_peripheral/` – main rear light firmware (Zephyr/nRF Connect SDK), including Smart Mode, BLE peripheral control, charging/idle state, and low-power sleep
-- `software/front_light_central/` – proof-of-concept central/front-light firmware (experimental; will evolve later)
+- `software/rear_light_ant/` – rear light firmware (bare metal on the ANT SoftDevice S212), including Smart Mode, ANT+ bike light control, charging/idle state, and low-power sleep
+- `software/rear_light_peripheral/` – the previous Zephyr/BLE rear light firmware, kept as reference until the physical checks of the ANT+ firmware are done
+- `software/front_light_central/` – proof-of-concept BLE central/front-light firmware (experimental). It controlled the BLE rear light and does not work with the ANT+ rear light
 - `software/` *(other folders)* – development history and experiments (central/peripheral prototypes, refactors, test projects)
 - `docs/` – photos, rendered schematics, mechanical notes, and user-facing manuals
 - `LICENSE` – GPLv3 with NonCommercial clause
@@ -64,36 +65,26 @@ Side of the enclosure showing the USB charge port.
 
 ## Firmware
 
-The rear light firmware is built on **Zephyr RTOS** using **nRF Connect SDK toolchain v3.1.1** targeting the **nRF52833 (BL653 module)**. It implements intelligent lighting control with multiple operating modes and supports BLE control via a simple GATT service.
+The rear light firmware (`software/rear_light_ant/`) runs bare metal on the **ANT SoftDevice S212 7.0.1** of the **nRF52833 (BL653 module)**. ANT SoftDevices are not supported by Zephyr or the nRF Connect SDK, so it uses a plain Makefile with the compiler of an nRF Connect SDK toolchain installation (v3.1.1) and the register headers of its nrfx. It implements the lighting control with three light modes and is controlled by an ANT+ bike computer through the ANT+ Bike Lights profile (tested with a Wahoo ELEMNT BOLT v2).
 
 ### Features
-- **Four Operating Modes**: OFF, 50% continuous, 50/80 flash, and Smart Mode
+- **Three light modes**: Steady, Flash (double flash) and Smart, plus Off from the bike computer
 - **Smart Mode**: Adaptive brightness based on braking detection and ambient light
-- **Braking Detection**: Automatic 80% brightness boost during deceleration
+- **Braking Detection**: Automatic peak brightness boost during deceleration
 - **Ambient Light Sensing**: Adjusts brightness for day/night conditions
 - **Auto-Off**: Power-saving mode when stationary for 2.5+ minutes
-- **Sensor Buffering**: 3-minute circular buffer for motion and environmental data
-- **Power Management**: Low-battery indication and automatic shut-off at low voltage
+- **Power Management**: Low-battery indication and automatic shut-off at low voltage, USB-C charging indication
+- **ANT+ control**: state, battery and mode of the light on the bike computer, mode changes from the bike computer
 
-For complete operating instructions and technical details, see the **[Rear light User Manual](software/rear_light_peripheral/MANUAL.md)**.
-
-### Bluetooth control
-The rear light exposes a custom BLE GATT service intended for simple remote control and status reads:
-
-- **Service UUID**: `0xA000`
-- **LED status characteristic (read)**: `0xA001` (returns the current state-machine state)
-- **Control characteristic (write)**: `0xA002` (write a single byte to request a new state)
-
-Exact UUIDs and behavior live in `software/rear_light_peripheral/inc/ble_service.h` and `software/rear_light_peripheral/src/ble_service.c`. Control writes are rate-limited by a short “state stable” window to avoid fighting local button transitions.
+For complete operating instructions and technical details, see the **[Rear light User Manual](software/rear_light_ant/MANUAL.md)**; the behaviour is specified in [SPEC.md](software/rear_light_ant/SPEC.md).
 
 ### Firmware environment setup
-1. Install the [nRF Command Line Tools](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools) for access to `nrfjprog` and programming utilities.
-2. Install [nRF Connect for VS Code](https://www.nordicsemi.com/Products/Development-tools/nrf-connect-for-vs-code) 
-3. Within its extension packs, install the **nRF Connect Bare Metal SDK v0.9.0**.
-4. Use the nRF Connect for VS Code Toolchain Manager to install the **nRF Connect SDK toolchain v3.1.1** so the project can target the BL653/nRF52833 with the expected compilers and CMake presets.
-5. (Optional) Through the nRF Connect tab in VS Code, install the nRF Kconfig and nRF Devicetree extensions.
+1. Install the [nRF Command Line Tools](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools) for access to `nrfjprog` and a J-Link.
+2. Install the **nRF Connect SDK toolchain v3.1.1** (nRF Connect for VS Code, Toolchain Manager). Only its GNU Arm compiler and the nrfx register headers are used.
+3. Put the ANT SoftDevice archive `ANT_s212_nrf52_7.0.1.zip` (from the Garmin/ANT downloads) into `software/ant_source/SoftDevices_Current_Items/`. The folder is gitignored: the ANT+ documents and SoftDevice files must not be redistributed.
+4. `cd software/rear_light_ant && make test && make flash` (see its [README](software/rear_light_ant/README.md) for options, bench tools and the licence key).
 
-The main application entry point is `software/rear_light_peripheral/` (see `prj.conf` and `src/main.c`).
+The previous Zephyr firmware in `software/rear_light_peripheral/` is built with the nRF Connect for VS Code extension as before (nRF Connect Bare Metal SDK v0.9.0 and toolchain v3.1.1).
 
 Note 1: Device flashing using WSL2  
 To connect a J-Link debugger to a WSL instance:

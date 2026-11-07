@@ -6,4 +6,8 @@ hardware/kicad_project/production
 hardware/datasheets/markdown/marker_extraction_with_images/
 hardware/datasheets/markdown/marker_extraction_with_images/
 software/nrf_connect_prj/.git/
+software/ant_source/
 software/nrf_connect_prj/.git_backup/
+software/rear_light_ant/build/
+software/rear_light_ant/keys.local.mk
+software/ant_docs/

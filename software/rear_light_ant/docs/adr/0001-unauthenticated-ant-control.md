@@ -1,0 +1,3 @@
+# ANT+ control is unauthenticated
+
+Light settings and connect/disconnect commands can be sent by any ANT+ controller in range: the bike light profile has no pairing, key exchange or encryption, and the ANT+ network key is shared by every ANT+ device. Anyone near the bike can therefore switch the light off or change its mode. We accept that, as we accepted it for BLE before (this supersedes ADR-0001 of the Zephyr/BLE firmware): the intended client is the rider's own bike computer, and the profile offers no better option. Encrypted ANT channels exist but are not part of the bike light profile, so controllers would not understand them. Do not rely on ANT+ as a security boundary, and revisit this before adding any behaviour that needs trust.
