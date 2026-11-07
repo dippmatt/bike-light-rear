@@ -204,7 +204,7 @@ Fill the Result column; none of these can be done through the debugger.
 
 | # | Test | How | Expected | Result |
 | --- | --- | --- | --- | --- |
-| P1 | Real button, short press | Press and release quickly, 10 times | Each press steps through Smart, Steady, Flash, then sleeps (inside the first 15 s); `make stats` `mode_changes` agrees | |
+| P1 | Real button, short press | Press and release quickly, 10 times | Each press steps through Smart, Steady, Flash, then Smart again, never off; `make stats` `mode_changes` agrees | |
 | P2 | Real button, long press and wake | Hold 1 s; wait; press once | Light goes off and the ANT channel closes (`ant channel closed`); the next press wakes into Smart without stepping on | |
 | P3 | Button bounce and double press | Press twice within 0.2 s | The second press is ignored (BTN-3) | |
 | P4 | Flash and steady look | Watch the main LED in Steady and Flash | Same look as the Zephyr firmware (double flash every 1.5 s) | |
@@ -227,9 +227,23 @@ Fill the Result column; none of these can be done through the debugger.
 
 | # | Test | How | Expected | Result |
 | --- | --- | --- | --- | --- |
-| F1 | Mode cycle | Short presses inside the selection window | Smart → Standard → Bright → off | |
+| F1 | Mode cycle | Short presses, also after the first 20 s | Smart → Standard → Bright → Smart, never off; a long press switches off | |
 | F2 | Levels | Look at the LED in Standard and Bright | 30 % and 80 %, steady | |
 | F3 | Smart without brake boost | In the dark (LED at Standard), jerk the light | The level stays at Standard | |
 | F4 | Bike computer | Add the light on the Wahoo | Shown as a headlight with steady 21-40 %, steady 61-80 % and auto; switching works | Pass (Wahoo, Nov 2026, reported by the user) |
 | F5 | Two lights | Add the rear and the front light to the same Wahoo | Both are shown and can be switched (the shared channel for secondary lights is not implemented, ANT-6) | Pass (Wahoo, Nov 2026, reported by the user): both lights work |
 | F6 | Bright heat and current | Leave Bright on for 30 minutes, meter in series with the battery | Record the housing temperature and current | |
+
+### Front light: rear control (SPEC section 12)
+
+Host tests: `test/test_rear_link.c` (round trip with the rear's own command handler, connected and unconnected; taillight check and exclusion; newest command wins; retry and drop; waiting while lost and after a wake) and `test_REAR3_*` in `test_core.c` (what is and is not relayed).
+
+| # | Test | How | Expected | Result |
+| --- | --- | --- | --- | --- |
+| R1 | Find the rear | Wake the front with the rear nearby, `make LIGHT=front stats` | `rear control found <number>` within a few seconds | Pass (Nov 2026, BENCH images): found 0xde6c, first command acked |
+| R2 | Relay | Front short presses (injected) | The rear follows: Smart, Steady, Flash | Pass (Nov 2026): commands 9, 5, 6 acked, and the rear followed (confirmed by eye: dark, Smart, Steady, Flash) |
+| R3 | Off and wake | Front long press, then wake | Rear Off before the front sleeps, Smart after the wake | Off acked after one retry, Smart acked after the wake |
+| R4 | Rear out of reach | Rear in Deep Sleep or out of range, change the front, bring the rear back | The command is delivered when the rear is found again | First run (Nov 2026): found again after 54 s and acked, but the rear stayed in Smart: the command came within its 3 s window after the wake press (ANT-8). Fixed: the front now checks the mode in the rear's page 1 and sends again (REAR-5). Rerun: Pass: found 4 s after the wake, the first Flash ignored in the window, the resend about 4 s later applied; the rear flashed (confirmed by eye) |
+| R5 | Wahoo still works | Wahoo with both lights | Shows and switches both | |
+| R6 | Last change wins | Wahoo command to the rear, then to the front | The rear keeps the Wahoo's setting until the next front button press; a Wahoo command to the front does not change the rear | |
+| R7 | Nearest rear | A second rear light a few metres away | The own rear right behind the front is picked; tune `REAR_PROXIMITY_BIN` | |

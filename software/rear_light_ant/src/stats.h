@@ -66,6 +66,15 @@ struct proto_stats {
     int32_t millilux;          /* last ambient light reading */
     uint32_t blank_count;      /* ambient measurements with the LED blanked */
 
+    /* Front light: rear control (SPEC section 12) */
+    uint16_t rear_device;      /* device number of the found rear, 0 = none */
+    uint8_t rear_phase;        /* enum rear_link_phase */
+    uint8_t rear_last_cmd;     /* byte 6 of the last command: mode << 2, or 1 = off */
+    uint32_t rear_sent;        /* commands queued */
+    uint32_t rear_acked;
+    uint32_t rear_failed;      /* failed acknowledged transfers (retried) */
+    uint32_t rear_excluded;    /* devices excluded because they are no taillight */
+
     /* Bench builds only (make BENCH=1): write (arg << 8 | type) + 1 << 16 here
      * over SWD to post an event, see tools/inject.py */
     uint32_t inject;

@@ -70,6 +70,9 @@ static struct {
     unsigned int published_calls;
     uint32_t delayed_ms;
     unsigned int resets;
+    enum system_state relayed;
+    unsigned int relay_calls;
+    bool relayed_before_sleep; /* the last relay came before sleep_enter */
 } fake;
 
 static void f_light_set(uint32_t p)
@@ -170,6 +173,13 @@ static int f_reenable(void)
 static void f_sleep_enter(void)
 {
     fake.sleep_enter_calls++;
+    fake.relayed_before_sleep = (fake.relay_calls > 0U);
+}
+
+static void f_rear_relay(enum system_state s)
+{
+    fake.relayed = s;
+    fake.relay_calls++;
 }
 
 static void f_sleep_exit(void)
@@ -217,6 +227,7 @@ static const struct sm_ops ops = {
     .sleep_enter = f_sleep_enter,
     .sleep_exit = f_sleep_exit,
     .state_changed = f_state_changed,
+    .rear_relay = f_rear_relay,
     .now_ms = f_now,
     .delay_ms = f_delay,
     .reset = f_reset,
@@ -550,6 +561,15 @@ TEST(test_BTN4_short_press_from_off_and_idle_charging)
 TEST(test_BTN4_end_of_cycle_goes_to_idle_charging_or_deep_sleep)
 {
     BEGIN();
+#if CYCLE_WRAPS
+    /* after the last Active Mode the first again, never off */
+    for (int usb = 0; usb <= 1; usb++) {
+        start(LAST_MODE, usb != 0);
+        send(EVT_BUTTON_SHORT, 0U);
+        CHECK(sm_current_state() == sm_first_active_mode());
+        CHECK(!sm_is_sleeping() && fake.sleep_enter_calls == 0U);
+    }
+#else
     start(LAST_MODE, true); /* the last Active Mode, USB present */
     send(EVT_BUTTON_SHORT, 0U);
     CHECK(sm_current_state() == IDLE_CHARGING);
@@ -559,6 +579,28 @@ TEST(test_BTN4_end_of_cycle_goes_to_idle_charging_or_deep_sleep)
     send(EVT_BUTTON_SHORT, 0U);
     CHECK(sm_is_sleeping());
     CHECK(fake.sleep_enter_calls == 1U);
+#endif
+}
+
+/* Short presses cycle at any time; only a long press powers off */
+TEST(test_BTN4_cycle_wraps_after_the_window_too)
+{
+    BEGIN();
+#if CYCLE_WRAPS
+    start(LED_SMART, false);
+    ticks(MODE_SELECT_WINDOW_BATTERY_TICKS + 5U); /* window long closed */
+    for (unsigned int round = 0; round < 2U; round++) {
+        send(EVT_BUTTON_SHORT, 0U);
+        CHECK(sm_current_state() == LED_STEADY);
+        send(EVT_BUTTON_SHORT, 0U);
+        CHECK(sm_current_state() == LAST_MODE);
+        send(EVT_BUTTON_SHORT, 0U);
+        CHECK(sm_current_state() == LED_SMART);
+    }
+    CHECK(!sm_is_sleeping());
+    send(EVT_BUTTON_LONG, 0U);
+    CHECK(sm_is_sleeping());
+#endif
 }
 
 TEST(test_BTN8_BTN9_selection_window)
@@ -574,9 +616,14 @@ TEST(test_BTN8_BTN9_selection_window)
     ticks(1U);
     CHECK(sm_current_state() == LED_STEADY);
     CHECK(fake.light == LIGHT_PULSE_BASE);
-    /* the next short press leaves the cycle instead of stepping on */
+    /* the next short press leaves the cycle instead of stepping on
+     * (with CYCLE_WRAPS it steps on, the window does not matter) */
     send(EVT_BUTTON_SHORT, 0U);
+#if CYCLE_WRAPS
+    CHECK(sm_current_state() == LAST_MODE);
+#else
     CHECK(sm_is_sleeping());
+#endif
 }
 
 TEST(test_BTN8_window_closes_after_ticks_and_not_restarted_by_mode_change)
@@ -589,7 +636,11 @@ TEST(test_BTN8_window_closes_after_ticks_and_not_restarted_by_mode_change)
     CHECK(sm_current_state() == LED_STEADY);
     ticks(2U); /* a mode change must not have restarted the window */
     send(EVT_BUTTON_SHORT, 0U);
+#if CYCLE_WRAPS
+    CHECK(sm_current_state() == LAST_MODE);
+#else
     CHECK(sm_current_state() == IDLE_CHARGING);
+#endif
 }
 
 TEST(test_BTN8_boot_into_active_mode_opens_window)
@@ -1024,12 +1075,16 @@ TEST(test_SMART18_parked_buttons_usb_battery)
     CHECK(sm_current_state() == LED_STEADY && !sm_is_parked());
     CHECK(!fake.sensors_running);
 
-    /* after the window: short press powers off */
+    /* after the window: next mode (power-off without CYCLE_WRAPS) */
     start(LED_SMART, false);
     ticks(MODE_SELECT_WINDOW_BATTERY_TICKS);
     park();
     send(EVT_BUTTON_SHORT, 0U);
+#if CYCLE_WRAPS
+    CHECK(sm_current_state() == LED_STEADY && !sm_is_parked());
+#else
     CHECK(sm_is_sleeping() && !sm_is_parked());
+#endif
 
     /* long press powers off */
     start(LED_SMART, false);
@@ -1132,6 +1187,106 @@ TEST(test_SMART2_front_has_no_brake_boost)
     CHECK(fake.light == LIGHT_PULSE_BASE);
 }
 #endif
+
+/* --- Rear control relay (REAR-3) ---------------------------------------------- */
+
+TEST(test_REAR3_local_changes_are_relayed)
+{
+    BEGIN();
+    /* boot into an Active Mode */
+    start(LED_SMART, false);
+    CHECK(fake.relay_calls == 1U && fake.relayed == LED_SMART);
+
+    /* short presses through the cycle */
+    send(EVT_BUTTON_SHORT, 0U);
+    CHECK(fake.relay_calls == 2U && fake.relayed == LED_STEADY);
+    send(EVT_BUTTON_SHORT, 0U);
+    CHECK(fake.relay_calls == 3U && fake.relayed == LAST_MODE);
+
+#if CYCLE_WRAPS
+    /* after the last mode the first again, relayed; then a long press to
+     * sleep for the wake below */
+    send(EVT_BUTTON_SHORT, 0U);
+    CHECK(fake.relay_calls == 4U && fake.relayed == LED_SMART);
+    send(EVT_BUTTON_LONG, 0U);
+    CHECK(sm_is_sleeping() && fake.relayed == LED_OFF && fake.relayed_before_sleep);
+#else
+    /* end of the cycle without USB: Off, relayed before the channels close */
+    send(EVT_BUTTON_SHORT, 0U);
+    CHECK(sm_is_sleeping() && fake.relayed == LED_OFF && fake.relayed_before_sleep);
+#endif
+
+    /* wake: the first Active Mode */
+    unsigned int calls = fake.relay_calls;
+    send(EVT_BUTTON_WAKE, 0U);
+    CHECK(fake.relay_calls == calls + 1U && fake.relayed == LED_SMART);
+
+    /* long press: Off before sleep */
+    fake.relay_calls = 0U;
+    send(EVT_BUTTON_LONG, 0U);
+    CHECK(sm_is_sleeping() && fake.relay_calls == 1U && fake.relayed == LED_OFF);
+    CHECK(fake.relayed_before_sleep);
+
+    /* power-off with USB: Idle Charging, relayed as Off (long press; without
+     * CYCLE_WRAPS also the end of the cycle) */
+    start(LAST_MODE, true);
+#if CYCLE_WRAPS
+    send(EVT_BUTTON_LONG, 0U);
+#else
+    send(EVT_BUTTON_SHORT, 0U);
+#endif
+    CHECK(sm_current_state() == IDLE_CHARGING && fake.relayed == LED_OFF);
+
+    /* a short press in Idle Charging turns the light on */
+    send(EVT_BUTTON_SHORT, 0U);
+    CHECK(fake.relayed == LED_SMART);
+}
+
+TEST(test_REAR3_other_changes_are_not_relayed)
+{
+    BEGIN();
+    /* boot into Idle Charging (USB power-on reset): nothing to relay */
+    start(IDLE_CHARGING, true);
+    CHECK(fake.relay_calls == 0U);
+
+    /* long press in Idle Charging with USB does nothing (BTN-5) */
+    send(EVT_BUTTON_LONG, 0U);
+    CHECK(fake.relay_calls == 0U);
+
+    /* controller requests */
+    start(LED_STEADY, false);
+    fake.relay_calls = 0U;
+    settle();
+    send(EVT_REMOTE_SET_STATE, LED_SMART);
+    CHECK(sm_current_state() == LED_SMART && fake.relay_calls == 0U);
+    settle();
+    send(EVT_REMOTE_SET_STATE, LED_OFF);
+    CHECK(sm_current_state() == LED_OFF && fake.relay_calls == 0U);
+
+    /* critical battery: a dead front battery must not darken the rear */
+    start(LED_STEADY, false);
+    fake.relay_calls = 0U;
+    fake.battery = BATTERY_CRITICAL;
+    ticks(1U);
+    CHECK(sm_is_sleeping() && fake.relay_calls == 0U);
+
+    /* USB edges, parking and motion */
+    start(LED_SMART, false);
+    fake.relay_calls = 0U;
+    send(EVT_USB_CONNECTED, 0U);
+    send(EVT_USB_DISCONNECTED, 0U);
+    send(EVT_STATIONARY_TIMEOUT, 0U);
+    CHECK(sm_is_parked());
+    send(EVT_MOTION_DETECTED, 0U);
+    CHECK(fake.relay_calls == 0U);
+
+    /* a wake by USB power into Idle Charging */
+    start(LED_STEADY, false);
+    send(EVT_BUTTON_LONG, 0U);
+    fake.relay_calls = 0U;
+    send(EVT_USB_CONNECTED, 0U);
+    CHECK(sm_current_state() == IDLE_CHARGING && fake.relay_calls == 0U);
+}
 
 /* --- State machine: USB ----------------------------------------------------- */
 
@@ -1289,6 +1444,29 @@ TEST(test_ANT8_equal_state_and_stable_window)
     CHECK(sm_current_state() == LED_SMART);
 }
 
+TEST(test_ANT8_controller_changes_and_the_window)
+{
+    BEGIN();
+    start(LED_STEADY, false);
+    settle();
+    send(EVT_REMOTE_SET_STATE, LED_SMART);
+    CHECK(sm_current_state() == LED_SMART);
+    fake.now += 100U; /* a second command right after the first */
+    send(EVT_REMOTE_SET_STATE, LAST_MODE);
+#if STABLE_WINDOW_LOCAL_ONLY
+    CHECK(sm_current_state() == LAST_MODE); /* a controller's change opens no window */
+#else
+    CHECK(sm_current_state() == LED_SMART); /* one command per window */
+#endif
+
+    /* a press at the light still protects itself after controller commands */
+    send(EVT_BUTTON_SHORT, 0U);
+    enum system_state pressed = sm_current_state();
+    fake.now += 100U;
+    send(EVT_REMOTE_SET_STATE, LED_OFF);
+    CHECK(sm_current_state() == pressed);
+}
+
 TEST(test_ANT9_requests_applied_in_idle_charging)
 {
     BEGIN();
@@ -1328,6 +1506,7 @@ int main(void)
     test_SYS2_mode_cycle_order();
     test_BTN4_short_press_from_off_and_idle_charging();
     test_BTN4_end_of_cycle_goes_to_idle_charging_or_deep_sleep();
+    test_BTN4_cycle_wraps_after_the_window_too();
     test_BTN8_BTN9_selection_window();
     test_BTN8_window_closes_after_ticks_and_not_restarted_by_mode_change();
     test_BTN8_boot_into_active_mode_opens_window();
@@ -1358,6 +1537,8 @@ int main(void)
     test_SMART16_leaving_parked_smart_by_request();
     test_SMART_auto_off_variant_keeps_old_behaviour();
     test_SYS2_ANT7_mode_outside_the_cycle_is_not_requestable();
+    test_REAR3_local_changes_are_relayed();
+    test_REAR3_other_changes_are_not_relayed();
     test_LED1_LED5_variant_levels();
 #if LIGHT_FRONT
     test_SMART2_front_has_no_brake_boost();
@@ -1369,6 +1550,7 @@ int main(void)
     test_BAT5_low_battery_does_not_change_main_led();
     test_ANT7_requests_validated();
     test_ANT8_equal_state_and_stable_window();
+    test_ANT8_controller_changes_and_the_window();
     test_ANT9_requests_applied_in_idle_charging();
     test_ANT_publication_on_every_change();
 

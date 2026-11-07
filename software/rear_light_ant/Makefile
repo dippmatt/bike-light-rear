@@ -89,7 +89,7 @@ LDFLAGS := -mcpu=cortex-m4 -mthumb -mfloat-abi=soft -nostartfiles -nostdlib \
 SRCS := src/startup.c src/main.c src/ant_link.c src/bike_light.c src/app_events.c \
         src/sm.c src/detectors.c src/battery_logic.c src/platform.c src/light.c \
         src/status_led.c src/soft_timer.c src/button.c src/battery.c src/power.c \
-        src/sensors.c src/twim.c
+        src/sensors.c src/twim.c src/rear_link.c
 OBJS := $(SRCS:src/%.c=$(B)/%.o) $(B)/system_nrf52833.o
 
 .PHONY: all clean test flash flash-app stats rate watch inject size sd
@@ -148,7 +148,8 @@ size: $(APP).elf
 	$(SIZE) $<
 
 # Both variants, so a change for one light cannot break the other unnoticed
-TEST_BINS := $(foreach v,rear front,build/test/test_bike_light_$(v) build/test/test_core_$(v))
+TEST_BINS := $(foreach v,rear front,build/test/test_bike_light_$(v) build/test/test_core_$(v)) \
+             build/test/test_rear_link
 
 test: $(TEST_BINS)
 	@for t in $(TEST_BINS); do echo "  RUN     $$t"; $$t || exit 1; done
@@ -159,6 +160,11 @@ variant_def = $(if $(filter front,$(1)),-DLIGHT_FRONT=1,)
 
 build/test/test_bike_light_%: test/test_bike_light.c src/bike_light.c $(wildcard src/*.h) | build/test
 	gcc $(HOST_CFLAGS) $(call variant_def,$*) -o $@ test/test_bike_light.c src/bike_light.c
+
+# Rear control of the front light, tested against the rear light's command
+# handler (rear variant of bike_light.c), see test/test_rear_link.c
+build/test/test_rear_link: test/test_rear_link.c src/rear_link.c src/bike_light.c $(wildcard src/*.h) | build/test
+	gcc $(HOST_CFLAGS) -o $@ test/test_rear_link.c src/rear_link.c src/bike_light.c
 
 CORE_SRCS := src/sm.c src/app_events.c src/battery_logic.c src/detectors.c src/bike_light.c
 

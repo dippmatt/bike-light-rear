@@ -8,6 +8,18 @@ Firmware for the bicycle rear light: one button, one main LED, a status LED, USB
 Which light an image is built for: the rear light (default) or the front light (`make LIGHT=front`). Same board and source; they differ in Mode Cycle, brightness levels, brake boost and ANT+ light type (SPEC section 0).
 _Avoid_: target, flavour, build type
 
+**Rear control** (front light):
+The front light acting as an ANT+ controller of the rear light, like a bike computer, so the rear follows the changes the rider makes at the front.
+_Avoid_: master/slave light (ANT uses master and slave for channels), pairing (ANT+ lights have no pairing)
+
+**Relay**:
+Passing a change the rider made at the front light on to the rear. Changes made by a bike computer are never relayed.
+_Avoid_: sync, mirror (the rear can differ, e.g. after a bike computer command)
+
+**Found rear**:
+The taillight the front light found by proximity search after its last wake. It is the only device the front commands until it sleeps again.
+_Avoid_: paired rear
+
 ## Power states
 
 **Off**:
@@ -63,7 +75,7 @@ The ordered list of Active Modes that short presses step through. Its order is a
 _Avoid_: mode ring, mode sequence
 
 **Selection Window**:
-The period right after the light goes from an inactive state (Deep Sleep, Off, Idle Charging) to an Active Mode, in which short presses still step through the Mode Cycle. Changing between Active Modes never starts or restarts it. Its length is about 15 to 20 seconds, because it is counted in battery ticks.
+The period right after the light goes from an inactive state (Deep Sleep, Off, Idle Charging) to an Active Mode, in which short presses still step through the Mode Cycle. Changing between Active Modes never starts or restarts it. Its length is about 15 to 20 seconds, because it is counted in battery ticks. While short presses always cycle (`CYCLE_WRAPS`, the default on both lights) the window has no effect.
 _Avoid_: mode timeout, cycle timeout
 
 **Charging**:

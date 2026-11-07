@@ -11,10 +11,10 @@ This manual covers what differs from the rear light and what you need day to day
 A short press steps through the modes:
 
 ```
-Deep Sleep → Smart → Standard → Bright → Deep Sleep
+Deep Sleep → Smart → Standard → Bright → Smart → ...
 ```
 
-The three light modes are the **Active Modes**. After the last one, a short press enters Deep Sleep, or Idle Charging when USB power is present.
+The three light modes are the **Active Modes**. After Bright a short press starts again at Smart: a short press never switches the light off. Switch it off with a **long press**.
 
 ### Smart
 - **Dark** (below about 30 lux): Standard brightness (30 %).
@@ -35,8 +35,8 @@ The light is dark but awake and reachable, so the bike computer can switch it on
 
 ## Button
 
-- **Short press** (released within 1 second): steps through Smart → Standard → Bright, but only for about 15 to 20 seconds after switching the light on (the **selection window**). After that, a short press switches the light off: Deep Sleep, or Idle Charging when USB power is present. To change the mode later, switch the light off and on again.
-- **Long press** (1 second): switches the light off immediately from any mode. In Idle Charging it does nothing.
+- **Short press** (released within 1 second): next mode, Smart → Standard → Bright → Smart, at any time. It never switches the light off.
+- **Long press** (1 second): the only way to switch the light off with the button, from any mode: Deep Sleep, or Idle Charging when USB power is present. In Idle Charging it does nothing.
 - **Wake**: in Deep Sleep a press wakes the light into Smart. The wake press does nothing else.
 
 ## Status LED
@@ -53,6 +53,26 @@ The light is dark but awake and reachable, so the bike computer can switch it on
 ## Charging and battery
 
 As on the rear light: USB-C charging also in Deep Sleep, a low battery is shown only by the status LED, and below about 3.0 V the light switches off. See the [rear light manual](./MANUAL.md#charging--battery-behavior).
+
+## Controlling the rear light
+
+The front light also switches the rear light over ANT+, the same way a bike computer does. Nothing has to be set up.
+
+- **Finding the rear:** each time the front light wakes, it looks for the **nearest rear light** and uses that one until it is switched off again. Keep both lights on the bike when you switch on. When riding in a group, a stranger's rear light that is closer at that moment could be picked.
+- **What the rear follows:** the changes you make at the front light:
+
+| Front light | Rear light |
+| --- | --- |
+| Smart | Smart |
+| Standard | Steady |
+| Bright | Flash |
+| Off (long press) | Off: dark, but awake, so the front light switches it on again next time |
+| Wake / switched on | Smart |
+
+- **Not passed on:** changes from the bike computer, the front's low-battery cut-off (the rear stays on if the front battery runs flat), plugging in USB, and parking.
+- **With a bike computer:** the bike computer still sees and switches both lights. The last change wins: if the bike computer changes the rear, it stays like that until you change the front light by hand.
+- A rear that was switched Off by the front light stays dark until the front light, the bike computer or the rear's own button switches it on.
+- The rear ignores a change that comes within 3 seconds of a press on its own button.
 
 ## Control from an ANT+ bike computer
 

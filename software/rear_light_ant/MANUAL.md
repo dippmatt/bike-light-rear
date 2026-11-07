@@ -9,10 +9,10 @@ The bike light rear is a high-visibility intelligent bicycle tail light featurin
 The light steps through its modes via short button press:
 
 ```
-Deep Sleep → Smart → Steady → Flash → Deep Sleep
+Deep Sleep → Smart → Steady → Flash → Smart → ...
 ```
 
-The three light modes (Smart, Steady, Flash) are the **Active Modes**. After the last one, a short press enters Deep Sleep, or Idle Charging when USB power is present (see below).
+The three light modes (Smart, Steady, Flash) are the **Active Modes**. After the last one a short press starts again at Smart: a short press never switches the light off. Switch it off with a **long press** (Deep Sleep, or Idle Charging when USB power is present) (see below).
 
 ### Deep Sleep
 - **Description**: Light is completely off; the processor idles and everything else is stopped (no sensors, no battery sampling, no ANT+ transmission)
@@ -51,11 +51,10 @@ The light can also be put into **Off** from the bike computer: the light is dark
 ### Button behavior summary
 
 - **Short press** (released within 1 second):
-  - Steps through the light modes: `Smart → Steady → Flash`
-  - After the last light mode (Flash), the light enters **Deep Sleep**, or **Idle Charging** when USB power is present. A short press in Idle Charging (or in Off) starts the first light mode again (Smart).
-  - **Selection window (about 15 to 20 seconds):** you can step through the light modes only for a short time after the light was switched on (from Deep Sleep, Off or Idle Charging, also after a restart). After that, a short press in any light mode switches the light off (Deep Sleep, or Idle Charging when USB power is present) instead of going to the next mode. For example, in Steady after the window, a press goes to Deep Sleep, not to Flash. Nothing signals the end of the window. To change the mode later, switch the light off and on again. The length varies by up to 5 seconds because the window is counted in battery sampling ticks.
+  - Steps through the light modes at any time: `Smart → Steady → Flash → Smart → ...`
+  - A short press never switches the light off. A short press in Idle Charging (or in Off) starts the first light mode (Smart).
 - **Long press** (held for 1 second or longer):
-  - Turns the light **off immediately from any mode**. It enters Deep Sleep, or **Idle Charging** when USB power is present (the status LED then keeps blinking to show charging). In Idle Charging a long press does nothing. It acts at the 1 second mark; you do not have to release first.
+  - The only way to switch the light off with the button: **off immediately from any mode**. It enters Deep Sleep, or **Idle Charging** when USB power is present (the status LED then keeps blinking to show charging). In Idle Charging a long press does nothing. It acts at the 1 second mark; you do not have to release first.
 - **Wake from sleep**:
   - After the light has turned itself fully off and entered Deep Sleep, a press wakes it and starts in Smart. The wake press does nothing else; keep holding it and nothing more happens, and the next press counts as a new press.
 
@@ -106,7 +105,7 @@ When Smart starts, the LED is off until the first dark detection (about one seco
 
 **Auto-on:**
 - Moving the bike (any jolt above about 0.3 g, such as riding off; wind or brushing past the bike should not wake it) switches Smart back on by itself, within about a second. Smart restarts as when it was switched on: LED off until darkness or braking is detected.
-- The button works as in Smart: a short press inside the selection window goes to the next mode, after it the light powers off. A long press powers off.
+- The button works as in Smart: a short press goes to the next mode, a long press powers off.
 
 ### Sensor failure
 
@@ -200,8 +199,7 @@ stateDiagram-v2
     Deep_Sleep --> Smart: Button Press (wake)
     Smart --> Steady: Short Press
     Steady --> Flash: Short Press
-    Flash --> Deep_Sleep: Short Press (no USB)
-    Flash --> Idle_Charging: Short Press (USB present)
+    Flash --> Smart: Short Press
     Idle_Charging --> Smart: Short Press
     Idle_Charging --> Deep_Sleep: USB unplugged
     Steady --> Deep_Sleep: Long Press
@@ -232,7 +230,7 @@ stateDiagram-v2
     }
 ```
 
-"Smart → Steady → Flash" is the configured mode order. The mode arrows apply only within the selection window of about 15 to 20 seconds after switching on; after it, a short press in any light mode goes to Deep Sleep (or Idle Charging with USB power present). A different order changes the arrows between the light modes, but Idle Charging (or Deep Sleep) always follows the last one. Off (from the bike computer only) is not shown. After motion, Smart restarts in Bright_Daylight and switches to Dark within about a second if it is dark.
+"Smart → Steady → Flash" is the configured mode order; after the last mode a short press starts again at the first. A different order changes the arrows between the light modes. The long-press arrows go to Idle Charging instead of Deep Sleep when USB power is present. Off (from the bike computer only) is not shown. After motion, Smart restarts in Bright_Daylight and switches to Dark within about a second if it is dark.
 
 ## Usage Recommendations
 
@@ -248,6 +246,10 @@ stateDiagram-v2
 - **Smart** is ideal for mixed urban/traffic conditions
 - Automatic brightness adjustment reduces manual intervention
 - Parking saves battery while the bike stands, and the light switches itself on again when you ride off
+
+## Control from the front light
+
+The ANT+ front light (`MANUAL_FRONT.md`) switches this rear light like a bike computer does: Smart, Steady and Flash follow the front's Smart, Standard and Bright, and switching the front off puts the rear into Off (dark, awake and reachable). A short press on the rear's own button in Off starts Smart again.
 
 ## Control from an ANT+ bike computer
 

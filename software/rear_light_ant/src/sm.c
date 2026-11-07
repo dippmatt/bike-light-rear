@@ -208,6 +208,22 @@ static void power_off(void)
     }
 }
 
+/* A change the rider made at this light (REAR-3) */
+static void relay(enum system_state s)
+{
+    ops->rear_relay(s);
+}
+
+/* Power-off by the rider (long press): relayed as Off unless nothing
+ * changes (long press in Idle Charging with USB power, BTN-5) */
+static void local_power_off(void)
+{
+    if (!(usb_present && state == IDLE_CHARGING)) {
+        relay(LED_OFF);
+    }
+    power_off();
+}
+
 /* Leave Deep Sleep into the given state, as a boot would (BOOT-3, BOOT-4) */
 static void wake_from_sleep(enum system_state to)
 {
@@ -236,6 +252,7 @@ static void handle_sleeping_event(const struct app_event *evt)
     switch (evt->type) {
     case EVT_BUTTON_WAKE:
         wake_from_sleep(mode_cycle[0]);
+        relay(mode_cycle[0]);
         break;
     case EVT_USB_CONNECTED:
         usb_present = true;
@@ -256,14 +273,25 @@ static void handle_button_short(void)
     if (idx < 0) {
         /* Off or Idle Charging: enter the first Active Mode */
         transition(mode_cycle[0]);
+        relay(mode_cycle[0]);
+    } else if (CYCLE_WRAPS) {
+        /* Always the next Active Mode, after the last the first; a short
+         * press never powers off (BTN-4) */
+        enum system_state next = mode_cycle[((unsigned int)idx + 1U) % MODE_CYCLE_LEN];
+
+        transition(next);
+        relay(next);
     } else if (selection_ticks < MODE_SELECT_WINDOW_BATTERY_TICKS &&
                (unsigned int)idx + 1U < MODE_CYCLE_LEN) {
         /* Inside the selection window: next Active Mode */
         transition(mode_cycle[idx + 1]);
+        relay(mode_cycle[idx + 1]);
     } else if (usb_present) {
         /* After the last Active Mode, or after the selection window closed */
         transition(IDLE_CHARGING);
+        relay(LED_OFF);
     } else {
+        relay(LED_OFF); /* before the ANT channels close */
         do_deep_sleep();
     }
 }
@@ -343,7 +371,18 @@ static void handle_remote_set_state(uint8_t requested)
 
     /* A requested Off keeps the system awake and reachable (ANT-10); only
      * the button and the auto-off paths power the system down */
-    transition((enum system_state)requested);
+    {
+        uint32_t window_start = last_change_ms;
+
+        transition((enum system_state)requested);
+#if STABLE_WINDOW_LOCAL_ONLY
+        /* A controller's own change does not start the window: it protects
+         * a press at this light, not the previous command (ANT-8) */
+        last_change_ms = window_start;
+#else
+        (void)window_start;
+#endif
+    }
 }
 
 static void handle_flash_step(void)
@@ -412,7 +451,7 @@ void sm_handle_event(const struct app_event *evt)
         handle_button_short();
         break;
     case EVT_BUTTON_LONG:
-        power_off();
+        local_power_off();
         break;
     case EVT_REMOTE_SET_STATE:
         handle_remote_set_state(evt->arg);
@@ -491,9 +530,11 @@ void sm_init(const struct sm_ops *sm_ops, enum system_state boot_state, bool usb
 
     last_change_ms = ops->now_ms();
 
-    /* Booting into an Active Mode counts as inactive -> active */
+    /* Booting into an Active Mode counts as inactive -> active, and the
+     * rear follows (REAR-3) */
     if (light_is_on(boot_state)) {
         selection_ticks = 0U;
+        relay(boot_state);
     }
 
     ops->state_changed(boot_state);

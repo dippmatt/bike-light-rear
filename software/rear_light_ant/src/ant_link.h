@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 #include "bike_light.h"
+#include "sm.h"
 
 enum ant_channel_state {
     ANT_CH_CLOSED = 0,
@@ -55,6 +56,14 @@ void ant_link_report_battery(uint8_t status, uint8_t percent);
 void ant_link_on_battery_tick(void);
 
 /** Wait for an interrupt; returns when something needs service */
+/** Front light: pass a change the rider made on to the rear (REAR-3); a
+ *  no-op on the rear light */
+void ant_link_rear_request(enum system_state state);
+
+/** Front light: before Deep Sleep, wait up to @p timeout_ms for a pending
+ *  command to be acknowledged, then drop it (REAR-6) */
+void ant_link_rear_flush(uint32_t timeout_ms);
+
 void ant_link_sleep_until_event(void);
 
 #endif /* ANT_LINK_H */

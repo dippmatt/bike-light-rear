@@ -19,6 +19,7 @@ One source builds two lights for the same board (ADR-0009): the **rear light** (
 | ANT+ light type (ANT-4) `[ANT_LIGHT_TYPE]` | taillight | headlight |
 | ANT+ modes (ANT-3) | 0, 5, 6, 9 | 0, 4, 2, 9 |
 | Model number (common page 80) `[MODEL_NUMBER]` | 1 | 2 |
+| Controls the rear light (section 12) `[REAR_CONTROL]` | no | yes |
 
 The variant constants live in `src/variant.h`. Standard is the Steady state of the front light.
 
@@ -50,18 +51,19 @@ The variant constants live in `src/variant.h`. Standard is the Steady state of t
   - Idle Charging: enter the first Active Mode.
   - An Active Mode that is not the last in the Mode Cycle, inside the Selection Window (BTN-8): enter the next Active Mode.
   - The last Active Mode, or any Active Mode after the Selection Window has closed: enter Idle Charging if USB power is present, otherwise enter Deep Sleep.
+  - While the cycle wraps (the default on both lights), these two rules are replaced: any Active Mode enters the next Active Mode, the last one the first, also after the Selection Window has closed. A short press never powers off; only a long press does (BTN-5). `[CYCLE_WRAPS]`
 - **BTN-5** A long press in any state shall power the light off: enter Idle Charging if USB power is present (so the status LED keeps showing Charging), otherwise enter Deep Sleep. A long press in Idle Charging with USB power present shall do nothing.
 - **BTN-6** Before entering Deep Sleep the firmware shall wait until the button has read released for several polls in a row (contact bounce on release has settled), up to a limit, so that a still-held or bouncing button does not wake the device immediately. If the limit is exceeded it proceeds anyway. `[SLEEP_RELEASE_WAIT_MS, SLEEP_RELEASE_POLL_MS, SLEEP_RELEASE_STABLE_POLLS]`
 - **BTN-7** If the Deep Sleep wake interrupt cannot be armed, the firmware shall stay awake in Off with the button working instead of sleeping.
 - **BTN-8** Every transition from an inactive state (Deep Sleep, Off, Idle Charging) to an Active Mode shall open the Selection Window, whether caused by the button, a boot or reset, or a controller request. Changes between Active Modes, by button or by controller, shall neither open nor restart it. The window shall be counted in battery ticks (no dedicated timer), so its length is between (N-1) and N tick periods, about 15 to 20 s. `[MODE_SELECT_WINDOW_BATTERY_TICKS, BATTERY_SAMPLE_INTERVAL_MS]`
-- **BTN-9** Closing the Selection Window shall have no visible effect. Only the effect of the next short press changes (BTN-4). USB power is evaluated at the time of that press. A long press is unaffected.
+- **BTN-9** Closing the Selection Window shall have no visible effect. Only the effect of the next short press changes (BTN-4). USB power is evaluated at the time of that press. A long press is unaffected. While the cycle wraps (the default) the window is still counted but changes nothing.
 
 ## 4. Power states
 
 - **PWR-1** In Deep Sleep the main LED and the status LED shall be off, sensor sampling and battery sampling shall be stopped, and the ANT channel shall be closed (the light transmits nothing and is unreachable). Deep Sleep is the CPU idling in System ON (ADR-0004), not System OFF, so waking causes no reset. Only the button (or USB power appearing, see BOOT-3) wakes the device.
 - **PWR-2** Off shall be entered only by a controller request (ANT-7). It shall have no timeout and shall not enter Deep Sleep on its own.
 - **PWR-3** In Off and Idle Charging the main LED shall be off.
-- **PWR-4** Every power-off (long press, Smart Auto-Off stationary auto-off, critical battery, and the end of the short-press cycle, BTN-4) shall enter Idle Charging if USB power is present, otherwise Deep Sleep. Removing USB power in Idle Charging shall enter Deep Sleep (USB-3). USB presence is taken from the USB poll, so it may be one poll interval old.
+- **PWR-4** Every power-off (long press, Smart Auto-Off stationary auto-off, critical battery, and, only without CYCLE_WRAPS, the end of the short-press cycle, BTN-4) shall enter Idle Charging if USB power is present, otherwise Deep Sleep. Removing USB power in Idle Charging shall enter Deep Sleep (USB-3). USB presence is taken from the USB poll, so it may be one poll interval old.
 
 ## 5. Light output
 
@@ -134,7 +136,7 @@ The light is an ANT+ bike light (profile D00001621 Rev 2.0): a bidirectional mas
 - **ANT-5** After every event (a state change, a command, a battery status change) the transmission pattern shall restart with page 1 three times, then continue with pages 2, 80 and 81 (and 18 while connected). Page 19 (battery percent) and any other supported page shall be sent on a page 70 request, repeated a limited number of times. `[EVENT_PAGE1_REPEATS, MAX_REQUEST_REPEATS in src/bike_light.c]`
 - **ANT-6** A controller forms a network even for a single light: the connect command (page 33) with light index 1 makes this light the main light. It shall then report light index 1 in its pages, send its channel ID (page 18), echo the controller ID as the sequence number, apply the optional light state setting (off, flashing, steady), and accept settings addressed to light index 0 or 1. Connect commands for secondary lights (index 2 to 63) are ignored, because the shared channel is not implemented. The disconnect command (page 32) for index 0 or 1 returns the light to unconnected.
 - **ANT-7** Light settings (page 34) shall request a state: beam off requests Off, a supported mode requests the mapped state, a beam on command without mode while Off requests the last Active Mode, an unsupported mode is ignored. The sequence number of every command that is addressed to a light is reported (ANT-4), also if the command is ignored. Valid requests are Off and the Active Modes of the variant. Idle Charging cannot be requested because only USB power sets it. Requests are delivered to the state machine as events (SYS-3).
-- **ANT-8** A request shall be ignored if it equals the current state, or arrives within the stable window after the last state change (including boot). `[REMOTE_STABLE_WINDOW_MS]`
+- **ANT-8** A request shall be ignored if it equals the current state, or arrives within the stable window after the last state change made at the light itself (button, wake, boot, battery, USB). A change made by a controller request does not start the window, so controller commands, from a bike computer or the front light, may follow each other quickly. `[REMOTE_STABLE_WINDOW_MS, STABLE_WINDOW_LOCAL_ONLY]` With `STABLE_WINDOW_LOCAL_ONLY` 0, every state change starts the window (earlier behaviour: one controller command per window).
 - **ANT-9** A request for Steady, Flash or Smart shall be applied in Idle Charging.
 - **ANT-10** A request for Off shall keep the device awake and reachable.
 - **ANT-11** If no message from a controller has been received for the silence timeout, a connected light shall return to unconnected (light index 0). The main LED shall not change because of this timeout. The timeout is counted in battery ticks. `[ANT_SILENCE_TIMEOUT_BATTERY_TICKS]`
@@ -142,6 +144,19 @@ The light is an ANT+ bike light (profile D00001621 Rev 2.0): a bidirectional mas
 - **ANT-13** If the SoftDevice reports a fault the chip shall reset (the boot policy then restores the light, BOOT-2). The fault details are kept in the debug counters.
 - **ANT-14** Controller commands are not authenticated. Any ANT+ controller in range can change the state. See ADR-0001.
 - **ANT-15** Debug counters (transmitted events, received messages, ANT events, the last received messages, SoftDevice errors, dropped events, resets) shall be readable over SWD without a console.
+
+## 12. Front light: rear control
+
+The front light also acts as an ANT+ Bike Lights **controller** of the rear light, in the same role as a bike computer. The rear light needs no change: it accepts light settings from any controller (ANT-14). See ADR-0010. This section applies to the front light only.
+
+- **REAR-1** While awake, the front light shall run a second ANT channel as a slave on the bike lights' network, frequency and period, searching for device type bike light with low priority, so its own light channel keeps transmitting. `[ANT_CHANNELS, REAR_SEARCH_TIMEOUT]`
+- **REAR-2** At every wake and boot the front shall forget the previous rear and search anew. The first device is acquired by proximity search (wildcard device number). It is accepted as **the rear** only after its page 1 reports the light type taillight. Any other light type is put on an exclusion list and the search continues. Once found, ANT keeps that device's ID, so a lost link re-finds the same rear until the front sleeps. After a search timeout the search is repeated every few battery ticks. `[REAR_PROXIMITY_BIN, REAR_RETRY_BATTERY_TICKS]`
+- **REAR-3** Only changes the rider makes at the front light shall be passed on to the rear: short presses, a long press, the wake from Deep Sleep, and the boot into an Active Mode. Not passed on: controller requests, the critical battery cut-off (a dead front battery must not darken the rear), USB plug/unplug, Idle Charging after a USB wake, and parking or auto-on. A long press in Idle Charging with USB power changes nothing and is not passed on.
+- **REAR-4** The rear shall be commanded with light settings (page 34): light index 0, all lights of type taillight, beam off for Off, otherwise the rear's mode number. Mapping: Smart → auto (9), Standard → steady 0-20 % (5), Bright → slow flash (6), Off and Idle Charging → beam off. The front never sends a connect (page 33), so it never changes the rear's light index or a bike computer's connection to it.
+- **REAR-5** One command shall be pending at a time; a newer change replaces it. It shall be sent as acknowledged data once the rear is found and repeated after a failed transfer. An acknowledgement only means the rear received it: the command counts as delivered when the rear's page 1 reports the commanded mode (Off as mode 0). If enough page 1s report another mode, longer than the rear's stable window (ANT-8), the command is sent again. Failed transfers and failed checks share a limited number of attempts. A command that arrives while no rear is found waits for it. `[REAR_CMD_RETRIES, REAR_VERIFY_PAGES]`
+- **REAR-6** Before the front enters Deep Sleep, a pending Off shall be delivered first, waiting for the acknowledgement (not for the page 1 check) up to a limit; then the command is dropped and both channels close. `[REAR_FLUSH_TIMEOUT_MS]`
+- **REAR-7** With a bike computer present, both controllers may command the rear; the last change wins. A bike computer's command to the rear stays until the rider next changes the front light. A bike computer's command to the front is not passed on.
+- **REAR-8** Known limits: a change at the rear's own button or by a bike computer in the few seconds before the front has seen the commanded mode in page 1 is overridden by the resend. A rear put to Off by the front stays awake and dark until the front, a bike computer or its own button switches it on. A stranger's taillight that is closer than the own rear at the moment of the search can be picked.
 
 ## 11. Hardware assumptions
 

@@ -63,6 +63,11 @@ struct sm_ops {
     /* The published state changed (also called once at start-up) */
     void (*state_changed)(enum system_state state);
 
+    /* The rider changed the state here (button, wake, boot): the front light
+     * passes it on to the rear (REAR-3). Not called for controller requests,
+     * the critical battery, USB or parking. A no-op on the rear light. */
+    void (*rear_relay)(enum system_state state);
+
     uint32_t (*now_ms)(void);
     void (*delay_ms)(uint32_t ms);
     void (*reset)(void);

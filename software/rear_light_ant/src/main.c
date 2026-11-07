@@ -88,6 +88,7 @@ static enum battery_level op_battery_sample(void)
 
 static void op_sleep_enter(void)
 {
+    ant_link_rear_flush(REAR_FLUSH_TIMEOUT_MS); /* front: the Off reaches the rear first */
     ant_link_close();
 }
 
@@ -138,6 +139,7 @@ static const struct sm_ops ops = {
     .sleep_enter = op_sleep_enter,
     .sleep_exit = op_sleep_exit,
     .state_changed = op_state_changed,
+    .rear_relay = ant_link_rear_request,
     .now_ms = op_now_ms,
     .delay_ms = op_delay_ms,
     .reset = op_reset,

@@ -33,8 +33,16 @@
 #define SAMPLE_INTERVAL_MS 100U /* press-length sampling interval */
 #define LONG_PRESS_SAMPLES 10U  /* held for 10 samples (1 s) -> long press */
 
+/* Short presses cycle the Active Modes, after the last the first, and never
+ * power off; only a long press does (BTN-4). 0 restores the earlier cycle:
+ * the next mode only inside the selection window, otherwise power-off. */
+#ifndef CYCLE_WRAPS
+#define CYCLE_WRAPS 1
+#endif
+
 /* Selection window: short presses cycle the Active Modes for this many
- * battery ticks after the light is switched on from an inactive state */
+ * battery ticks after the light is switched on from an inactive state
+ * (no effect while CYCLE_WRAPS is 1) */
 #define MODE_SELECT_WINDOW_BATTERY_TICKS 4U
 
 /* Deep Sleep entry waits for a stable button release */
@@ -76,9 +84,28 @@
 /* Controller requests are ignored this long after a local state change */
 #define REMOTE_STABLE_WINDOW_MS 3000U
 
+/* 1: only changes made at the light itself (button, wake, boot, battery,
+ * USB) start the stable window, so controller commands can follow each other
+ * quickly. 0: every state change starts it, also one a controller made
+ * (earlier behaviour: one controller command per window). ANT-8 */
+#ifndef STABLE_WINDOW_LOCAL_ONLY
+#define STABLE_WINDOW_LOCAL_ONLY 1
+#endif
+
 /* A connected light returns to unconnected after this many battery ticks
  * (2 minutes) without any message from a controller */
 #define ANT_SILENCE_TIMEOUT_BATTERY_TICKS 24U
+
+/* Front light: control of the rear light (SPEC section 12) */
+#define REAR_PROXIMITY_BIN        5U  /* ANT proximity threshold 1 (closest) .. 10 for the first find; 3 needed the boards almost touching */
+#define REAR_SEARCH_TIMEOUT       12U /* low-priority search, 2.5 s units: 30 s */
+#define REAR_RETRY_BATTERY_TICKS  6U  /* search again after a timeout: every 30 s */
+#define REAR_CMD_RETRIES          8U  /* failed attempts before a command is dropped */
+/* After an acknowledgement, page 1s that may still report another mode
+ * before the command is sent again. The rear sends page 1 about every
+ * 0.5 s, so 10 cover its stable window after a button press (ANT-8, 3 s). */
+#define REAR_VERIFY_PAGES         10U
+#define REAR_FLUSH_TIMEOUT_MS     1500U /* the Off before Deep Sleep waits at most this long */
 
 /* --- Smart sensors --------------------------------------------------------
  *

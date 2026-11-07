@@ -81,6 +81,21 @@ bool bike_light_lamp_mode_of(uint8_t ant_mode, enum lamp_mode *mode)
     return false;
 }
 
+/* --- Controller side -------------------------------------------------- */
+
+void bike_light_build_settings(uint8_t page[BL_PAGE_SIZE], uint8_t light_type, uint8_t seq,
+                               uint8_t ant_mode, bool off)
+{
+    page[0] = BL_PAGE_SETTINGS;
+    page[1] = BL_LIGHT_INDEX_UNCONNECTED; /* index 0: all lights (7.18.10) */
+    page[2] = (uint8_t)((light_type << 4) | 0x08U); /* all sub-lights of that type */
+    page[3] = seq;
+    page[4] = 0x00U;
+    page[5] = 0x00U;
+    page[6] = off ? BEAM_CMD_OFF : (uint8_t)(ant_mode << 2);
+    page[7] = 0xFFU;
+}
+
 /* --- Page builders --------------------------------------------------- */
 
 static const uint8_t default_rotation[] = {

@@ -10,7 +10,7 @@ import sys
 import tempfile
 
 LOG_LEN = 8
-FORMAT = "<13I8s8sBB2x66H3I" + "IB3x8s" * LOG_LEN + "4I8B3iiII"
+FORMAT = "<13I8s8sBB2x66H3I" + "IB3x8s" * LOG_LEN + "4I8B3iiIHBB4II"
 STATE_NAMES = {0: "Off", 1: "Steady", 2: "Flash", 3: "Smart", 4: "Idle Charging",
                5: "Smart Auto-Off", 6: "Bright"}
 EVENT_NAMES = {
@@ -82,7 +82,8 @@ def main():
     rx_other, rx_other_id, rx_next = values[17 + 0x42:17 + 0x42 + 3]
     log_raw = values[17 + 0x42 + 3:17 + 0x42 + 3 + 3 * LOG_LEN]
     (events_dropped, reset_reason, ant_init_error, silence_timeouts,
-     state, sleeping, usb, low_batt, accel_ok, light_ok, channel_state, parked, ax, ay, az, millilux, blanks, _inject) = values[17 + 0x42 + 3 + 3 * LOG_LEN:]
+     state, sleeping, usb, low_batt, accel_ok, light_ok, channel_state, parked, ax, ay, az, millilux, blanks,
+     rear_dev, rear_phase, rear_cmd, rear_sent, rear_acked, rear_failed, rear_excl, _inject) = values[17 + 0x42 + 3 + 3 * LOG_LEN:]
     log = [log_raw[i:i + 3] for i in range(0, len(log_raw), 3)]
 
     if stats["magic"] != 0x414E5450:
@@ -103,6 +104,10 @@ def main():
           f", init error {ant_init_error:#x}, silence timeouts {silence_timeouts}")
     print(f"{'reset reason':16} {reset_reason:#x} (0 = power-on), events dropped {events_dropped}")
     print(f"{'light index':16} {light_index} (0 unconnected, 1 connected)")
+    rear_cmd_text = "off" if rear_cmd == 1 else f"mode {rear_cmd >> 2}"
+    print(f"{'rear control':16} {['searching', 'checking', 'found'][rear_phase] if rear_phase < 3 else rear_phase}"
+          f" {rear_dev:#06x}, last {rear_cmd_text}, sent {rear_sent} acked {rear_acked}"
+          f" failed {rear_failed} excluded {rear_excl} (front light only)")
     print(f"{'last rx page':16} {last_rx.hex(' ')}")
     print(f"{'last tx page':16} {last_tx.hex(' ')}")
     print("ANT events:")

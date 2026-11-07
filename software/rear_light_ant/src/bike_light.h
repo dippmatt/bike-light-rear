@@ -124,6 +124,16 @@ bool bike_light_handle_rx(struct bike_light *bl, const uint8_t payload[BL_PAGE_S
 
 /* Mode table helpers (single configuration point, see mode_map in the .c) */
 uint8_t bike_light_ant_mode_of(enum lamp_mode mode);
+
+/**
+ * Build a light settings command (page 34) as a controller sends it: light
+ * index 0 (works whether or not another controller has connected the
+ * light), addressed to all lights of @p light_type, beam off if @p off,
+ * otherwise the ANT+ mode @p ant_mode. Laid out like the commands of a Wahoo
+ * ELEMNT (VERIFY.md). Used by the front light to control the rear (REAR-4).
+ */
+void bike_light_build_settings(uint8_t page[BL_PAGE_SIZE], uint8_t light_type, uint8_t seq,
+                               uint8_t ant_mode, bool off);
 bool bike_light_lamp_mode_of(uint8_t ant_mode, enum lamp_mode *mode);
 
 #endif /* BIKE_LIGHT_H */

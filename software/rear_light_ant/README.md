@@ -4,7 +4,7 @@ Firmware for the bicycle rear light (BL653 / nRF52833) that a bike computer cont
 
 The same source also builds the **front light** (`make LIGHT=front`): same board with a white LED, modes Smart, Standard (30 %) and Bright (80 %), reported to the bike computer as a headlight. The differences are listed in [SPEC.md](./SPEC.md), section 0, and ADR-0009. The directory keeps its name.
 
-Tested with a Wahoo ELEMNT BOLT v2: it finds the light, shows state and battery, switches modes, and reconnects. The front and the rear light also work together on the same Wahoo.
+Tested with a Wahoo ELEMNT BOLT v2: it finds the light, shows state and battery, switches modes, and reconnects. The front and the rear light also work together on the same Wahoo. Without a bike computer the front light switches the rear light itself (SPEC section 12, ADR-0010).
 
 ## Where to read what
 
@@ -27,6 +27,7 @@ Tested with a Wahoo ELEMNT BOLT v2: it finds the light, shows state and battery,
 | `src/detectors.[ch]` | Braking, ambient light and stationary detectors (portable) |
 | `src/battery_logic.[ch]` | Battery thresholds and ANT+ battery mapping (portable) |
 | `src/bike_light.[ch]` | ANT+ Bike Lights page logic (portable) |
+| `src/rear_link.[ch]` | Front light: control of the rear light as an ANT+ controller (portable, SPEC section 12) |
 | `src/config.h`, `src/board.h` | Tunable constants, pins |
 | `src/variant.h` | Rear/front differences: brightness levels, brake boost, ANT+ light type, model number |
 | `src/main.c` | Start-up, event loop, glue between the portable core and the drivers |

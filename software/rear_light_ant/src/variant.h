@@ -22,6 +22,8 @@
 #define SMART_BRAKE_BOOST 0    /* a brighter headlight warns nobody */
 #define ANT_LIGHT_TYPE    0U   /* ANT+ light type: headlight */
 #define MODEL_NUMBER      0x0002U
+#define REAR_CONTROL      1    /* controls the rear light over ANT+ (SPEC section 12) */
+#define ANT_CHANNELS      2U   /* own light channel + rear control channel */
 
 #else
 
@@ -32,6 +34,8 @@
 #define SMART_BRAKE_BOOST 1
 #define ANT_LIGHT_TYPE    2U   /* ANT+ light type: taillight */
 #define MODEL_NUMBER      0x0001U
+#define REAR_CONTROL      0
+#define ANT_CHANNELS      1U
 
 #endif
 
