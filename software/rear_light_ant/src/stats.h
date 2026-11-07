@@ -74,6 +74,9 @@ struct proto_stats {
     uint32_t rear_acked;
     uint32_t rear_failed;      /* failed acknowledged transfers (retried) */
     uint32_t rear_excluded;    /* devices excluded because they are no taillight */
+    int8_t rear_rssi;          /* signal strength of the last page from the rear (dBm) */
+    uint8_t rear_rssi_count;   /* pages with an RSSI value (wraps), to tell fresh from stale */
+    uint8_t reserved3[2];
 
     /* Bench builds only (make BENCH=1): write (arg << 8 | type) + 1 << 16 here
      * over SWD to post an event, see tools/inject.py */

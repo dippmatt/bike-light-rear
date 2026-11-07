@@ -176,8 +176,9 @@ static void rear_open_now(void)
     err = sd_ant_channel_id_set(REAR_CHANNEL, known ? rear.device_number : 0U,
                                 ANT_DEVICE_TYPE_BIKE_LIGHT, 0U);
     if (err == NRF_SUCCESS) {
-        err = sd_ant_prox_search_set(REAR_CHANNEL, known ? PROXIMITY_THRESHOLD_OFF : REAR_PROXIMITY_BIN,
-                                     0U);
+        err = sd_ant_prox_search_set(REAR_CHANNEL,
+                                     known ? PROXIMITY_THRESHOLD_OFF : PROXIMITY_THRESHOLD_CUSTOM,
+                                     (uint8_t)(int8_t)REAR_PROXIMITY_DBM);
     }
     if (err == NRF_SUCCESS) {
         err = sd_ant_channel_open(REAR_CHANNEL);
@@ -265,6 +266,12 @@ static void rear_handle_event(uint8_t event, const ANT_MESSAGE *msg)
             msg->ANT_MESSAGE_ucMesgID != MESG_ACKNOWLEDGED_DATA_ID) {
             break;
         }
+        /* Signal strength of the rear, for tuning REAR_PROXIMITY_DBM */
+        if ((msg->ANT_MESSAGE_ucExtMesgBF & ANT_EXT_MESG_BITFIELD_RSSI) != 0U &&
+            msg->ANT_MESSAGE_aucExtData[RSSI_TYPE_OFFSET] == RSSI_DBM_TYPE) {
+            proto_stats.rear_rssi = (int8_t)msg->ANT_MESSAGE_aucExtData[RSSI_TYPE_DBM_VALUE];
+            proto_stats.rear_rssi_count++;
+        }
         (void)sd_ant_channel_id_get(REAR_CHANNEL, &number, &type, &trans);
         rear_do(rear_link_on_page(&rear, number, msg->ANT_MESSAGE_aucPayload), number);
         proto_stats.rear_device = (rear.phase == REAR_FOUND) ? rear.device_number : 0U;
@@ -334,6 +341,8 @@ uint32_t ant_link_init(ant_mode_request_cb on_mode_request)
 #if REAR_CONTROL
     rear_link_init(&rear);
     (void)configure_rear_channel(); /* not fatal: the light works without rear control */
+    /* Received messages carry their RSSI (diagnostics only, REAR-2) */
+    record_error(0x33U, sd_ant_lib_config_set(ANT_LIB_CONFIG_MESG_OUT_INC_RSSI));
 #endif
 
     available = true;

@@ -97,7 +97,13 @@
 #define ANT_SILENCE_TIMEOUT_BATTERY_TICKS 24U
 
 /* Front light: control of the rear light (SPEC section 12) */
-#define REAR_PROXIMITY_BIN        5U  /* ANT proximity threshold 1 (closest) .. 10 for the first find; 3 needed the boards almost touching */
+/* Minimum signal strength (dBm) of the rear for the first find: just below
+ * the weakest reading at mounting distance. Measured indoors on the bench
+ * (Nov 2026, VERIFY.md R7): 1-1.5 m -72..-51 (median -62), 3 m -81..-56
+ * (-67), 5-10 m -83..-60 (-69). The ANT proximity bins (1..10) are given for
+ * nRF51 and were too strict here (bin 3 needed the boards almost touching,
+ * bin 5 about -60 dBm missed the rear often). */
+#define REAR_PROXIMITY_DBM        (-75)
 #define REAR_SEARCH_TIMEOUT       12U /* low-priority search, 2.5 s units: 30 s */
 #define REAR_RETRY_BATTERY_TICKS  6U  /* search again after a timeout: every 30 s */
 #define REAR_CMD_RETRIES          8U  /* failed attempts before a command is dropped */

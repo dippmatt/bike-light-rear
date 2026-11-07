@@ -90,7 +90,7 @@ All read the target without stopping it. Without a battery on the board use a `B
 
 | Command | Purpose |
 | --- | --- |
-| `make stats` | Counters: state, ANT channel and events, last received pages, sensor values, resets, SoftDevice faults |
+| `make stats` | Counters: state, ANT channel and events, last received pages, sensor values, resets, SoftDevice faults; on the front light also the rear control and the rear's signal strength (RSSI) |
 | `make rate RATE_S=30` | ANT TX event rate and LF clock check (the host clock in WSL runs slow, see VERIFY.md) |
 | `make watch WATCH_S=300` | Log changes over time (reconnect tests) |
 | `make inject EVT=BUTTON_LONG` | `BENCH=1` only: post an event (`BUTTON_SHORT`, `BUTTON_LONG`, `BUTTON_WAKE`, `USB_CONNECTED`, `USB_DISCONNECTED`, `REMOTE_SET_STATE ARG=n`, ...) |
