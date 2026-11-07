@@ -171,4 +171,26 @@ _Static_assert(BRAKING_SMOOTHING_SAMPLES >= 1U && BRAKING_SMOOTHING_SAMPLES <= U
 _Static_assert(STATIONARY_SAMPLES >= 1U && STATIONARY_SAMPLES <= UINT16_MAX,
                "stationary timeout does not fit the sample counter");
 
+/* --- Smart parked (SMART-16..19) -------------------------------------------
+ *
+ * After the stationary timeout Smart parks: only the LIS3DH's own motion
+ * detector runs (low-power 10 Hz, high-pass filtered, latched flag). Its INT
+ * pins are not wired, so the flag is polled.
+ */
+
+#define PARKED_POLL_INTERVAL_MS 1000U
+
+/* High-pass filtered acceleration on any axis above this wakes the light.
+ * INT1_THS has 16 mg per LSB at +-2 g, 7 bits. */
+#define MOTION_WAKE_THRESHOLD_MG 300U /* above wind and brushing, below rolling vibration */
+#define MOTION_WAKE_THS          MS_TO_SAMPLES(MOTION_WAKE_THRESHOLD_MG, 16U)
+#define MOTION_WAKE_DURATION     0U /* samples (1/ODR) above threshold, 0 = one sample */
+
+_Static_assert(MOTION_WAKE_THS >= 1U && MOTION_WAKE_THS <= 127U,
+               "motion wake threshold out of range");
+
+/* Status LED while parked: a very short pulse, like a smoke detector */
+#define PARKED_PULSE_ON_MS     30U
+#define PARKED_PULSE_PERIOD_MS 5000U
+
 #endif /* CONFIG_H */

@@ -40,7 +40,7 @@ The three light modes (Smart, Steady, Flash) are the **Active Modes**. After the
 - **Features**:
   - Automatic braking detection
   - Ambient light sensing
-  - Automatic power-off when stationary
+  - Parks when stationary (LED off, very short status pulse) and switches itself back on when the bike moves
 - **Activation**: Press button from Deep Sleep (wake), Idle Charging or Off
 - **See detailed behavior below**
 
@@ -89,25 +89,28 @@ When Smart starts, the LED is off until the first dark detection (about one seco
 - No measurement is taken while braking (the LED is at peak). The first one follows 0.5 s after braking ended
 - While the LED is off, the light sensor is read every 0.5 s without any blanking
 
-### 3. Automatic Power-Off
+### 3. Parking and auto-on
 
 **Stationary Detection:**
 - Monitors acceleration magnitude: √(x² + y² + z²)
 - Expected value when stationary: ~9.81 m/s² (Earth's gravity)
 - Tolerance: ±100% (0 - 19.62 m/s²)
-
-**Auto-Off Criteria:**
 - **2.5 minutes** (150 s) of uninterrupted samples within the stationary range
 - Any sample outside the range (road vibration, movement) resets the counter
-- Only active in Smart
 
-**When Auto-Off Triggers:**
-- Light switches off and enters Deep Sleep to save battery, or Idle Charging when USB power is present (the status LED then blinks to show charging).
-- Requires a manual button press to reactivate (starts in Smart).
+**Parked:**
+- After 2.5 minutes without motion the light **parks**: the main LED and the light sensor switch off, and the accelerometer only watches for motion in a low-power mode.
+- The **status LED gives a very short flash (30 ms) every 5 seconds**, like a smoke detector, so you can tell Parked from fully off at minimal battery cost. With USB power present it shows the charging blink instead, and with a low battery the slow blink.
+- The light stays visible to the bike computer as Auto, and the bike computer can still switch it.
+- Parked has no time limit. A bike that stands for days keeps watching for motion until the battery reaches the critical cut-off.
+
+**Auto-on:**
+- Moving the bike (any jolt above about 0.3 g, such as riding off; wind or brushing past the bike should not wake it) switches Smart back on by itself, within about a second. Smart restarts as when it was switched on: LED off until darkness or braking is detected.
+- The button works as in Smart: a short press inside the selection window goes to the next mode, after it the light powers off. A long press powers off.
 
 ### Sensor failure
 
-If a sensor does not start, Smart keeps working with the other one. Without the light sensor the LED stays off. Without the accelerometer there is no braking boost and no auto-off.
+If a sensor does not start, Smart keeps working with the other one. Without the light sensor the LED stays off. Without the accelerometer there is no braking boost and no parking. If the motion detector cannot be set up when Smart would park, Smart keeps running normally instead.
 
 ## Charging & Battery Behavior
 
@@ -131,9 +134,10 @@ If a sensor does not start, Smart keeps working with the other one. Without the 
 
 1. Low battery → 500ms blink
 2. Charging (USB power present) → 300ms blink
-3. Light in an active mode → solid on
-4. Off from the bike computer (light dark, awake and reachable) → short pulse (0.1 s) every 2 seconds
-5. Otherwise (Deep Sleep) → off
+3. Smart parked → very short flash (30 ms) every 5 seconds
+4. Light in an active mode → solid on
+5. Off from the bike computer (light dark, awake and reachable) → short pulse (0.1 s) every 2 seconds
+6. Otherwise (Deep Sleep) → off
 
 ## Technical Specifications
 
@@ -143,6 +147,7 @@ If a sensor does not start, Smart keeps working with the other one. Without the 
 - 3-axis motion detection
 - Polling interval: 50ms (20 Hz), only while in Smart
 - Output data rate: 25 Hz
+- Parked: low-power 10 Hz motion detector (high-pass filtered, about 300 mg threshold, latched), its flag read once per second
 - Range: ±2g typical
 - Interface: I²C
 
@@ -197,7 +202,6 @@ stateDiagram-v2
     Steady --> Flash: Short Press
     Flash --> Deep_Sleep: Short Press (no USB)
     Flash --> Idle_Charging: Short Press (USB present)
-    Smart --> Deep_Sleep: Auto-Off
     Idle_Charging --> Smart: Short Press
     Idle_Charging --> Deep_Sleep: USB unplugged
     Steady --> Deep_Sleep: Long Press
@@ -208,6 +212,9 @@ stateDiagram-v2
 
     state Smart {
         [*] --> Bright_Daylight
+        Bright_Daylight --> Parked: No motion for 2.5 min
+        Dark --> Parked: No motion for 2.5 min
+        Parked --> Bright_Daylight: Motion (auto-on)
         Bright_Daylight --> Dark: Light < 30 lux (2 samples)
         Dark --> Bright_Daylight: Light >= 40 lux (2 samples, measured with LED blanked)
 
@@ -225,7 +232,7 @@ stateDiagram-v2
     }
 ```
 
-"Smart → Steady → Flash" is the configured mode order. The mode arrows apply only within the selection window of about 15 to 20 seconds after switching on; after it, a short press in any light mode goes to Deep Sleep (or Idle Charging with USB power present). A different order changes the arrows between the light modes, but Idle Charging (or Deep Sleep) always follows the last one. Off (from the bike computer only) is not shown.
+"Smart → Steady → Flash" is the configured mode order. The mode arrows apply only within the selection window of about 15 to 20 seconds after switching on; after it, a short press in any light mode goes to Deep Sleep (or Idle Charging with USB power present). A different order changes the arrows between the light modes, but Idle Charging (or Deep Sleep) always follows the last one. Off (from the bike computer only) is not shown. After motion, Smart restarts in Bright_Daylight and switches to Dark within about a second if it is dark.
 
 ## Usage Recommendations
 
@@ -240,7 +247,7 @@ stateDiagram-v2
 ### Commuting
 - **Smart** is ideal for mixed urban/traffic conditions
 - Automatic brightness adjustment reduces manual intervention
-- Auto-off prevents battery drain if bike is left stationary
+- Parking saves battery while the bike stands, and the light switches itself on again when you ride off
 
 ## Control from an ANT+ bike computer
 
@@ -264,7 +271,7 @@ The rear light is an **ANT+ bike light** (ANT+ Bike Lights profile). A bike comp
 
 - Idle Charging (USB power present, light off) appears as Off with the battery shown as charging. It cannot be commanded.
 - A mode change from the bike computer is ignored for 3 seconds after any change at the light itself (button, boot), so the bike computer cannot fight a button press.
-- Button presses and the safety features (braking, auto-off, low battery) always take priority.
+- Button presses and the safety features (braking, parking, low battery) always take priority.
 - After the bike computer has connected, the light reports itself as connected. If no message arrives from the bike computer for 2 minutes, it returns to the unconnected state; **the main LED is not changed by this**, so the light never goes dark just because the bike computer is switched off or out of range. The bike computer connects again by itself.
 - If the ANT+ stack cannot start (for example a hardware fault), the light still works with the button.
 

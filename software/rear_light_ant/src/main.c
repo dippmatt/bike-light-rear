@@ -32,7 +32,11 @@ _Static_assert((int)LAMP_OFF == (int)LED_OFF && (int)LAMP_STEADY == (int)LED_STE
 
 static enum lamp_mode lamp_mode_of_state(enum system_state s)
 {
-    /* Deep Sleep is published as Off, Idle Charging is reported as Off (ANT-3) */
+    /* Deep Sleep is published as Off, Idle Charging is reported as Off, both
+     * Smart variants as Smart (ANT-3) */
+    if (s == LED_SMART_AUTO_OFF) {
+        return LAMP_SMART;
+    }
     return (s <= LED_SMART) ? (enum lamp_mode)s : LAMP_OFF;
 }
 
@@ -97,6 +101,7 @@ static const struct sm_ops ops = {
     .flash_timer_start = op_flash_timer_start,
     .flash_timer_stop = op_flash_timer_stop,
     .sensors_start = sensors_start,
+    .sensors_start_parked = sensors_start_parked,
     .sensors_stop = sensors_stop,
     .battery_sample = op_battery_sample,
     .battery_tick_start = battery_tick_start,
@@ -139,7 +144,6 @@ static void start_lfclk_without_softdevice(void)
     NRF_CLOCK->TASKS_LFCLKSTART = 1U;
     while (NRF_CLOCK->EVENTS_LFCLKSTARTED == 0U && guard-- > 0U) {
     }
-    SCB->SCR |= SCB_SCR_SEVONPEND_Msk; /* a pending interrupt wakes WFE */
 }
 
 /* --- Event loop -------------------------------------------------------- */
@@ -203,6 +207,7 @@ static void publish_stats(void)
     proto_stats.uptime_s = soft_timer_uptime_ms() / 1000U;
     proto_stats.state = (uint8_t)sm_current_state();
     proto_stats.sleeping = sm_is_sleeping() ? 1U : 0U;
+    proto_stats.parked = sm_is_parked() ? 1U : 0U;
     proto_stats.usb = sm_usb_present() ? 1U : 0U;
     proto_stats.low_battery = sm_low_battery() ? 1U : 0U;
     proto_stats.events_dropped = app_event_dropped();
@@ -224,6 +229,12 @@ int main(void)
     if (ant_link_init(on_remote_mode_request) != 0U) {
         start_lfclk_without_softdevice();
     }
+
+    /* The main loop sleeps inside a critical region, which masks the
+     * application interrupts in the NVIC. Without SEVONPEND a masked
+     * interrupt that becomes pending does not end sd_app_evt_wait() or WFE,
+     * and timer events would wait for the next SoftDevice event (~125 ms). */
+    SCB->SCR |= SCB_SCR_SEVONPEND_Msk;
     soft_timer_init();
 
     /* Non-fatal: Smart works with the remaining sensor, or stays dark */

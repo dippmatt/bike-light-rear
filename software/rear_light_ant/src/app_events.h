@@ -31,6 +31,7 @@ enum app_event_type {
     EVT_AMBIENT_BRIGHT,
     EVT_STATIONARY_TIMEOUT,
     EVT_BUTTON_WAKE,        /* button pressed while in Deep Sleep */
+    EVT_MOTION_DETECTED,    /* motion while Smart is parked (SMART-17) */
 
     /* Driver events handled in main.c (coalesced, never reach the state machine) */
     EVT_SD,                 /* SoftDevice event pending */

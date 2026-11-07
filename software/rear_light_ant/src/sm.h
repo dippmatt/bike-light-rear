@@ -21,22 +21,27 @@ enum system_state {
     LED_OFF = 0,         /* light off, system awake (ANT reachable) */
     LED_STEADY = 1,      /* solid base brightness */
     LED_FLASH = 2,       /* base brightness with periodic double flash */
-    LED_SMART = 3,       /* sensor-controlled brightness */
+    LED_SMART = 3,       /* sensor-controlled brightness, parks when stationary */
     IDLE_CHARGING = 4,   /* light off, USB connected */
+    LED_SMART_AUTO_OFF = 5, /* earlier Smart: powers off when stationary (not in the Mode Cycle) */
     SYSTEM_STATE_COUNT
 };
 
 struct sm_ops {
     /* Outputs */
     void (*light_set)(uint32_t pulse_usec);
-    /* reachable_off: awake and Off, so a controller can still switch the light on */
-    void (*status_set)(bool low_battery, bool charging, bool light_on, bool reachable_off);
+    /* reachable_off: awake and Off, so a controller can still switch the light on;
+     * parked: Smart is parked (SMART-16) */
+    void (*status_set)(bool low_battery, bool charging, bool light_on, bool reachable_off,
+                       bool parked);
     void (*status_off)(void);
 
     /* Timers and sensors that depend on the state */
     void (*flash_timer_start)(uint32_t ms); /* one-shot, posts EVT_FLASH_STEP */
     void (*flash_timer_stop)(void);
     void (*sensors_start)(void);
+    /* Parked sampling: motion detection only; 0 on success (SMART-16, SMART-19) */
+    int (*sensors_start_parked)(void);
     void (*sensors_stop)(void);
 
     /* Battery: sample the voltage and run the thresholds; the tick timer
@@ -83,6 +88,7 @@ enum system_state sm_first_active_mode(void);
 enum system_state sm_current_state(void);
 
 bool sm_is_sleeping(void);
+bool sm_is_parked(void);
 bool sm_usb_present(void);
 bool sm_low_battery(void);
 

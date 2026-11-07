@@ -13,7 +13,7 @@ The lowest power state. Outputs, sensors, battery sampling and the ANT channel a
 _Avoid_: Sleep, power-off, shutdown, System OFF (a different hardware mode that the firmware does not use)
 
 **Idle Charging**:
-The main LED is dark and the controller is awake while Charging. Reached instead of Deep Sleep whenever the light is powered off (short press past the last Active Mode, long press, auto-off, critical battery) while USB power is present, or by plugging in USB power while in Deep Sleep. Removing USB power in Idle Charging enters Deep Sleep. Reported to a bike computer as Off with battery status Charging.
+The main LED is dark and the controller is awake while Charging. Reached instead of Deep Sleep whenever the light is powered off (short press past the last Active Mode, long press, Smart Auto-Off's auto-off, critical battery) while USB power is present, or by plugging in USB power while in Deep Sleep. Removing USB power in Idle Charging enters Deep Sleep. Reported to a bike computer as Off with battery status Charging.
 _Avoid_: Charging mode, charge mode
 
 ## Light modes
@@ -27,13 +27,21 @@ Base brightness with a periodic double flash to Peak brightness.
 _Avoid_: 50/80 Flash, High Visibility
 
 **Smart**:
-Brightness is chosen automatically from braking, ambient light and motion. Reported to a bike computer as the ANT+ Auto mode.
-_Avoid_: Smart Mode (acceptable in prose), Adaptive
+Brightness is chosen automatically from braking and ambient light. When the bike stands still for 2.5 minutes, Smart parks, and motion brings it back. Reported to a bike computer as the ANT+ Auto mode.
+_Avoid_: Smart Mode (acceptable in prose), Adaptive, Always-On
+
+**Parked**:
+The phase of Smart after the stationary timeout. The main LED and the light sensor are off, the accelerometer only watches for motion, and the status LED gives a very short pulse every 5 seconds. Motion returns to normal Smart by itself (auto-on). Still the Smart state: the light stays reachable and is reported as Auto. Parked has no timeout.
+_Avoid_: standby, idle, auto-off (that is Smart Auto-Off)
+
+**Smart Auto-Off**:
+The earlier Smart behaviour: the same as Smart, but the stationary timeout powers the light off (Deep Sleep, or Idle Charging with USB power) instead of parking. Kept in the code, not in the Mode Cycle.
+_Avoid_: old Smart, legacy Smart
 
 ## Mode cycle
 
 **Active Mode**:
-A member of the mode cycle that runs the light: Steady, Flash or Smart. Smart counts even when its LED happens to be dark.
+A member of the mode cycle that runs the light: Steady, Flash or Smart. Smart counts even when its LED happens to be dark, also while Parked.
 _Avoid_: lit mode, light mode (too broad: includes Off)
 
 **Mode Cycle**:

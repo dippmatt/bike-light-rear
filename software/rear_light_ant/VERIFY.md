@@ -161,6 +161,7 @@ physical tests that only a person at the board can do (listed last).
 | PWR-1 .. PWR-4 | `test_PWR1_*`, `test_PWR2_PWR3_*`, `test_PWR4_all_power_off_paths` |
 | LED-1, LED-2, LED-4 | `test_LED1_LED2_steady_and_flash`, `test_LED4_*` |
 | SMART-1 .. SMART-6, SMART-8, SMART-9, SMART-11 .. SMART-13 | `test_SMART*` (detectors on synthetic samples, state machine priority rules) |
+| SMART-5, SMART-16 .. SMART-19 (Parked) | `test_SMART5_SMART16_*`, `test_SMART16_*`, `test_SMART17_*`, `test_SMART18_*`, `test_SMART19_*`, `test_SMART_auto_off_variant_*` (state machine only; the LIS3DH motion detector needs the board, P9a/P9b) |
 | USB-2 .. USB-4 | `test_USB2_USB3_USB4_usb_edges` |
 | BAT-2 .. BAT-5, BAT-7 | `test_BAT2_BAT3_BAT4_battery_logic`, `test_BAT5_*`, `test_BAT7_*` |
 | STAT-1 | `test_STAT1_status_led_priority` |
@@ -182,6 +183,20 @@ injection). Results of 16 Oct 2026:
 | SYS-5 | `make BENCH=1 FORCE_SD_FAILURE=1`: SoftDevice enable fails (error 0x3), the light and button logic, timers and Deep Sleep still work without it |
 | ANT-1, ANT-4, ANT-5, ANT-13, ANT-15 | Channel opens, pages are sent at the expected rate, no SoftDevice fault, counters readable with `make stats` |
 
+### Smart parked, sample board (7 Nov 2026, `make BENCH=1`, J-Link)
+
+Status LED pin (P0.11) sampled over SWD about every 1 ms, timed by the board's RTC1 counter.
+
+| Requirement | Result |
+| --- | --- |
+| SMART-16 | `make inject EVT=STATIONARY_TIMEOUT`: `make stats` shows `Smart (parked)`, the ANT+ mode stays Smart |
+| SMART-17 | Board shaken by hand: back to full Smart within the next poll |
+| SMART-17 (no false wake) | About 2.5 minutes untouched on the table: stayed parked (300 mg threshold) |
+| STAT-1 (parked pulse) | 30 ms every 5000 ms |
+| STAT-1 (heartbeat) | 100 ms every 2000 ms |
+
+Bug found and fixed: before the fix both pulses measured about 124 ms (parked period 5110 ms, heartbeat period 2118 ms). The main loop sleeps inside an SoftDevice critical region, which masks application interrupts, and `SEVONPEND` was only set without the SoftDevice. Timer events therefore waited for the next ANT radio event (about 125 ms), which also stretched Flash steps and button sampling. `SEVONPEND` is now set in both cases (`src/main.c`). The earlier heartbeat result above was sampled every 100 ms and could not show this.
+
 ### Physical tests still to do (checklist)
 
 Fill the Result column; none of these can be done through the debugger.
@@ -196,7 +211,10 @@ Fill the Result column; none of these can be done through the debugger.
 | P6 | Power-on reset with USB present | Connect the battery with USB-C plugged in | Boots into Idle Charging (BOOT-1); `reset reason 0` | |
 | P7 | Smart: ambient light | Cover the sensor, then uncover; watch `make stats` | `ambient` drops below 30 lux, the LED goes to Base within a few seconds, the blanked measurement shows as one brief dark moment every 30 s (`blanked measurements` counts up); uncover and it turns off again | |
 | P8 | Smart: braking | Move the light (jerk it along its Z axis, see HW-3) with the LED dark | LED goes to Peak while decelerating and holds 0.5 s | |
-| P9 | Smart: stationary auto-off | Leave the light still in Smart for 2.5 minutes | It powers off (Deep Sleep, or Idle Charging with USB) | |
+| P9 | Smart: parking | Leave the light still in Smart for 2.5 minutes (or `make inject EVT=STATIONARY_TIMEOUT` on a BENCH build) | Main LED off, status LED one 30 ms flash every 5 s, `make stats` shows `Smart (parked)`, the bike computer still shows Auto | |
+| P9a | Smart: auto-on | While parked, tap the light or lift the bike | Within about 1 s the status LED is solid again and `(parked)` is gone; braking boost works | |
+| P9b | Smart: no false wake | Leave it parked on a table for 30 minutes, then on the bike in the wind | Stays parked; if it wakes by itself, raise `MOTION_WAKE_THRESHOLD_MG` | |
+| P9c | Parked current | Meter in series with the battery: Smart with LED off, then Parked | Record both; Parked should be clearly lower (no light sensor, no 20 Hz polling) | |
 | P10 | Low and critical battery | Supply from a bench supply, lower slowly (no `BENCH=1`!) | Status LED blinks slowly below 3.4 V, the light powers off below 3.0 V | |
 | P11 | Wahoo with the product firmware | Press UMSCHALTEN several times, switch Off/On, wait out the Stable Window | Same behaviour as the prototype: commands follow, `light index 1`; a request right after a button press is ignored for 3 s | |
 | P12 | Silence timeout | Connect with the Wahoo, then switch the Wahoo off for 3 minutes | `make stats`: light index 0, `silence timeouts 1`, the main LED unchanged | |

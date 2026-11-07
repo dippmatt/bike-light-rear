@@ -35,6 +35,9 @@ static bool braking;
 static bool ambient_dark;
 static uint8_t flash_phase;
 
+/* Smart is parked: LED off, only motion is watched (SMART-16) */
+static bool parked;
+
 /* Position of a state in the Mode Cycle, or -1 if it is not an Active Mode */
 static int cycle_index(enum system_state s)
 {
@@ -52,11 +55,17 @@ static bool light_is_on(enum system_state s)
     return cycle_index(s) >= 0;
 }
 
+/* Both Smart variants share brightness and sensor handling */
+static bool is_smart(enum system_state s)
+{
+    return s == LED_SMART || s == LED_SMART_AUTO_OFF;
+}
+
 static void status_refresh(void)
 {
     /* Off while awake is reachable; Deep Sleep (sleeping) shows nothing */
     ops->status_set(low_battery, usb_present, light_is_on(state),
-                    state == LED_OFF && !sleeping);
+                    state == LED_OFF && !sleeping, parked);
 }
 
 /* Smart brightness priority: braking > ambient dark > off (SMART-2) */
@@ -87,6 +96,7 @@ static void state_enter(enum system_state s)
         ops->flash_timer_start(FLASH_CYCLE_MS); /* first double flash one cycle later */
         break;
     case LED_SMART:
+    case LED_SMART_AUTO_OFF:
         braking = false;
         ambient_dark = false;
         ops->light_set(LIGHT_PULSE_OFF);
@@ -104,7 +114,9 @@ static void state_exit(enum system_state s)
         ops->flash_timer_stop();
         break;
     case LED_SMART:
-        ops->sensors_stop();
+    case LED_SMART_AUTO_OFF:
+        ops->sensors_stop(); /* stops parked sampling too */
+        parked = false;
         break;
     default:
         break;
@@ -246,8 +258,64 @@ static void handle_button_short(void)
     }
 }
 
+/* No motion for the stationary timeout: the earlier Smart powers off, Smart
+ * parks (SMART-5, SMART-16). If the motion detector cannot be set up, Smart
+ * keeps full sampling instead of going dark without a wake source (SMART-19). */
+static void handle_stationary_timeout(void)
+{
+    if (state == LED_SMART_AUTO_OFF) {
+        power_off();
+        return;
+    }
+    if (state != LED_SMART || parked) {
+        return;
+    }
+
+    ops->sensors_stop();
+    if (ops->sensors_start_parked() != 0) {
+        ops->sensors_start();
+        return;
+    }
+
+    parked = true;
+    braking = false;
+    ambient_dark = false;
+    ops->light_set(LIGHT_PULSE_OFF);
+    status_refresh();
+}
+
+/* Motion while parked: back to full Smart, as on entering it (SMART-17).
+ * Not a state change: no publication, the Selection Window is untouched. */
+static void handle_motion_detected(void)
+{
+    if (state != LED_SMART || !parked) {
+        return;
+    }
+
+    ops->sensors_stop();
+    parked = false;
+    ops->sensors_start();
+    status_refresh();
+}
+
+/* A request for Smart (ANT+ Auto) selects the Smart variant in the Mode
+ * Cycle, so swapping the variants is one edit of mode_cycle (ANT-3) */
+static uint8_t smart_in_cycle(void)
+{
+    for (unsigned int i = 0; i < MODE_CYCLE_LEN; i++) {
+        if (is_smart(mode_cycle[i])) {
+            return (uint8_t)mode_cycle[i];
+        }
+    }
+    return (uint8_t)LED_SMART;
+}
+
 static void handle_remote_set_state(uint8_t requested)
 {
+    if (requested == (uint8_t)LED_SMART) {
+        requested = smart_in_cycle();
+    }
+
     /* Only Off and the Active Modes can be requested; Idle Charging is set
      * by USB power alone. Invalid requests are ignored (ANT-7). */
     if (requested != (uint8_t)LED_OFF && cycle_index((enum system_state)requested) < 0) {
@@ -357,26 +425,27 @@ void sm_handle_event(const struct app_event *evt)
             status_refresh();
         }
         break;
+    /* Detector events are stale while parked: the detectors are stopped */
     case EVT_BRAKE_START:
-        if (state == LED_SMART) {
+        if (is_smart(state) && !parked) {
             braking = true;
             apply_smart_pwm();
         }
         break;
     case EVT_BRAKE_STOP:
-        if (state == LED_SMART) {
+        if (is_smart(state) && !parked) {
             braking = false;
             apply_smart_pwm();
         }
         break;
     case EVT_AMBIENT_DARK:
-        if (state == LED_SMART) {
+        if (is_smart(state) && !parked) {
             ambient_dark = true;
             apply_smart_pwm();
         }
         break;
     case EVT_AMBIENT_BRIGHT:
-        if (state == LED_SMART) {
+        if (is_smart(state) && !parked) {
             ambient_dark = false;
             apply_smart_pwm();
         }
@@ -384,9 +453,10 @@ void sm_handle_event(const struct app_event *evt)
     case EVT_BUTTON_WAKE:
         break; /* stale wake request (device is already awake) */
     case EVT_STATIONARY_TIMEOUT:
-        if (state == LED_SMART) {
-            power_off();
-        }
+        handle_stationary_timeout();
+        break;
+    case EVT_MOTION_DETECTED:
+        handle_motion_detected();
         break;
     default:
         break;
@@ -402,6 +472,7 @@ void sm_init(const struct sm_ops *sm_ops, enum system_state boot_state, bool usb
     braking = false;
     ambient_dark = false;
     sleeping = false;
+    parked = false;
     flash_phase = 0U;
     selection_ticks = MODE_SELECT_WINDOW_BATTERY_TICKS;
 
@@ -437,6 +508,11 @@ enum system_state sm_current_state(void)
 bool sm_is_sleeping(void)
 {
     return sleeping;
+}
+
+bool sm_is_parked(void)
+{
+    return parked;
 }
 
 bool sm_usb_present(void)

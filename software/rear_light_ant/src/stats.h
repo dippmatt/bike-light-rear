@@ -59,7 +59,7 @@ struct proto_stats {
     uint8_t accel_ok;          /* accelerometer initialised */
     uint8_t light_ok;          /* ambient light sensor initialised */
     uint8_t channel_state;     /* enum ant_channel_state */
-    uint8_t reserved2;
+    uint8_t parked;            /* 1 while Smart is parked (SMART-16) */
 
     /* Last sensor values and counters of the Smart sensors */
     int32_t accel_milli[3];    /* milli-m/s^2 */

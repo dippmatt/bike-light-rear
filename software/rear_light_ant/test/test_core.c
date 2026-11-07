@@ -31,14 +31,17 @@ static struct {
     uint32_t now;
     uint32_t light;
     unsigned int light_calls;
-    bool status_low, status_charging, status_on, status_reachable_off;
+    bool status_low, status_charging, status_on, status_reachable_off, status_parked;
     unsigned int status_calls;
     unsigned int status_off_calls;
     bool flash_running;
     uint32_t flash_ms;
     unsigned int flash_starts;
     bool sensors_running;
+    bool sensors_parked;
     unsigned int sensors_starts;
+    unsigned int parked_starts;
+    int parked_start_result;
     enum battery_level battery;
     unsigned int battery_samples;
     bool battery_tick_running;
@@ -62,12 +65,13 @@ static void f_light_set(uint32_t p)
     fake.light_calls++;
 }
 
-static void f_status_set(bool low, bool charging, bool on, bool reachable_off)
+static void f_status_set(bool low, bool charging, bool on, bool reachable_off, bool parked)
 {
     fake.status_low = low;
     fake.status_charging = charging;
     fake.status_on = on;
     fake.status_reachable_off = reachable_off;
+    fake.status_parked = parked;
     fake.status_calls++;
 }
 
@@ -76,6 +80,7 @@ static void f_status_off(void)
     fake.status_off_calls++;
     fake.status_low = fake.status_charging = fake.status_on = false;
     fake.status_reachable_off = false;
+    fake.status_parked = false;
 }
 
 static void f_flash_start(uint32_t ms)
@@ -96,9 +101,20 @@ static void f_sensors_start(void)
     fake.sensors_starts++;
 }
 
+static int f_sensors_start_parked(void)
+{
+    fake.parked_starts++;
+    if (fake.parked_start_result == 0) {
+        fake.sensors_running = true;
+        fake.sensors_parked = true;
+    }
+    return fake.parked_start_result;
+}
+
 static void f_sensors_stop(void)
 {
     fake.sensors_running = false;
+    fake.sensors_parked = false;
 }
 
 static enum battery_level f_battery_sample(void)
@@ -177,6 +193,7 @@ static const struct sm_ops ops = {
     .flash_timer_start = f_flash_start,
     .flash_timer_stop = f_flash_stop,
     .sensors_start = f_sensors_start,
+    .sensors_start_parked = f_sensors_start_parked,
     .sensors_stop = f_sensors_stop,
     .battery_sample = f_battery_sample,
     .battery_tick_start = f_battery_tick_start,
@@ -770,11 +787,11 @@ TEST(test_PWR4_all_power_off_paths)
     ticks(1U);
     CHECK(sm_current_state() == IDLE_CHARGING);
 
-    /* Smart auto-off */
-    start(LED_SMART, false);
+    /* Smart Auto-Off: stationary auto-off (Smart parks instead, SMART-16) */
+    start(LED_SMART_AUTO_OFF, false);
     send(EVT_STATIONARY_TIMEOUT, 0U);
     CHECK(sm_is_sleeping());
-    start(LED_SMART, true);
+    start(LED_SMART_AUTO_OFF, true);
     send(EVT_STATIONARY_TIMEOUT, 0U);
     CHECK(sm_current_state() == IDLE_CHARGING);
 }
@@ -895,6 +912,168 @@ TEST(test_SMART6_sensor_events_outside_smart_are_ignored)
     start(LED_OFF, false);
     send(EVT_STATIONARY_TIMEOUT, 0U);
     CHECK(!sm_is_sleeping());
+}
+
+/* --- State machine: Smart parked -------------------------------------------- */
+
+/* Park Smart with the light dark-lit and braking, so clearing is visible */
+static void park(void)
+{
+    send(EVT_AMBIENT_DARK, 0U);
+    send(EVT_BRAKE_START, 0U);
+    send(EVT_STATIONARY_TIMEOUT, 0U);
+}
+
+TEST(test_SMART5_SMART16_stationary_parks_smart)
+{
+    BEGIN();
+    start(LED_SMART, false);
+    unsigned int published = fake.published_calls;
+    park();
+    CHECK(sm_current_state() == LED_SMART && sm_is_parked() && !sm_is_sleeping());
+    CHECK(fake.light == LIGHT_PULSE_OFF);
+    CHECK(fake.parked_starts == 1U && fake.sensors_parked);
+    CHECK(fake.status_parked);
+    CHECK(fake.published_calls == published); /* not a state change: ANT+ keeps Auto */
+
+    /* stale detector events while parked do not light the LED */
+    unsigned int calls = fake.light_calls;
+    send(EVT_AMBIENT_DARK, 0U);
+    send(EVT_BRAKE_START, 0U);
+    CHECK(fake.light_calls == calls);
+
+    /* a second stationary timeout while parked changes nothing */
+    send(EVT_STATIONARY_TIMEOUT, 0U);
+    CHECK(fake.parked_starts == 1U && sm_is_parked());
+}
+
+TEST(test_SMART17_motion_unparks)
+{
+    BEGIN();
+    start(LED_SMART, false);
+    park();
+    unsigned int starts = fake.sensors_starts;
+    unsigned int published = fake.published_calls;
+    send(EVT_MOTION_DETECTED, 0U);
+    CHECK(!sm_is_parked() && sm_current_state() == LED_SMART);
+    CHECK(fake.sensors_running && !fake.sensors_parked && fake.sensors_starts == starts + 1U);
+    CHECK(fake.status_on && !fake.status_parked);
+    CHECK(fake.light == LIGHT_PULSE_OFF); /* flags cleared: off until the next detection */
+    CHECK(fake.published_calls == published);
+
+    /* Smart works again */
+    send(EVT_AMBIENT_DARK, 0U);
+    CHECK(fake.light == LIGHT_PULSE_BASE);
+
+    /* and parks again after the next stationary timeout */
+    send(EVT_STATIONARY_TIMEOUT, 0U);
+    CHECK(sm_is_parked() && fake.parked_starts == 2U);
+}
+
+TEST(test_SMART17_motion_ignored_unless_parked)
+{
+    BEGIN();
+    start(LED_SMART, false);
+    unsigned int starts = fake.sensors_starts;
+    send(EVT_MOTION_DETECTED, 0U);
+    CHECK(fake.sensors_starts == starts && !sm_is_parked());
+
+    start(LED_STEADY, false);
+    unsigned int calls = fake.light_calls;
+    send(EVT_MOTION_DETECTED, 0U);
+    CHECK(fake.light_calls == calls && sm_current_state() == LED_STEADY);
+    CHECK(!fake.sensors_running);
+
+    start(LED_SMART_AUTO_OFF, false);
+    send(EVT_MOTION_DETECTED, 0U);
+    CHECK(sm_current_state() == LED_SMART_AUTO_OFF && !sm_is_parked());
+}
+
+TEST(test_SMART19_park_setup_failure_keeps_full_smart)
+{
+    BEGIN();
+    start(LED_SMART, false);
+    fake.parked_start_result = -1;
+    unsigned int starts = fake.sensors_starts;
+    send(EVT_STATIONARY_TIMEOUT, 0U);
+    CHECK(!sm_is_parked() && sm_current_state() == LED_SMART);
+    CHECK(fake.sensors_running && !fake.sensors_parked && fake.sensors_starts == starts + 1U);
+    CHECK(!fake.status_parked);
+}
+
+TEST(test_SMART18_parked_buttons_usb_battery)
+{
+    BEGIN();
+    /* inside the Selection Window: short press goes to the next mode */
+    start(LED_SMART, false);
+    park();
+    send(EVT_BUTTON_SHORT, 0U);
+    CHECK(sm_current_state() == LED_STEADY && !sm_is_parked());
+    CHECK(!fake.sensors_running);
+
+    /* after the window: short press powers off */
+    start(LED_SMART, false);
+    ticks(MODE_SELECT_WINDOW_BATTERY_TICKS);
+    park();
+    send(EVT_BUTTON_SHORT, 0U);
+    CHECK(sm_is_sleeping() && !sm_is_parked());
+
+    /* long press powers off */
+    start(LED_SMART, false);
+    park();
+    send(EVT_BUTTON_LONG, 0U);
+    CHECK(sm_is_sleeping() && !fake.sensors_running);
+
+    /* wake after Deep Sleep from Parked: full Smart, not parked */
+    send(EVT_BUTTON_WAKE, 0U);
+    CHECK(sm_current_state() == LED_SMART && !sm_is_parked() && !fake.sensors_parked);
+
+    /* USB power does not unpark; charging is passed to the driver (it wins there) */
+    start(LED_SMART, false);
+    park();
+    send(EVT_USB_CONNECTED, 0U);
+    CHECK(sm_is_parked() && fake.status_charging && fake.status_parked);
+    send(EVT_USB_DISCONNECTED, 0U);
+    CHECK(sm_is_parked() && !fake.status_charging);
+
+    /* no park timeout: battery ticks keep it parked */
+    ticks(1000U);
+    CHECK(sm_is_parked() && sm_current_state() == LED_SMART);
+
+    /* critical battery powers off */
+    fake.battery = BATTERY_CRITICAL;
+    ticks(1U);
+    CHECK(sm_is_sleeping() && !sm_is_parked());
+}
+
+TEST(test_SMART16_leaving_parked_smart_by_request)
+{
+    BEGIN();
+    start(LED_SMART, false);
+    park();
+    settle();
+    send(EVT_REMOTE_SET_STATE, LED_SMART); /* equals the current state: ignored */
+    CHECK(sm_is_parked());
+    send(EVT_REMOTE_SET_STATE, LED_STEADY);
+    CHECK(sm_current_state() == LED_STEADY && !sm_is_parked() && !fake.status_parked);
+    CHECK(!fake.sensors_running);
+
+    settle();
+    send(EVT_REMOTE_SET_STATE, LED_SMART);
+    CHECK(sm_current_state() == LED_SMART && !sm_is_parked() && !fake.sensors_parked);
+}
+
+TEST(test_SMART_auto_off_variant_keeps_old_behaviour)
+{
+    BEGIN();
+    start(LED_SMART_AUTO_OFF, false);
+    CHECK(fake.sensors_running && fake.light == LIGHT_PULSE_OFF);
+    send(EVT_AMBIENT_DARK, 0U);
+    CHECK(fake.light == LIGHT_PULSE_BASE);
+    send(EVT_BRAKE_START, 0U);
+    CHECK(fake.light == LIGHT_PULSE_PEAK);
+    send(EVT_STATIONARY_TIMEOUT, 0U);
+    CHECK(sm_is_sleeping() && fake.parked_starts == 0U);
 }
 
 /* --- State machine: USB ----------------------------------------------------- */
@@ -1114,6 +1293,13 @@ int main(void)
     test_SMART1_SMART2_entering_smart_and_priority();
     test_SMART1_flags_cleared_on_reentry_and_sampling_stops();
     test_SMART6_sensor_events_outside_smart_are_ignored();
+    test_SMART5_SMART16_stationary_parks_smart();
+    test_SMART17_motion_unparks();
+    test_SMART17_motion_ignored_unless_parked();
+    test_SMART19_park_setup_failure_keeps_full_smart();
+    test_SMART18_parked_buttons_usb_battery();
+    test_SMART16_leaving_parked_smart_by_request();
+    test_SMART_auto_off_variant_keeps_old_behaviour();
     test_USB2_USB3_USB4_usb_edges();
     test_STAT1_status_led_priority();
     test_STAT1_heartbeat_only_in_awake_off();

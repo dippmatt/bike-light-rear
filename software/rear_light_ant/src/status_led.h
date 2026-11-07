@@ -11,11 +11,13 @@ void status_led_init(void);
 
 /**
  * Show the status in priority order: low battery slow blink, charging fast
- * blink, light on solid, awake and Off a short pulse every few seconds
- * (heartbeat), otherwise off (STAT-1). Blinking is driven by the ST_STATUS
- * timer; call status_led_on_blink() for every EVT_STATUS_BLINK.
+ * blink, Smart parked a very short pulse every few seconds, light on solid,
+ * awake and Off a short pulse every few seconds (heartbeat), otherwise off
+ * (STAT-1). Blinking is driven by the ST_STATUS timer; call
+ * status_led_on_blink() for every EVT_STATUS_BLINK.
  */
-void status_led_set(bool low_battery, bool charging, bool light_on, bool reachable_off);
+void status_led_set(bool low_battery, bool charging, bool light_on, bool reachable_off,
+                    bool parked);
 
 void status_led_on_blink(void);
 

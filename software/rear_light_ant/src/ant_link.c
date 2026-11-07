@@ -349,15 +349,15 @@ void ant_link_sleep_until_event(void)
 {
     uint8_t nested;
 
-    /* With interrupts masked a pending interrupt still ends the wait, so an
-     * event posted between the check and the sleep is not lost */
+    /* With interrupts masked a pending interrupt still ends the wait (SEVONPEND,
+     * set in main), so an event posted between the check and the sleep is not lost */
     (void)sd_nvic_critical_region_enter(&nested);
     if (!app_event_pending()) {
         if (available) {
             (void)sd_app_evt_wait();
         } else {
-            /* No SoftDevice: SEVONPEND (set in main) turns a pending interrupt
-             * into an event, the first WFE clears a stale one */
+            /* No SoftDevice: SEVONPEND turns a pending interrupt into an
+             * event, the first WFE clears a stale one */
             __SEV();
             __WFE();
             __WFE();

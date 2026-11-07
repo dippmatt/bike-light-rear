@@ -7,6 +7,7 @@
 
 #include "sensors.h"
 
+#include "app_events.h"
 #include "board.h"
 #include "config.h"
 #include "detectors.h"
@@ -20,11 +21,24 @@
 #define LIS3DH_WHO_AM_I      0x0FU
 #define LIS3DH_WHO_AM_I_ID   0x33U
 #define LIS3DH_CTRL_REG1     0x20U
+#define LIS3DH_CTRL_REG2     0x21U
 #define LIS3DH_CTRL_REG4     0x23U
+#define LIS3DH_CTRL_REG5     0x24U
+#define LIS3DH_REFERENCE     0x26U
 #define LIS3DH_OUT_X_L       0x28U
+#define LIS3DH_INT1_CFG      0x30U
+#define LIS3DH_INT1_SRC      0x31U
+#define LIS3DH_INT1_THS      0x32U
+#define LIS3DH_INT1_DURATION 0x33U
 #define LIS3DH_AUTO_INCREMENT 0x80U
 #define LIS3DH_CTRL1_XYZ_EN  0x07U
+#define LIS3DH_CTRL1_LPEN    0x08U /* low-power mode (8-bit) */
+#define LIS3DH_ODR_10HZ      0x2U
+#define LIS3DH_CTRL2_HP_IA1  0x01U /* high-pass filter on interrupt generator 1, normal mode */
 #define LIS3DH_CTRL4_BDU     0x80U /* output registers update only after both bytes are read */
+#define LIS3DH_CTRL5_LIR_INT1 0x08U /* INT1_SRC latched until read */
+#define LIS3DH_INT1_CFG_XYZ_HIGH 0x2AU /* OR of X, Y, Z high events */
+#define LIS3DH_INT1_SRC_IA   0x40U
 
 /* +-2 g in 10-bit normal mode: 4 mg per digit on the left-justified 16-bit value */
 #define LIS3DH_MG_PER_DIGIT 4
@@ -37,6 +51,9 @@
 static bool accel_ok;
 static bool light_ok;
 static bool running;
+
+/* Parked: only the motion flag is polled, TWIM is enabled per poll */
+static bool parked;
 
 /* The last switch back to continuous conversion failed; retried on the next
  * light sample */
@@ -101,7 +118,41 @@ static int lis3dh_start(void)
 
 static void lis3dh_stop(void)
 {
-    (void)lis3dh_write_reg(LIS3DH_CTRL_REG1, 0x00U); /* power-down */
+    /* Motion detector off (if it was set up), then power-down */
+    (void)lis3dh_write_reg(LIS3DH_INT1_CFG, 0x00U);
+    (void)lis3dh_write_reg(LIS3DH_CTRL_REG5, 0x00U);
+    (void)lis3dh_write_reg(LIS3DH_CTRL_REG2, 0x00U);
+    (void)lis3dh_write_reg(LIS3DH_CTRL_REG1, 0x00U);
+}
+
+/* Motion detector for Parked (SMART-16): low-power 10 Hz, high-pass filter
+ * on interrupt generator 1, OR of the X/Y/Z high events, latched in INT1_SRC.
+ * Reading REFERENCE resets the filter to the current acceleration, so the
+ * resting gravity vector does not count as motion. */
+static int lis3dh_start_motion(void)
+{
+    static const uint8_t setup[][2] = {
+        { LIS3DH_CTRL_REG1, (uint8_t)((LIS3DH_ODR_10HZ << 4) | LIS3DH_CTRL1_LPEN |
+                                      LIS3DH_CTRL1_XYZ_EN) },
+        { LIS3DH_CTRL_REG2, LIS3DH_CTRL2_HP_IA1 },
+        { LIS3DH_CTRL_REG4, LIS3DH_CTRL4_BDU },
+        { LIS3DH_CTRL_REG5, LIS3DH_CTRL5_LIR_INT1 },
+        { LIS3DH_INT1_THS, (uint8_t)MOTION_WAKE_THS },
+        { LIS3DH_INT1_DURATION, (uint8_t)MOTION_WAKE_DURATION },
+    };
+    uint8_t value;
+
+    for (unsigned int i = 0; i < sizeof(setup) / sizeof(setup[0]); i++) {
+        if (lis3dh_write_reg(setup[i][0], setup[i][1]) != 0) {
+            return -1;
+        }
+    }
+    if (lis3dh_read_reg(LIS3DH_REFERENCE, &value) != 0 ||
+        lis3dh_write_reg(LIS3DH_INT1_CFG, LIS3DH_INT1_CFG_XYZ_HIGH) != 0 ||
+        lis3dh_read_reg(LIS3DH_INT1_SRC, &value) != 0) { /* clear a stale latch */
+        return -1;
+    }
+    return 0;
 }
 
 /* @return 0 on success, values in milli-m/s^2 */
@@ -370,6 +421,44 @@ void sensors_start(void)
     soft_timer_start(ST_SENSOR, SENSOR_TICK_MS, SENSOR_TICK_MS);
 }
 
+int sensors_start_parked(void)
+{
+    if (running || !accel_ok) {
+        return -1; /* without the accelerometer nothing could wake the light */
+    }
+
+    twim_enable();
+    if (light_ok) {
+        (void)opt3001_config_write(OPT3001_CONFIG_SHUTDOWN);
+    }
+    if (lis3dh_start_motion() != 0) {
+        lis3dh_stop();
+        twim_disable();
+        return -1;
+    }
+    twim_disable();
+
+    parked = true;
+    running = true;
+    soft_timer_start(ST_SENSOR, PARKED_POLL_INTERVAL_MS, PARKED_POLL_INTERVAL_MS);
+    return 0;
+}
+
+/* Reading INT1_SRC clears the latch. A failed read is ignored (SMART-17). */
+static void poll_motion(void)
+{
+    uint8_t src = 0U;
+    int ret;
+
+    twim_enable();
+    ret = lis3dh_read_reg(LIS3DH_INT1_SRC, &src);
+    twim_disable();
+
+    if (ret == 0 && (src & LIS3DH_INT1_SRC_IA) != 0U) {
+        (void)app_event_post(EVT_MOTION_DETECTED, 0U);
+    }
+}
+
 void sensors_stop(void)
 {
     if (!running) {
@@ -378,6 +467,11 @@ void sensors_stop(void)
 
     running = false;
     soft_timer_stop(ST_SENSOR);
+
+    if (parked) {
+        parked = false;
+        twim_enable(); /* disabled between parked polls */
+    }
 
     if (blank_state != BLANK_IDLE) {
         soft_timer_stop(ST_BLANK);
@@ -398,6 +492,11 @@ void sensors_on_tick(void)
 {
     if (!running) {
         return; /* stale tick */
+    }
+
+    if (parked) {
+        poll_motion();
+        return;
     }
 
     if (accel_phase == 0U) {

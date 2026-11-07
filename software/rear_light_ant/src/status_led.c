@@ -12,13 +12,26 @@
 enum pattern {
     PATTERN_NONE,      /* steady level, no timer */
     PATTERN_BLINK,     /* toggled by a periodic timer */
-    PATTERN_HEARTBEAT, /* short pulse, a one-shot timer ends each phase */
+    PATTERN_PULSE,     /* short pulse, a one-shot timer ends each phase */
 };
 
 /* The pattern that owns the LED: a blink event that is still queued after
  * the timer stopped must not toggle it */
 static enum pattern pattern;
-static bool heartbeat_lit;
+static bool pulse_lit;
+static uint32_t pulse_on_ms;
+static uint32_t pulse_period_ms;
+
+/* Starts with a pulse, so the change is visible at once */
+static void pulse_start(uint32_t on_ms, uint32_t period_ms)
+{
+    pattern = PATTERN_PULSE;
+    pulse_on_ms = on_ms;
+    pulse_period_ms = period_ms;
+    pulse_lit = true;
+    status_led_raw(true);
+    soft_timer_start(ST_STATUS, on_ms, 0U);
+}
 
 void status_led_raw(bool on)
 {
@@ -35,7 +48,8 @@ void status_led_init(void)
     NRF_P0->DIRSET = 1UL << PIN_STATUS_LED;
 }
 
-void status_led_set(bool low_battery, bool charging, bool light_on, bool reachable_off)
+void status_led_set(bool low_battery, bool charging, bool light_on, bool reachable_off,
+                    bool parked)
 {
     /* Stop any pattern first so the timer cannot toggle a freshly set level */
     soft_timer_stop(ST_STATUS);
@@ -55,12 +69,13 @@ void status_led_set(bool low_battery, bool charging, bool light_on, bool reachab
         return;
     }
 
+    if (parked) {
+        pulse_start(PARKED_PULSE_ON_MS, PARKED_PULSE_PERIOD_MS);
+        return;
+    }
+
     if (!light_on && reachable_off) {
-        /* Starts with a pulse, so the change is visible at once */
-        pattern = PATTERN_HEARTBEAT;
-        heartbeat_lit = true;
-        status_led_raw(true);
-        soft_timer_start(ST_STATUS, HEARTBEAT_ON_MS, 0U);
+        pulse_start(HEARTBEAT_ON_MS, HEARTBEAT_PERIOD_MS);
         return;
     }
 
@@ -73,12 +88,10 @@ void status_led_on_blink(void)
     case PATTERN_BLINK:
         NRF_P0->OUT ^= 1UL << PIN_STATUS_LED;
         break;
-    case PATTERN_HEARTBEAT:
-        heartbeat_lit = !heartbeat_lit;
-        status_led_raw(heartbeat_lit);
-        soft_timer_start(ST_STATUS,
-                         heartbeat_lit ? HEARTBEAT_ON_MS : HEARTBEAT_PERIOD_MS - HEARTBEAT_ON_MS,
-                         0U);
+    case PATTERN_PULSE:
+        pulse_lit = !pulse_lit;
+        status_led_raw(pulse_lit);
+        soft_timer_start(ST_STATUS, pulse_lit ? pulse_on_ms : pulse_period_ms - pulse_on_ms, 0U);
         break;
     case PATTERN_NONE:
     default:

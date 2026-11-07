@@ -11,7 +11,8 @@ import tempfile
 
 LOG_LEN = 8
 FORMAT = "<13I8s8sBB2x66H3I" + "IB3x8s" * LOG_LEN + "4I8B3iiII"
-STATE_NAMES = {0: "Off", 1: "Steady", 2: "Flash", 3: "Smart", 4: "Idle Charging"}
+STATE_NAMES = {0: "Off", 1: "Steady", 2: "Flash", 3: "Smart", 4: "Idle Charging",
+               5: "Smart Auto-Off"}
 EVENT_NAMES = {
     0x01: "RX_SEARCH_TIMEOUT", 0x02: "RX_FAIL", 0x03: "TX", 0x04: "TRANSFER_RX_FAILED",
     0x05: "TRANSFER_TX_COMPLETED", 0x06: "TRANSFER_TX_FAILED", 0x07: "CHANNEL_CLOSED",
@@ -81,7 +82,7 @@ def main():
     rx_other, rx_other_id, rx_next = values[17 + 0x42:17 + 0x42 + 3]
     log_raw = values[17 + 0x42 + 3:17 + 0x42 + 3 + 3 * LOG_LEN]
     (events_dropped, reset_reason, ant_init_error, silence_timeouts,
-     state, sleeping, usb, low_batt, accel_ok, light_ok, channel_state, _, ax, ay, az, millilux, blanks, _inject) = values[17 + 0x42 + 3 + 3 * LOG_LEN:]
+     state, sleeping, usb, low_batt, accel_ok, light_ok, channel_state, parked, ax, ay, az, millilux, blanks, _inject) = values[17 + 0x42 + 3 + 3 * LOG_LEN:]
     log = [log_raw[i:i + 3] for i in range(0, len(log_raw), 3)]
 
     if stats["magic"] != 0x414E5450:
@@ -92,7 +93,8 @@ def main():
     if uptime:
         print(f"{'tx/uptime [Hz]':16} {stats['tx_events'] / uptime:.3f} (expect 8.02)")
     print(f"{'mode':16} {MODES.get(mode, mode)}")
-    print(f"{'state':16} {STATE_NAMES.get(state, state)}{' (sleeping)' if sleeping else ''}")
+    print(f"{'state':16} {STATE_NAMES.get(state, state)}{' (sleeping)' if sleeping else ''}"
+          f"{' (parked)' if parked else ''}")
     print(f"{'usb / low batt':16} {usb} / {low_batt}")
     print(f"{'sensors ok':16} accel {accel_ok}, light {light_ok}")
     print(f"{'accel [m/s2]':16} x {ax / 1000:.2f}  y {ay / 1000:.2f}  z {az / 1000:.2f}")
