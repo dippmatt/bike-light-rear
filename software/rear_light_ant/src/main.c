@@ -25,19 +25,45 @@
 
 #define LFCLK_START_WAIT_LIMIT 2000000U
 
-/* The ANT+ modes use the numbering of the lamp modes of bike_light.c */
-_Static_assert((int)LAMP_OFF == (int)LED_OFF && (int)LAMP_STEADY == (int)LED_STEADY &&
-               (int)LAMP_FLASH == (int)LED_FLASH && (int)LAMP_SMART == (int)LED_SMART,
-               "lamp modes and system states must share their numbering");
-
+/* Lamp modes (the ANT+ side, bike_light.c) and system states are numbered
+ * independently; these two functions are the only link between them. */
 static enum lamp_mode lamp_mode_of_state(enum system_state s)
 {
     /* Deep Sleep is published as Off, Idle Charging is reported as Off, both
      * Smart variants as Smart (ANT-3) */
-    if (s == LED_SMART_AUTO_OFF) {
+    switch (s) {
+    case LED_STEADY:
+        return LAMP_STEADY;
+    case LED_FLASH:
+        return LAMP_FLASH;
+    case LED_BRIGHT:
+        return LAMP_BRIGHT;
+    case LED_SMART:
+    case LED_SMART_AUTO_OFF:
         return LAMP_SMART;
+    default:
+        return LAMP_OFF;
     }
-    return (s <= LED_SMART) ? (enum lamp_mode)s : LAMP_OFF;
+}
+
+/* A lamp mode that has no state maps to SYSTEM_STATE_COUNT, which the state
+ * machine rejects as an invalid request (ANT-7) */
+static enum system_state state_of_lamp_mode(enum lamp_mode mode)
+{
+    switch (mode) {
+    case LAMP_OFF:
+        return LED_OFF;
+    case LAMP_STEADY:
+        return LED_STEADY;
+    case LAMP_FLASH:
+        return LED_FLASH;
+    case LAMP_SMART:
+        return LED_SMART;
+    case LAMP_BRIGHT:
+        return LED_BRIGHT;
+    default:
+        return SYSTEM_STATE_COUNT;
+    }
 }
 
 /* --- Operations for the state machine ----------------------------------- */
@@ -122,7 +148,7 @@ static const struct sm_ops ops = {
 /* A controller request becomes an event like any other input (SYS-3) */
 static void on_remote_mode_request(enum lamp_mode mode)
 {
-    (void)app_event_post(EVT_REMOTE_SET_STATE, (uint8_t)mode);
+    (void)app_event_post(EVT_REMOTE_SET_STATE, (uint8_t)state_of_lamp_mode(mode));
 }
 
 static void report_battery(void)

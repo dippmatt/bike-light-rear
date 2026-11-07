@@ -1,11 +1,12 @@
-# ANT+ Bike Lights bench prototype for the rear light (nRF52833, ANT S212 7.0.1)
+# ANT+ Bike Lights firmware for the rear and the front light (nRF52833, ANT S212 7.0.1)
 #
 # Builds with the GCC that ships with the nRF Connect SDK toolchain; no nRF5
 # SDK is needed (the SoftDevice API headers, the nRF52833 MDK and CMSIS are
 # the only external sources).
 #
-#   make            build build/rear_light_ant.hex
-#   make test       host unit tests of the profile logic
+#   make            build build/rear/light_rear.hex (rear light, the default)
+#   make LIGHT=front  the same for the front light (build/front/light_front.hex)
+#   make test       host unit tests of both variants
 #   make flash      erase chip, program SoftDevice and application, reset
 #   make flash-app  program the application only
 #   make stats      read the debug counters over SWD
@@ -36,12 +37,25 @@ SD_NAME := ANT_s212_nrf52_7.0.1
 SD_API  := $(SD_DIR)/$(SD_NAME)/$(SD_NAME).API/include
 SD_HEX  := $(SD_DIR)/$(SD_NAME)/$(SD_NAME).hex
 
+# Light variant (ADR-0009): rear (default) or front. Every target that builds,
+# flashes or reads a board takes it, e.g. make LIGHT=front flash
+LIGHT ?= rear
+ifeq ($(LIGHT),front)
+EXTRA_DEFS += -DLIGHT_FRONT=1
+else ifneq ($(LIGHT),rear)
+$(error LIGHT must be rear or front)
+endif
+
+# Build output of this variant; the SoftDevice in build/sd is shared
+B   := build/$(LIGHT)
+APP := $(B)/light_$(LIGHT)
+
 # Keys are not in the repository. Copy keys.example.mk to keys.local.mk (git-
 # ignored) and fill in ANT_PLUS_NETWORK_KEY and ANT_LICENSE_KEY; see README.md,
 # "Keys". The firmware build stops if they are missing.
 -include keys.local.mk
 
-# ANT+ network key as a C byte list, e.g. 0x01,0x23,... (written to build/ant_keys.h)
+# ANT+ network key as a C byte list, e.g. 0x01,0x23,... (written to $(B)/ant_keys.h)
 ANT_PLUS_NETWORK_KEY_BYTES := $(shell echo '$(ANT_PLUS_NETWORK_KEY)' | grep -E '^[0-9A-Fa-f]{16}$$' | sed 's/../0x&,/g; s/,$$//')
 
 # Low-frequency clock source: rc (default, no crystal on this board),
@@ -67,20 +81,20 @@ CFLAGS := -mcpu=cortex-m4 -mthumb -mfloat-abi=soft -Os -g3 \
           -ffunction-sections -fdata-sections -fno-common \
           -Wall -Wextra -Werror -Wshadow \
           -DNRF52833_XXAA -DANT_LICENSE_KEY=\"$(ANT_LICENSE_KEY)\" $(EXTRA_DEFS) \
-          -Isrc -Ibuild -isystem $(MDK) -isystem $(CMSIS) -isystem $(SD_API) -isystem $(SD_API)/nrf52
+          -Isrc -I$(B) -isystem $(MDK) -isystem $(CMSIS) -isystem $(SD_API) -isystem $(SD_API)/nrf52
 
 LDFLAGS := -mcpu=cortex-m4 -mthumb -mfloat-abi=soft -nostartfiles -nostdlib \
-           -Tlinker/rear_light_ant.ld -Wl,--gc-sections -Wl,-Map=build/rear_light_ant.map
+           -Tlinker/rear_light_ant.ld -Wl,--gc-sections -Wl,-Map=$(APP).map
 
 SRCS := src/startup.c src/main.c src/ant_link.c src/bike_light.c src/app_events.c \
         src/sm.c src/detectors.c src/battery_logic.c src/platform.c src/light.c \
         src/status_led.c src/soft_timer.c src/button.c src/battery.c src/power.c \
         src/sensors.c src/twim.c
-OBJS := $(SRCS:src/%.c=build/%.o) build/system_nrf52833.o
+OBJS := $(SRCS:src/%.c=$(B)/%.o) $(B)/system_nrf52833.o
 
 .PHONY: all clean test flash flash-app stats rate watch inject size sd
 
-all: build/rear_light_ant.hex size check-vectors
+all: $(APP).hex size check-vectors
 
 sd: $(SD_HEX)
 
@@ -90,34 +104,34 @@ $(SD_HEX): $(SD_ZIP)
 	touch $@
 
 # Rebuild everything when the compiler flags (LFCLK, licence key) change
-build/.flags: FORCE | build
+$(B)/.flags: FORCE | $(B)
 	@echo '$(CFLAGS)' | cmp -s - $@ || echo '$(CFLAGS)' > $@
 FORCE:
 
 # Generated from keys.local.mk; stops the build if a key is missing or malformed.
 # Rewritten only when the content changes, so ant_link.o is not rebuilt needlessly.
-build/ant_keys.h: FORCE | build
+$(B)/ant_keys.h: FORCE | $(B)
 	@test -n '$(ANT_LICENSE_KEY)' || { echo 'ANT_LICENSE_KEY is not set: see README.md, "Keys"'; exit 1; }
 	@test -n '$(ANT_PLUS_NETWORK_KEY_BYTES)' || { echo 'ANT_PLUS_NETWORK_KEY must be 16 hex digits: see README.md, "Keys"'; exit 1; }
 	@echo '#define ANT_PLUS_NETWORK_KEY_BYTES $(ANT_PLUS_NETWORK_KEY_BYTES)' | cmp -s - $@ || echo '#define ANT_PLUS_NETWORK_KEY_BYTES $(ANT_PLUS_NETWORK_KEY_BYTES)' > $@
 
-build/%.o: src/%.c $(SD_HEX) build/.flags build/ant_keys.h | build
+$(B)/%.o: src/%.c $(SD_HEX) $(B)/.flags $(B)/ant_keys.h | $(B)
 	@echo "  CC      $<"
 	$(Q)$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
 # The MDK's system file is third-party code: no -Werror/-Wshadow for it
-build/system_nrf52833.o: $(MDK)/system_nrf52833.c build/.flags | build
+$(B)/system_nrf52833.o: $(MDK)/system_nrf52833.c $(B)/.flags | $(B)
 	@echo "  CC      $<"
 	$(Q)$(CC) $(filter-out -Werror -Wshadow,$(CFLAGS)) -c $< -o $@
 
-build:
-	mkdir -p build
+$(B) build/test:
+	mkdir -p $@
 
-build/rear_light_ant.elf: $(OBJS) linker/rear_light_ant.ld
+$(APP).elf: $(OBJS) linker/rear_light_ant.ld
 	@echo "  LD      $@"
 	$(Q)$(CC) $(LDFLAGS) $(OBJS) -lgcc -o $@
 
-build/rear_light_ant.hex: build/rear_light_ant.elf
+$(APP).hex: $(APP).elf
 	@echo "  HEX     $@"
 	$(Q)$(OBJCOPY) -O ihex $< $@
 
@@ -125,55 +139,59 @@ build/rear_light_ant.hex: build/rear_light_ant.elf
 # defaults in the vector table (a silent name mismatch would leave an
 # interrupt without a handler)
 .PHONY: check-vectors
-check-vectors: build/rear_light_ant.elf
+check-vectors: $(APP).elf
 	@for h in SWI2_EGU2_IRQHandler RTC1_IRQHandler GPIOTE_IRQHandler; do \
 	    $(NM) $< | grep -q " T $$h$$" || { echo "missing handler $$h"; exit 1; }; \
 	done
 
-size: build/rear_light_ant.elf
+size: $(APP).elf
 	$(SIZE) $<
 
-test: build/test_bike_light build/test_core
-	build/test_bike_light
-	build/test_core
+# Both variants, so a change for one light cannot break the other unnoticed
+TEST_BINS := $(foreach v,rear front,build/test/test_bike_light_$(v) build/test/test_core_$(v))
+
+test: $(TEST_BINS)
+	@for t in $(TEST_BINS); do echo "  RUN     $$t"; $$t || exit 1; done
 
 HOST_CFLAGS := -Wall -Wextra -Werror -Wshadow -std=c11 -fsanitize=address,undefined -g
 
-build/test_bike_light: test/test_bike_light.c src/bike_light.c src/bike_light.h | build
-	gcc $(HOST_CFLAGS) -o $@ test/test_bike_light.c src/bike_light.c
+variant_def = $(if $(filter front,$(1)),-DLIGHT_FRONT=1,)
+
+build/test/test_bike_light_%: test/test_bike_light.c src/bike_light.c $(wildcard src/*.h) | build/test
+	gcc $(HOST_CFLAGS) $(call variant_def,$*) -o $@ test/test_bike_light.c src/bike_light.c
 
 CORE_SRCS := src/sm.c src/app_events.c src/battery_logic.c src/detectors.c src/bike_light.c
 
-build/test_core: test/test_core.c test/test_platform.c $(CORE_SRCS) $(wildcard src/*.h) | build
-	gcc $(HOST_CFLAGS) -o $@ test/test_core.c test/test_platform.c $(CORE_SRCS)
+build/test/test_core_%: test/test_core.c test/test_platform.c $(CORE_SRCS) $(wildcard src/*.h) | build/test
+	gcc $(HOST_CFLAGS) $(call variant_def,$*) -o $@ test/test_core.c test/test_platform.c $(CORE_SRCS)
 
 # Chip erase also clears UICR; the application hex restores NFCPINS = GPIO
-flash: build/rear_light_ant.hex $(SD_HEX)
+flash: $(APP).hex $(SD_HEX)
 	nrfjprog --family NRF52 --program $(SD_HEX) --chiperase --verify
-	nrfjprog --family NRF52 --program build/rear_light_ant.hex --sectoranduicrerase --verify
+	nrfjprog --family NRF52 --program $(APP).hex --sectoranduicrerase --verify
 	nrfjprog --family NRF52 --reset
 
-flash-app: build/rear_light_ant.hex
-	nrfjprog --family NRF52 --program build/rear_light_ant.hex --sectoranduicrerase --verify
+flash-app: $(APP).hex
+	nrfjprog --family NRF52 --program $(APP).hex --sectoranduicrerase --verify
 	nrfjprog --family NRF52 --reset
 
 # RATE_S: measurement time of `make rate`
 RATE_S ?= 30
 stats:
-	python3 tools/stats.py build/rear_light_ant.elf $(NM)
+	python3 tools/stats.py $(APP).elf $(NM)
 
 # TX rate and LF clock error over RATE_S seconds, CPU keeps running (J-Link)
 rate:
-	python3 tools/rate.py build/rear_light_ant.elf $(NM) $(RATE_S)
+	python3 tools/rate.py $(APP).elf $(NM) $(RATE_S)
 
 # bench builds: post an event, e.g. make inject EVT=BUTTON_LONG or EVT=REMOTE_SET_STATE ARG=1
 inject:
-	python3 tools/inject.py build/rear_light_ant.elf $(NM) $(EVT) $(ARG)
+	python3 tools/inject.py $(APP).elf $(NM) $(EVT) $(ARG)
 
 # log counter changes for WATCH_S seconds (reconnect tests)
 WATCH_S ?= 300
 watch:
-	python3 tools/watch.py build/rear_light_ant.elf $(NM) $(WATCH_S)
+	python3 tools/watch.py $(APP).elf $(NM) $(WATCH_S)
 
 clean:
 	rm -rf build

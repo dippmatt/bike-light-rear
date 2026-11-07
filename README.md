@@ -72,17 +72,19 @@ The rear light firmware (`software/rear_light_ant/`) runs bare metal on the **AN
 - **Smart Mode**: Adaptive brightness based on braking detection and ambient light
 - **Braking Detection**: Automatic peak brightness boost during deceleration
 - **Ambient Light Sensing**: Adjusts brightness for day/night conditions
-- **Auto-Off**: Power-saving mode when stationary for 2.5+ minutes
+- **Parking and auto-on**: when the bike stands still for 2.5 minutes Smart parks (LED off, short status pulse) and switches itself back on when the bike moves
 - **Power Management**: Low-battery indication and automatic shut-off at low voltage, USB-C charging indication
 - **ANT+ control**: state, battery and mode of the light on the bike computer, mode changes from the bike computer
 
 For complete operating instructions and technical details, see the **[Rear light User Manual](software/rear_light_ant/MANUAL.md)**; the behaviour is specified in [SPEC.md](software/rear_light_ant/SPEC.md).
 
+The **front light** uses the same board with a white LED and the same firmware source, built as a variant (`make LIGHT=front`): Smart, Standard (30 %) and Bright (80 %), see the **[Front light User Manual](software/rear_light_ant/MANUAL_FRONT.md)**. The BLE front light firmware in `software/front_light_central/` is superseded.
+
 ### Firmware environment setup
 1. Install the [nRF Command Line Tools](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools) for access to `nrfjprog` and a J-Link.
 2. Install the **nRF Connect SDK toolchain v3.1.1** (nRF Connect for VS Code, Toolchain Manager). Only its GNU Arm compiler and the nrfx register headers are used.
 3. Put the ANT SoftDevice archive `ANT_s212_nrf52_7.0.1.zip` (from the Garmin/ANT downloads) into `software/ant_source/SoftDevices_Current_Items/`. The folder is gitignored: the ANT+ documents and SoftDevice files must not be redistributed.
-4. `cd software/rear_light_ant && make test && make flash` (see its [README](software/rear_light_ant/README.md) for options, bench tools and the licence key).
+4. `cd software/rear_light_ant && make test && make flash` (front light: `make LIGHT=front flash`; see its [README](software/rear_light_ant/README.md) for options, bench tools and the licence key).
 
 The previous Zephyr firmware in `software/rear_light_peripheral/` is built with the nRF Connect for VS Code extension as before (nRF Connect Bare Metal SDK v0.9.0 and toolchain v3.1.1).
 

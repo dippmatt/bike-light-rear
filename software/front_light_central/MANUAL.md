@@ -1,4 +1,4 @@
-> **Note (Oct 2026):** this front light is a Bluetooth LE central and talks to the BLE rear light firmware (`../rear_light_peripheral`). The rear light is now controlled over ANT+ (`../rear_light_ant`) and has no BLE interface, so this front light no longer controls it. A future front light is planned as an ANT+ light itself.
+> **Note (Oct 2026):** this front light is a Bluetooth LE central and talks to the BLE rear light firmware (`../rear_light_peripheral`). The rear light is now controlled over ANT+ (`../rear_light_ant`) and has no BLE interface, so this front light no longer controls it. The ANT+ front light is now a build variant of the rear light firmware: `make LIGHT=front` in `../rear_light_ant`, manual in `../rear_light_ant/MANUAL_FRONT.md`. This firmware is superseded.
 
 # Bike Light Rear - User Manual
 

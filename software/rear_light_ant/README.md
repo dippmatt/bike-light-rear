@@ -1,14 +1,17 @@
-# Rear Light (ANT+)
+# Rear and Front Light (ANT+)
 
 Firmware for the bicycle rear light (BL653 / nRF52833) that a bike computer controls over **ANT+** (ANT+ Bike Lights profile). It replaces the Zephyr/BLE firmware in [`../rear_light_peripheral`](../rear_light_peripheral), keeping its behaviour (Smart, Steady, Flash, Deep Sleep, USB charging, battery cut-off) and swapping the BLE interface for ANT+. Bare metal on the ANT SoftDevice S212 7.0.1, because ANT SoftDevices are not supported by Zephyr (ADR-0005).
 
-Tested with a Wahoo ELEMNT BOLT v2: it finds the light, shows state and battery, switches modes, and reconnects.
+The same source also builds the **front light** (`make LIGHT=front`): same board with a white LED, modes Smart, Standard (30 %) and Bright (80 %), reported to the bike computer as a headlight. The differences are listed in [SPEC.md](./SPEC.md), section 0, and ADR-0009. The directory keeps its name.
+
+Tested with a Wahoo ELEMNT BOLT v2: it finds the light, shows state and battery, switches modes, and reconnects. The front and the rear light also work together on the same Wahoo.
 
 ## Where to read what
 
 | File | Purpose |
 | --- | --- |
-| [MANUAL.md](./MANUAL.md) | User manual: modes, button, charging, adding the light to a bike computer |
+| [MANUAL.md](./MANUAL.md) | User manual of the rear light: modes, button, charging, adding the light to a bike computer |
+| [MANUAL_FRONT.md](./MANUAL_FRONT.md) | User manual of the front light |
 | [SPEC.md](./SPEC.md) | Behavioural requirements with IDs. Constants are named in `[...]` and live in `src/config.h` |
 | [CONTEXT.md](./CONTEXT.md) | Glossary |
 | [docs/adr/](./docs/adr) | Decisions: ANT+ replaces BLE, RC clock, unauthenticated control, reachability and silence timeout, ... |
@@ -25,6 +28,7 @@ Tested with a Wahoo ELEMNT BOLT v2: it finds the light, shows state and battery,
 | `src/battery_logic.[ch]` | Battery thresholds and ANT+ battery mapping (portable) |
 | `src/bike_light.[ch]` | ANT+ Bike Lights page logic (portable) |
 | `src/config.h`, `src/board.h` | Tunable constants, pins |
+| `src/variant.h` | Rear/front differences: brightness levels, brake boost, ANT+ light type, model number |
 | `src/main.c` | Start-up, event loop, glue between the portable core and the drivers |
 | `src/ant_link.[ch]` | SoftDevice enable, channel, page transport |
 | `src/light.c`, `status_led.c`, `button.c`, `battery.c`, `power.c`, `soft_timer.c`, `twim.c`, `sensors.c`, `platform.c` | Drivers (registers, no HAL) |
@@ -37,14 +41,16 @@ Tested with a Wahoo ELEMNT BOLT v2: it finds the light, shows state and battery,
 Needs the GNU Arm toolchain of the nRF Connect SDK installation, the S212 SoftDevice archive and (for flashing) `nrfjprog` plus a J-Link. No nRF5 SDK.
 
 ```sh
-make            # build/rear_light_ant.hex (unzips the SoftDevice from ../ant_source on first run)
-make test       # host tests (gcc, ASan/UBSan)
+make               # rear light: build/rear/light_rear.hex (unzips the SoftDevice from ../ant_source on first run)
+make LIGHT=front   # front light: build/front/light_front.hex
+make test          # host tests of both variants (gcc, ASan/UBSan)
 ```
 
 Paths default to this machine's NCS install; override with `make NCS=... TOOLCHAIN=...`. `make V=1` shows the full commands. Options:
 
 | Option | Meaning |
 | --- | --- |
+| `LIGHT=rear` (default), `front` | Which light to build, flash or read. Pass it to every command for the front light (`make LIGHT=front flash`, `make LIGHT=front stats`) |
 | `LFCLK=rc` (default), `synth`, `xtal` | Low-frequency clock: internal RC (the board has no crystal, ADR-0006), derived from the 32 MHz crystal, or a 32.768 kHz crystal |
 | `BENCH=1` | Bench image: fixed battery value and event injection over SWD. **Never put this image in a light that is used on a bike**: it has no battery cut-off |
 | `FORCE_SD_FAILURE=1` | Test image that pretends the SoftDevice cannot start |
@@ -63,7 +69,7 @@ The firmware needs two keys. They are **not in this repository** and must not be
 | `ANT_PLUS_NETWORK_KEY` (16 hex digits) | Garmin, [ANT+ network keys](https://developer.garmin.com/ant-program/ant-ant-plus/network-keys/) | Only for ANT+ Adopters. Garmin says not to publish it and not to use it for non-ANT+ devices |
 | `ANT_LICENSE_KEY` (`xxxx-…-xxxx`) | The S212 SoftDevice evaluation key from Nordic/ANT (`nrf_sdm.h` in the SDK), or a commercial key from [Garmin licensing](https://developer.garmin.com/ant-program/licensing/) | The evaluation key is **non-commercial use only** |
 
-`make` (and `make flash`) stops with a message if a key is missing or malformed. `make test` needs no keys. The Makefile writes `build/ant_keys.h` from `ANT_PLUS_NETWORK_KEY`; `ANT_LICENSE_KEY` is passed to the compiler as a macro.
+`make` (and `make flash`) stops with a message if a key is missing or malformed. `make test` needs no keys. The Makefile writes `build/<light>/ant_keys.h` from `ANT_PLUS_NETWORK_KEY`; `ANT_LICENSE_KEY` is passed to the compiler as a macro.
 
 To pass a key on the command line instead of the file: `make ANT_LICENSE_KEY=...`.
 
@@ -72,13 +78,14 @@ To pass a key on the command line instead of the file: `make ANT_LICENSE_KEY=...
 ```sh
 make flash       # first time: chip erase, SoftDevice + application, reset
 make flash-app   # application only
+make LIGHT=front flash   # the same for the front light
 ```
 
 `make flash` erases everything on the chip (including the Zephyr firmware). The application image also writes UICR `NFCPINS` so P0.09 (main LED) is a GPIO. To return to the Zephyr firmware: `nrfjprog --family NRF52 --recover`, then build and flash `../rear_light_peripheral` as before.
 
 ## Bench tools
 
-All read the target without stopping it. Without a battery on the board use a `BENCH=1` image.
+All read the target without stopping it. Without a battery on the board use a `BENCH=1` image. For the front light add `LIGHT=front`, so the tools read the front image's symbols.
 
 | Command | Purpose |
 | --- | --- |

@@ -4,10 +4,12 @@
 
 #include "bike_light.h"
 
+#include "variant.h"
+
 /* --- Device identity ------------------------------------------------- */
 
 #define MANUFACTURER_ID   0x00FFU /* 255 = development ID (common page 80) */
-#define MODEL_NUMBER      0x0001U
+/* MODEL_NUMBER depends on the variant (variant.h) */
 #define HW_REVISION       1U
 #define SW_REVISION_MAIN  1U
 #define SW_REVISION_SUPP  0xFFU   /* invalid = not used */
@@ -15,7 +17,7 @@
 #define BATTERY_CAPACITY_UNITS 5U /* 200 mAh units: 1100 mAh cell -> 5 (1000 mAh) */
 #define SECONDARY_LIGHTS       4U /* profile minimum; advertised, shared channel not implemented */
 
-#define LIGHT_TYPE_TAILLIGHT    2U /* Table 7-5 value (bit position 2) */
+/* ANT_LIGHT_TYPE (variant.h): Table 7-5 value, 0 headlight, 2 taillight */
 #define LIGHT_TYPE_ANY          15U /* Table 7-41 "invalid" = all types */
 
 #define BEAM_CMD_OFF 1U
@@ -26,7 +28,8 @@
 #define EVENT_PAGE1_REPEATS 3U
 #define MAX_REQUEST_REPEATS 4U
 
-#define INTENSITY_STEADY_PERCENT 20U /* Base brightness duty (LIGHT_PULSE_BASE) */
+#define INTENSITY_STEADY_PERCENT LIGHT_BASE_PERCENT /* Base duty (LIGHT_PULSE_BASE) */
+#define INTENSITY_BRIGHT_PERCENT LIGHT_PEAK_PERCENT /* Peak duty (LIGHT_PULSE_PEAK) */
 #define INTENSITY_AUTO 0xFEU
 #define INTENSITY_INVALID 0xFFU
 
@@ -42,10 +45,17 @@ static const struct {
     uint8_t ant_mode;
     enum lamp_mode lamp;
 } mode_map[] = {
+#if LIGHT_FRONT
+    { 0U, LAMP_OFF },    /* Off */
+    { 4U, LAMP_STEADY }, /* Steady 21-40% (Standard is a 30% duty) */
+    { 2U, LAMP_BRIGHT }, /* Steady 61-80% (Bright is an 80% duty) */
+    { 9U, LAMP_SMART },  /* Auto */
+#else
     { 0U, LAMP_OFF },    /* Off */
     { 5U, LAMP_STEADY }, /* Steady 0-20% (Base is a 20% duty) */
     { 6U, LAMP_FLASH },  /* Slow flash */
     { 9U, LAMP_SMART },  /* Auto */
+#endif
 };
 
 #define MODE_MAP_LEN (sizeof(mode_map) / sizeof(mode_map[0]))
@@ -98,6 +108,8 @@ static uint8_t intensity_of(enum lamp_mode mode)
         return 0U;
     case LAMP_STEADY:
         return INTENSITY_STEADY_PERCENT;
+    case LAMP_BRIGHT:
+        return INTENSITY_BRIGHT_PERCENT;
     case LAMP_SMART:
         return INTENSITY_AUTO;
     case LAMP_FLASH:
@@ -111,7 +123,7 @@ static void build_light_state(const struct bike_light *bl, uint8_t p[BL_PAGE_SIZ
     p[0] = BL_PAGE_LIGHT_STATE;
     p[1] = bl->light_index;
     /* bit 1 bike radar = 0, bits 2:4 light type, bits 5:7 battery status */
-    p[2] = (uint8_t)((LIGHT_TYPE_TAILLIGHT << 2) | ((bl->battery_status & 0x07U) << 5));
+    p[2] = (uint8_t)((ANT_LIGHT_TYPE << 2) | ((bl->battery_status & 0x07U) << 5));
     p[3] = 0U; /* no sub-lights */
     p[4] = bl->cmd_seq;
     p[5] = 0xFFU; /* beam focus not supported */
@@ -149,7 +161,7 @@ static void build_capabilities(const struct bike_light *bl, uint8_t p[BL_PAGE_SI
     p[4] = (uint8_t)(SECONDARY_LIGHTS | (1U << 6));
     p[5] = (uint8_t)(modes & 0xFFU);
     p[6] = (uint8_t)((modes >> 8) & 0x7FU); /* bit 7 synchronous brake: no */
-    p[7] = (uint8_t)(1U << 2); /* supported light types: taillight */
+    p[7] = (uint8_t)(1U << ANT_LIGHT_TYPE); /* supported light types: this one */
 }
 
 static void build_supplementary(const struct bike_light *bl, uint8_t p[BL_PAGE_SIZE])
@@ -339,7 +351,7 @@ static bool settings_apply_to_us(const struct bike_light *bl, const uint8_t d[BL
                (sub_index == 0U || all_sublights);
     }
     if (all_sublights) {
-        return light_type == LIGHT_TYPE_ANY || light_type == LIGHT_TYPE_TAILLIGHT;
+        return light_type == LIGHT_TYPE_ANY || light_type == ANT_LIGHT_TYPE;
     }
     return sub_index == 0U;
 }
@@ -396,7 +408,7 @@ static bool connect_state_request(uint8_t state, enum lamp_mode *requested)
 
 /* Page 33 (7.17). A controller uses it to form a network, even when there
  * is only one light: this light becomes the main light, index 1. The
- * light type setting is ignored; this light is a tail light and says so in
+ * light type setting is ignored; this light reports its own type in
  * page 1 (7.17.6: unsupported types are ignored). */
 static bool handle_connect(struct bike_light *bl, const uint8_t d[BL_PAGE_SIZE],
                            enum lamp_mode *requested)

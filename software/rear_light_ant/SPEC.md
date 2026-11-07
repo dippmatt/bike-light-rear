@@ -1,15 +1,33 @@
-# Rear Light (ANT+) - Firmware Specification
+# Bike Light (ANT+), Rear and Front - Firmware Specification
 
-Behavioural requirements of the rear light firmware. Terms are defined in [CONTEXT.md](./CONTEXT.md). Numeric values are **not** repeated here: the code constant named in `[...]` is the single source of truth (all of them live in `src/config.h` unless noted). Hard-to-reverse decisions are recorded in [docs/adr](./docs/adr).
+Behavioural requirements of the rear and the front light firmware. Terms are defined in [CONTEXT.md](./CONTEXT.md). Numeric values are **not** repeated here: the code constant named in `[...]` is the single source of truth (all of them live in `src/config.h` unless noted). Hard-to-reverse decisions are recorded in [docs/adr](./docs/adr).
 
 This firmware replaces the Zephyr/BLE firmware in `../rear_light_peripheral`. Sections 1 to 9 and 11 carry its requirements over (IDs unchanged so external test lists keep working); section 10 replaces the BLE section with the ANT+ Bike Lights profile (ADR-0005). The ANT+ page layouts are defined by the profile document D00001621, not repeated here.
 
 Each requirement has an ID so external test lists can reference it.
 
+## 0. Variants
+
+One source builds two lights for the same board (ADR-0009): the **rear light** (default, red LED) and the **front light** (`make LIGHT=front`, white LED). Every requirement applies to both unless it names a variant. The differences are:
+
+| | Rear | Front |
+| --- | --- | --- |
+| Mode Cycle (SYS-2) | Smart, Steady, Flash | Smart, Standard, Bright |
+| Base brightness `[LIGHT_PULSE_BASE]` | 20 % | 30 % (Standard) |
+| Peak brightness `[LIGHT_PULSE_PEAK]` | 80 % (braking, flash) | 80 % (Bright) |
+| Smart brake boost (SMART-2) `[SMART_BRAKE_BOOST]` | yes | no |
+| ANT+ light type (ANT-4) `[ANT_LIGHT_TYPE]` | taillight | headlight |
+| ANT+ modes (ANT-3) | 0, 5, 6, 9 | 0, 4, 2, 9 |
+| Model number (common page 80) `[MODEL_NUMBER]` | 1 | 2 |
+
+The variant constants live in `src/variant.h`. Standard is the Steady state of the front light.
+
+- **VAR-1** The variant shall be chosen at build time. A variant's image shall contain only its own Mode Cycle and mode map; a mode of the other variant shall be neither reachable by the button nor requestable over ANT+.
+
 ## 1. System and states
 
-- **SYS-1** The firmware shall have exactly six states: Off, Steady, Flash, Smart, Idle Charging and Smart Auto-Off. Their numeric values (0..5 in that order) are internal; the ANT+ mode numbers are defined only by the mode map (ANT-3). Smart Auto-Off is the earlier Smart behaviour, kept in the code but not in the Mode Cycle; it can only be reached by putting it into the Mode Cycle in place of Smart. Parked (SMART-16) is a phase of Smart, not a state.
-- **SYS-2** The Mode Cycle shall be a single configuration point listing the Active Modes in short-press order (currently Smart, Steady, Flash). No other behaviour shall depend on that order or on a specific mode being first or last.
+- **SYS-1** The firmware shall have exactly seven states: Off, Steady, Flash, Smart, Idle Charging, Smart Auto-Off and Bright. Their numeric values (0..6 in that order) are internal; the ANT+ mode numbers are defined only by the mode map (ANT-3). Smart Auto-Off is the earlier Smart behaviour, kept in the code but not in the Mode Cycle; it can only be reached by putting it into the Mode Cycle in place of Smart. Parked (SMART-16) is a phase of Smart, not a state.
+- **SYS-2** The Mode Cycle shall be a single configuration point listing the Active Modes in short-press order (per variant, section 0). No other behaviour shall depend on that order or on a specific mode being first or last.
 - **SYS-3** All inputs (button, controller commands, battery tick, USB edges, sensor detections, flash timer) shall be delivered as events to one queue consumed by the main loop. Only the main loop shall change the state or choose the main LED level. The one exception is the blank (SMART-12), where the sensor module may switch the LED off temporarily; the state machine's requested level is kept and restored. `[APP_EVENT_QUEUE_DEPTH]`
 - **SYS-4** If the event queue is full, the new event shall be dropped and counted in the debug counters. No retry is made.
 - **SYS-5** If initialization of the main LED, the status LED or the button fails, the firmware shall perform a software reset instead of returning from `main()`. Failure of the battery ADC, the sensors or the ANT SoftDevice shall not stop startup: without the SoftDevice the light works locally and the failure code is kept in the debug counters. See ADR-0003.
@@ -51,13 +69,14 @@ Each requirement has an ID so external test lists can reference it.
 - **LED-2** Flash shall show Base, with a double flash to Peak every cycle: Peak for one step, Base for one step, Peak for one step, Base for the rest of the cycle. The first double flash occurs one cycle after entering Flash. `[FLASH_CYCLE_MS, FLASH_STEP_MS, FLASH_REST_MS, LIGHT_PULSE_PEAK]`
 - **LED-3** The PWM period shall be fixed. `[LIGHT_PWM_PERIOD_USEC]`
 - **LED-4** Leaving Flash shall stop the flash timer. A flash step event arriving in any other state shall be ignored.
+- **LED-5** Bright shall show Peak continuously. `[LIGHT_PULSE_PEAK]`
 
 ## 6. Smart
 
 The requirements of this section apply to Smart and to Smart Auto-Off alike, except where a requirement names one of them. They differ only in what the stationary timeout does (SMART-5).
 
 - **SMART-1** On entering Smart the main LED shall be off, and the braking and dark flags shall be cleared. Sensor sampling shall start. Sampling shall stop when Smart is left. The accelerometer and the light sensor shall be sampled on independent schedules. `[ACCEL_SAMPLING_INTERVAL_MS, LIGHT_SAMPLING_INTERVAL_MS, SENSOR_TICK_MS]`
-- **SMART-2** Brightness in Smart shall be chosen by priority: braking gives Peak, otherwise dark gives Base, otherwise off.
+- **SMART-2** Brightness in Smart shall be chosen by priority: braking gives Peak, otherwise dark gives Base, otherwise off. Without brake boost (front light) braking is ignored: dark gives Base, otherwise off. Braking is still detected, so SMART-13 also applies there. `[SMART_BRAKE_BOOST]`
 - **SMART-3** Braking is judged on the filtered Z acceleration (SMART-8, SMART-9). The sensor is mounted with Z along the direction of travel and positive Z means decelerating and negative Z means accelerating. Braking shall start when the filtered value stays above the threshold for the start confirm time, and end when it stays at or below the same threshold for the stop confirm time plus the hold time, so the light keeps shining for the hold time after the braking phase has ended. Braking again within that time keeps the light on without a gap. The threshold is +5.0 m/s^2 (not g). `[BRAKING_ACCEL_THRESHOLD_MILLI, BRAKING_START_CONFIRM_MS, BRAKING_STOP_CONFIRM_MS, BRAKING_HOLD_MS]`
 - **SMART-4** Darkness starts after consecutive samples below the ambient threshold and ends after consecutive samples at or above the ambient threshold plus a fixed off offset. The offset only prevents flicker around the toggle point. `[AMBIENT_THRESHOLD_MILLILUX, AMBIENT_OFF_OFFSET_MILLILUX, AMBIENT_SAMPLES_REQUIRED]`
 - **SMART-5** The stationary timeout is reached after uninterrupted samples with acceleration magnitude within the tolerance band around 1g for the stationary time. Any sample outside the band resets the count. A failed accelerometer read neither counts nor resets. See ADR-0002. At the timeout, Smart shall park (SMART-16) and Smart Auto-Off shall power off (auto-off, PWR-4). `[STATIONARY_TIMEOUT_MS, STATIONARY_MIN_MAGNITUDE_SQ, STATIONARY_MAX_MAGNITUDE_SQ]`
@@ -110,11 +129,11 @@ The light is an ANT+ bike light (profile D00001621 Rev 2.0): a bidirectional mas
 
 - **ANT-1** Whenever the device is awake it shall transmit as an ANT+ bike light master: device type, RF frequency, channel period and transmission type as defined in the profile, and a device number derived from the chip's factory ID that is never zero. `[ANT_DEVICE_TYPE_BIKE_LIGHT, ANT_RF_FREQUENCY, ANT_CHANNEL_PERIOD, BL_TRANSMISSION_TYPE]` If the channel cannot be opened, opening is retried at every battery tick while awake. The ANT+ network key is not in the repository; the developer supplies it (README.md, "Keys").
 - **ANT-2** The channel shall be closed when entering Deep Sleep and opened again when leaving it (PWR-1). A controller therefore cannot reach a sleeping light. Off and Idle Charging stay awake and reachable.
-- **ANT-3** One table (`mode_map` in `src/bike_light.c`) shall map the ANT+ standard modes to the firmware states: Off to mode 0, Steady to mode 5 (steady 0-20 %, Base is a 20 % duty), Flash to mode 6 (slow flash), Smart to mode 9 (auto). Idle Charging is reported as Off. Smart Auto-Off is reported as mode 9 too. A request for mode 9 selects the Smart variant that is in the Mode Cycle. Page 2 shall list exactly the modes of this table, and the number of modes it announces shall equal the number of standard modes in its bit field (a controller assumes any difference to be custom modes).
-- **ANT-4** Page 1 shall report light index 0 (unconnected) or 1 (connected, ANT-6), the light type tail light, the battery status (ANT-12), the sequence number of the last command (0xFF until one was received), the current mode and its intensity (Steady 20 %, Smart auto, other 0xFF or 0).
+- **ANT-3** One table (`mode_map` in `src/bike_light.c`) shall map the ANT+ standard modes to the firmware states, per variant. Rear: Off to mode 0, Steady to mode 5 (steady 0-20 %, Base is a 20 % duty), Flash to mode 6 (slow flash), Smart to mode 9 (auto). Front: Off to mode 0, Standard to mode 4 (steady 21-40 %, a 30 % duty), Bright to mode 2 (steady 61-80 %, an 80 % duty), Smart to mode 9 (auto). Lamp modes and states are numbered independently; `main.c` maps between them. Idle Charging is reported as Off. Smart Auto-Off is reported as mode 9 too. A request for mode 9 selects the Smart variant that is in the Mode Cycle. Page 2 shall list exactly the modes of this table, and the number of modes it announces shall equal the number of standard modes in its bit field (a controller assumes any difference to be custom modes).
+- **ANT-4** Page 1 shall report light index 0 (unconnected) or 1 (connected, ANT-6), the light type of the variant (rear taillight, front headlight; page 2 announces only that type, and page 34 settings for all lights of another type are ignored), the battery status (ANT-12), the sequence number of the last command (0xFF until one was received), the current mode and its intensity (Steady/Standard the Base percent, Bright the Peak percent, Smart auto, other 0xFF or 0). `[ANT_LIGHT_TYPE, LIGHT_BASE_PERCENT, LIGHT_PEAK_PERCENT]`
 - **ANT-5** After every event (a state change, a command, a battery status change) the transmission pattern shall restart with page 1 three times, then continue with pages 2, 80 and 81 (and 18 while connected). Page 19 (battery percent) and any other supported page shall be sent on a page 70 request, repeated a limited number of times. `[EVENT_PAGE1_REPEATS, MAX_REQUEST_REPEATS in src/bike_light.c]`
 - **ANT-6** A controller forms a network even for a single light: the connect command (page 33) with light index 1 makes this light the main light. It shall then report light index 1 in its pages, send its channel ID (page 18), echo the controller ID as the sequence number, apply the optional light state setting (off, flashing, steady), and accept settings addressed to light index 0 or 1. Connect commands for secondary lights (index 2 to 63) are ignored, because the shared channel is not implemented. The disconnect command (page 32) for index 0 or 1 returns the light to unconnected.
-- **ANT-7** Light settings (page 34) shall request a state: beam off requests Off, a supported mode requests the mapped state, a beam on command without mode while Off requests the last Active Mode, an unsupported mode is ignored. The sequence number of every command that is addressed to a light is reported (ANT-4), also if the command is ignored. Valid requests are Off, Steady, Flash and Smart. Idle Charging cannot be requested because only USB power sets it. Requests are delivered to the state machine as events (SYS-3).
+- **ANT-7** Light settings (page 34) shall request a state: beam off requests Off, a supported mode requests the mapped state, a beam on command without mode while Off requests the last Active Mode, an unsupported mode is ignored. The sequence number of every command that is addressed to a light is reported (ANT-4), also if the command is ignored. Valid requests are Off and the Active Modes of the variant. Idle Charging cannot be requested because only USB power sets it. Requests are delivered to the state machine as events (SYS-3).
 - **ANT-8** A request shall be ignored if it equals the current state, or arrives within the stable window after the last state change (including boot). `[REMOTE_STABLE_WINDOW_MS]`
 - **ANT-9** A request for Steady, Flash or Smart shall be applied in Idle Charging.
 - **ANT-10** A request for Off shall keep the device awake and reachable.
@@ -128,6 +147,6 @@ The light is an ANT+ bike light (profile D00001621 Rev 2.0): a bidirectional mas
 
 - **HW-1** The charger is autonomous hardware that charges in Deep Sleep and with a flat battery.
 - **HW-2** USB power appearing is detected by software polling of the VBUS status while in Deep Sleep. No hardware reset or wake from it is assumed.
-- **HW-3** The accelerometer is mounted with Z along the direction of travel, with +Z pointing backward (against the direction of travel), so braking reads positive and accelerating reads negative.
+- **HW-3** The accelerometer is mounted with Z along the direction of travel, with +Z pointing backward (against the direction of travel), so braking reads positive and accelerating reads negative. This matters only for the brake boost (rear); the stationary and motion detection do not depend on the orientation, so the front light may be mounted either way.
 - **HW-4** The status LED is visible to the rider.
 - **HW-5** The board has no 32.768 kHz crystal; the low-frequency clock is the internal RC oscillator (ADR-0006).

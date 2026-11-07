@@ -7,6 +7,26 @@
 #include <string.h>
 
 #include "../src/bike_light.h"
+#include "../src/variant.h"
+
+/* Variant-specific expectations: a second Active Mode besides Steady and
+ * Smart, the ANT+ number of Steady, and a light type that is not ours */
+#if LIGHT_FRONT
+#define ALT_LAMP        LAMP_BRIGHT
+#define ALT_ANT_MODE    2U /* steady 61-80 % */
+#define STEADY_ANT_MODE 4U /* steady 21-40 % */
+#define OTHER_TYPE      2U /* taillight */
+#define ALT_INTENSITY   80U
+#else
+#define ALT_LAMP        LAMP_FLASH
+#define ALT_ANT_MODE    6U /* slow flash */
+#define STEADY_ANT_MODE 5U /* steady 0-20 % */
+#define OTHER_TYPE      0U /* headlight */
+#define ALT_INTENSITY   0xFFU
+#endif
+
+/* Light settings sub-light byte: "all lights" bit plus a light type */
+#define ALL_LIGHTS_OF_TYPE(t) ((uint8_t)(((t) << 4) | 0x08U))
 
 static int failures;
 
@@ -68,18 +88,24 @@ static void test_page1_content(void)
 
     bike_light_init(&bl, 1U);
     bike_light_set_battery(&bl, BL_BATT_GOOD, 77U);
-    bike_light_set_mode(&bl, LAMP_FLASH);
+    bike_light_set_mode(&bl, ALT_LAMP);
     bike_light_next_page(&bl, p);
 
     CHECK(p[0] == 0x01);
     CHECK(p[1] == 0x00);                   /* unconnected */
-    CHECK(((p[2] >> 2) & 0x07) == 2);      /* taillight */
+    CHECK(((p[2] >> 2) & 0x07) == ANT_LIGHT_TYPE); /* this variant's light type */
     CHECK(((p[2] >> 5) & 0x07) == BL_BATT_GOOD);
     CHECK((p[3] & 0x07) == 0);             /* no sub-lights */
     CHECK(p[4] == 0xFF);                   /* no command yet */
     CHECK(p[5] == 0xFF);                   /* beam focus invalid */
-    CHECK((p[6] >> 2) == 6);               /* slow flash */
+    CHECK((p[6] >> 2) == ALT_ANT_MODE);
     CHECK((p[6] & 0x03) == 0);             /* low beam */
+    CHECK(p[7] == ALT_INTENSITY);
+
+    bike_light_set_mode(&bl, LAMP_STEADY);
+    bike_light_next_page(&bl, p);
+    CHECK((p[6] >> 2) == STEADY_ANT_MODE);
+    CHECK(p[7] == LIGHT_BASE_PERCENT);     /* 20 % rear, 30 % front */
 }
 
 static void test_capabilities(void)
@@ -93,14 +119,15 @@ static void test_capabilities(void)
     bike_light_next_page(&bl, p);
     bike_light_next_page(&bl, p);
     CHECK(p[0] == 0x02);
-    CHECK((p[2] >> 2) == 3);          /* steady + flash + auto, no custom modes */
-    CHECK((p[5] & (1U << 5)) != 0);   /* mode 5 */
-    CHECK((p[5] & (1U << 6)) != 0);   /* mode 6 */
+    CHECK((p[2] >> 2) == 3);          /* three standard modes, no custom modes */
+    CHECK((p[5] & (1U << STEADY_ANT_MODE)) != 0);
+    CHECK((p[5] & (1U << ALT_ANT_MODE)) != 0);
+    CHECK(p[5] == (uint8_t)((1U << STEADY_ANT_MODE) | (1U << ALT_ANT_MODE))); /* nothing else */
     CHECK((p[5] & (1U << 1)) == 0);   /* mode 1 not offered */
     CHECK((p[6] & (1U << 1)) != 0);   /* mode 9 = bit 1 of MSB */
     CHECK((p[4] & 0x0FU) == 4);       /* secondary lights */
     CHECK((p[4] & 0xC0U) == 0x40U);   /* beam focus incapable, intensity incapable (table 7-8) */
-    CHECK((p[7] & (1U << 2)) != 0);   /* taillight */
+    CHECK(p[7] == (1U << ANT_LIGHT_TYPE)); /* only our light type */
 }
 
 static void test_common_pages(void)
@@ -128,10 +155,10 @@ static void test_command_modes(void)
 
     bike_light_init(&bl, 1U);
 
-    /* mode 6 (slow flash), principal light only */
-    make_settings(d, 0, 0x00, 7, 0, 6);
+    /* the second Active Mode, principal light only */
+    make_settings(d, 0, 0x00, 7, 0, ALT_ANT_MODE);
     CHECK(bike_light_handle_rx(&bl, d, &m));
-    CHECK(m == LAMP_FLASH);
+    CHECK(m == ALT_LAMP);
     CHECK(bl.cmd_seq == 7);
 
     /* mode 9 (auto) to all lights, any type */
@@ -139,13 +166,13 @@ static void test_command_modes(void)
     CHECK(bike_light_handle_rx(&bl, d, &m));
     CHECK(m == LAMP_SMART);
 
-    /* all lights, headlight only: not for a taillight */
-    make_settings(d, 0, 0x08, 9, 0, 5);
+    /* all lights of the other type: not for us */
+    make_settings(d, 0, ALL_LIGHTS_OF_TYPE(OTHER_TYPE), 9, 0, STEADY_ANT_MODE);
     CHECK(!bike_light_handle_rx(&bl, d, &m));
     CHECK(bl.cmd_seq == 9); /* sequence is still acknowledged */
 
-    /* all lights, taillight type */
-    make_settings(d, 0, 0x28, 10, 0, 5);
+    /* all lights of our type */
+    make_settings(d, 0, ALL_LIGHTS_OF_TYPE(ANT_LIGHT_TYPE), 10, 0, STEADY_ANT_MODE);
     CHECK(bike_light_handle_rx(&bl, d, &m));
     CHECK(m == LAMP_STEADY);
 
@@ -153,12 +180,25 @@ static void test_command_modes(void)
     make_settings(d, 0, 0x00, 11, 0, 7);
     CHECK(!bike_light_handle_rx(&bl, d, &m));
 
+    /* the other variant's modes are ignored too */
+#if LIGHT_FRONT
+    make_settings(d, 0, 0x00, 11, 0, 5);
+    CHECK(!bike_light_handle_rx(&bl, d, &m));
+    make_settings(d, 0, 0x00, 11, 0, 6);
+    CHECK(!bike_light_handle_rx(&bl, d, &m));
+#else
+    make_settings(d, 0, 0x00, 11, 0, 4);
+    CHECK(!bike_light_handle_rx(&bl, d, &m));
+    make_settings(d, 0, 0x00, 11, 0, 2);
+    CHECK(!bike_light_handle_rx(&bl, d, &m));
+#endif
+
     /* addressed to another light index */
-    make_settings(d, 2, 0x00, 12, 0, 5);
+    make_settings(d, 2, 0x00, 12, 0, STEADY_ANT_MODE);
     CHECK(!bike_light_handle_rx(&bl, d, &m));
 
     /* sub-light command: we have none */
-    make_settings(d, 0, 0x01, 13, 0, 5);
+    make_settings(d, 0, 0x01, 13, 0, STEADY_ANT_MODE);
     CHECK(!bike_light_handle_rx(&bl, d, &m));
 }
 
@@ -250,7 +290,9 @@ static void test_wahoo_connect_then_settings(void)
 {
     struct bike_light bl;
     const uint8_t connect[8] = { 0x21, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    const uint8_t slow_flash[8] = { 0x22, 0x01, 0x20, 0x07, 0x00, 0x00, 0x1A, 0xFF };
+    /* captured as mode 6 (slow flash); the mode is the variant's second Active Mode */
+    const uint8_t slow_flash[8] = { 0x22, 0x01, 0x20, 0x07, 0x00, 0x00,
+                                    (uint8_t)((ALT_ANT_MODE << 2) | 0x02U), 0xFF };
     const uint8_t disconnect[8] = { 0x20, 0x01, 0x05, 0, 0, 0, 0, 0 };
     enum lamp_mode m = LAMP_OFF;
     uint8_t p[8];
@@ -266,12 +308,12 @@ static void test_wahoo_connect_then_settings(void)
     bike_light_next_page(&bl, p);
     CHECK(p[0] == 0x01 && p[1] == 1 && p[4] == 0x00);
 
-    /* settings now apply: mode 6 (slow flash), beam low */
+    /* settings now apply: the requested mode, beam low */
     CHECK(bike_light_handle_rx(&bl, slow_flash, &m));
-    CHECK(m == LAMP_FLASH);
+    CHECK(m == ALT_LAMP);
     bike_light_set_mode(&bl, m);
     bike_light_next_page(&bl, p);
-    CHECK(p[0] == 0x01 && p[1] == 1 && p[4] == 0x07 && (p[6] >> 2) == 6);
+    CHECK(p[0] == 0x01 && p[1] == 1 && p[4] == 0x07 && (p[6] >> 2) == ALT_ANT_MODE);
 
     /* the connected rotation contains the channel ID page (18) */
     for (int i = 0; i < 12; i++) {
@@ -333,7 +375,7 @@ static void test_silence_returns_to_unconnected_without_touching_mode(void)
     uint8_t p[8];
 
     bike_light_init(&bl, 1U);
-    bike_light_set_mode(&bl, LAMP_FLASH);
+    bike_light_set_mode(&bl, ALT_LAMP);
     bike_light_handle_rx(&bl, connect, &m);
     CHECK(bike_light_is_connected(&bl));
 
@@ -341,7 +383,7 @@ static void test_silence_returns_to_unconnected_without_touching_mode(void)
     CHECK(!bike_light_is_connected(&bl));
     bike_light_next_page(&bl, p); /* page 1 restarts the pattern */
     CHECK(p[0] == 0x01 && p[1] == 0);
-    CHECK((p[6] >> 2) == 6); /* still slow flash */
+    CHECK((p[6] >> 2) == ALT_ANT_MODE); /* mode unchanged */
     CHECK(p[4] == 0x07);     /* the last controller ID stays reported */
 
     bike_light_disconnect(&bl); /* already unconnected: nothing to do */

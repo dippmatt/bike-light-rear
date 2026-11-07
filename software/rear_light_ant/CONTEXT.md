@@ -1,6 +1,12 @@
-# Rear Light (ANT+)
+# Rear and Front Light (ANT+)
 
 Firmware for the bicycle rear light: one button, one main LED, a status LED, USB-C charging, and an ANT+ bike light interface that a bike computer uses to read and switch the light. This glossary fixes the words used in the spec, code and manual. It continues the glossary of the Zephyr/BLE firmware in `../rear_light_peripheral`.
+
+## Variants
+
+**Variant**:
+Which light an image is built for: the rear light (default) or the front light (`make LIGHT=front`). Same board and source; they differ in Mode Cycle, brightness levels, brake boost and ANT+ light type (SPEC section 0).
+_Avoid_: target, flavour, build type
 
 ## Power states
 
@@ -22,12 +28,20 @@ _Avoid_: Charging mode, charge mode
 The main LED shows Base brightness continuously.
 _Avoid_: 50%, 50% Continuous, Mode 2
 
+**Standard** (front light):
+The front light's name for Steady: the main LED shows Base (30 % on the front) continuously. Reported to a bike computer as steady 21-40 %.
+_Avoid_: Low, Normal, Eco
+
+**Bright** (front light):
+The main LED shows Peak (80 %) continuously. Reported to a bike computer as steady 61-80 %.
+_Avoid_: High, Boost, Max
+
 **Flash**:
 Base brightness with a periodic double flash to Peak brightness.
 _Avoid_: 50/80 Flash, High Visibility
 
 **Smart**:
-Brightness is chosen automatically from braking and ambient light. When the bike stands still for 2.5 minutes, Smart parks, and motion brings it back. Reported to a bike computer as the ANT+ Auto mode.
+Brightness is chosen automatically from ambient light, and on the rear light also from braking. When the bike stands still for 2.5 minutes, Smart parks, and motion brings it back. Reported to a bike computer as the ANT+ Auto mode.
 _Avoid_: Smart Mode (acceptable in prose), Adaptive, Always-On
 
 **Parked**:
@@ -41,7 +55,7 @@ _Avoid_: old Smart, legacy Smart
 ## Mode cycle
 
 **Active Mode**:
-A member of the mode cycle that runs the light: Steady, Flash or Smart. Smart counts even when its LED happens to be dark, also while Parked.
+A member of the mode cycle that runs the light: Smart, Steady and Flash on the rear light, Smart, Standard and Bright on the front light. Smart counts even when its LED happens to be dark, also while Parked.
 _Avoid_: lit mode, light mode (too broad: includes Off)
 
 **Mode Cycle**:

@@ -163,6 +163,7 @@ physical tests that only a person at the board can do (listed last).
 | SMART-1 .. SMART-6, SMART-8, SMART-9, SMART-11 .. SMART-13 | `test_SMART*` (detectors on synthetic samples, state machine priority rules) |
 | SMART-5, SMART-16 .. SMART-19 (Parked) | `test_SMART5_SMART16_*`, `test_SMART16_*`, `test_SMART17_*`, `test_SMART18_*`, `test_SMART19_*`, `test_SMART_auto_off_variant_*` (state machine only; the LIS3DH motion detector needs the board, P9a/P9b) |
 | USB-2 .. USB-4 | `test_USB2_USB3_USB4_usb_edges` |
+| VAR-1, LED-5, SMART-2 (front), ANT-3/ANT-4 per variant | `make test` runs every test once per variant (`build/test/*_rear`, `*_front`); `test_SYS2_ANT7_mode_outside_the_cycle_*`, `test_LED1_LED5_variant_levels`, `test_SMART2_front_has_no_brake_boost`, and the variant expectations in `test_bike_light.c` |
 | BAT-2 .. BAT-5, BAT-7 | `test_BAT2_BAT3_BAT4_battery_logic`, `test_BAT5_*`, `test_BAT7_*` |
 | STAT-1 | `test_STAT1_status_led_priority` |
 | ANT-3 .. ANT-12 | `test_bike_light.c` (pages, mode map, connect/disconnect, commands, silence) and `test_ANT7_*`, `test_ANT8_*`, `test_ANT9_*`, `test_ANT12_*`, `test_PWR2_PWR3_*` (Off stays awake) |
@@ -221,3 +222,14 @@ Fill the Result column; none of these can be done through the debugger.
 | P13 | Current | Meter in series with the battery, light off (Deep Sleep), Off with the controller present, Steady | Record; compare with the Zephyr firmware | |
 | P14 | Range | Walk away with the Wahoo | Note the distance where commands stop | |
 | P15 | 8 h stability | Leave running with the Wahoo nearby (`make watch WATCH_S=28800`) | No reset, no dropped events, commands work at the end | |
+
+### Front light (`make LIGHT=front`): still to do
+
+| # | Test | How | Expected | Result |
+| --- | --- | --- | --- | --- |
+| F1 | Mode cycle | Short presses inside the selection window | Smart → Standard → Bright → off | |
+| F2 | Levels | Look at the LED in Standard and Bright | 30 % and 80 %, steady | |
+| F3 | Smart without brake boost | In the dark (LED at Standard), jerk the light | The level stays at Standard | |
+| F4 | Bike computer | Add the light on the Wahoo | Shown as a headlight with steady 21-40 %, steady 61-80 % and auto; switching works | Pass (Wahoo, Nov 2026, reported by the user) |
+| F5 | Two lights | Add the rear and the front light to the same Wahoo | Both are shown and can be switched (the shared channel for secondary lights is not implemented, ANT-6) | Pass (Wahoo, Nov 2026, reported by the user): both lights work |
+| F6 | Bright heat and current | Leave Bright on for 30 minutes, meter in series with the battery | Record the housing temperature and current | |

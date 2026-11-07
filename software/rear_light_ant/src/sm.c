@@ -10,9 +10,15 @@
  * that knows the order - the end of the cycle (Idle Charging or Deep Sleep)
  * and the entry point (first mode) are derived from it (SYS-2). */
 static const enum system_state mode_cycle[] = {
+#if LIGHT_FRONT
+    LED_SMART,
+    LED_STEADY, /* "Standard" on the front light */
+    LED_BRIGHT,
+#else
     LED_SMART,
     LED_STEADY,
     LED_FLASH,
+#endif
 };
 
 #define MODE_CYCLE_LEN (sizeof(mode_cycle) / sizeof(mode_cycle[0]))
@@ -68,10 +74,11 @@ static void status_refresh(void)
                     state == LED_OFF && !sleeping, parked);
 }
 
-/* Smart brightness priority: braking > ambient dark > off (SMART-2) */
+/* Smart brightness priority: braking > ambient dark > off (SMART-2). The
+ * brake boost exists only where the variant has it (front: no). */
 static void apply_smart_pwm(void)
 {
-    if (braking) {
+    if (braking && SMART_BRAKE_BOOST) {
         ops->light_set(LIGHT_PULSE_PEAK);
     } else if (ambient_dark) {
         ops->light_set(LIGHT_PULSE_BASE);
@@ -89,6 +96,9 @@ static void state_enter(enum system_state s)
         break;
     case LED_STEADY:
         ops->light_set(LIGHT_PULSE_BASE);
+        break;
+    case LED_BRIGHT:
+        ops->light_set(LIGHT_PULSE_PEAK);
         break;
     case LED_FLASH:
         ops->light_set(LIGHT_PULSE_BASE);

@@ -13,6 +13,19 @@
 #include "../src/config.h"
 #include "../src/detectors.h"
 #include "../src/sm.h"
+#include "../src/variant.h"
+
+/* Variant-specific expectations (ADR-0009): the last Active Mode, the
+ * Active Mode that only the other variant has, and the Smart level while
+ * braking (front: no brake boost, the level stays) */
+#if LIGHT_FRONT
+#define LAST_MODE  LED_BRIGHT
+#define OTHER_MODE LED_FLASH
+#else
+#define LAST_MODE  LED_FLASH
+#define OTHER_MODE LED_BRIGHT
+#endif
+#define BOOSTED(level) (SMART_BRAKE_BOOST ? LIGHT_PULSE_PEAK : (level))
 
 static int failures;
 static const char *current_test;
@@ -519,7 +532,7 @@ TEST(test_SYS2_mode_cycle_order)
     send(EVT_BUTTON_SHORT, 0U);
     CHECK(sm_current_state() == LED_STEADY);
     send(EVT_BUTTON_SHORT, 0U);
-    CHECK(sm_current_state() == LED_FLASH);
+    CHECK(sm_current_state() == LAST_MODE);
 }
 
 TEST(test_BTN4_short_press_from_off_and_idle_charging)
@@ -537,12 +550,12 @@ TEST(test_BTN4_short_press_from_off_and_idle_charging)
 TEST(test_BTN4_end_of_cycle_goes_to_idle_charging_or_deep_sleep)
 {
     BEGIN();
-    start(LED_FLASH, true); /* the last Active Mode, USB present */
+    start(LAST_MODE, true); /* the last Active Mode, USB present */
     send(EVT_BUTTON_SHORT, 0U);
     CHECK(sm_current_state() == IDLE_CHARGING);
     CHECK(!sm_is_sleeping());
 
-    start(LED_FLASH, false);
+    start(LAST_MODE, false);
     send(EVT_BUTTON_SHORT, 0U);
     CHECK(sm_is_sleeping());
     CHECK(fake.sleep_enter_calls == 1U);
@@ -864,9 +877,9 @@ TEST(test_SMART1_SMART2_entering_smart_and_priority)
     send(EVT_AMBIENT_DARK, 0U);
     CHECK(fake.light == LIGHT_PULSE_BASE);
     send(EVT_BRAKE_START, 0U);
-    CHECK(fake.light == LIGHT_PULSE_PEAK);
-    send(EVT_AMBIENT_BRIGHT, 0U); /* braking still wins */
-    CHECK(fake.light == LIGHT_PULSE_PEAK);
+    CHECK(fake.light == BOOSTED(LIGHT_PULSE_BASE));
+    send(EVT_AMBIENT_BRIGHT, 0U); /* braking still wins where it boosts */
+    CHECK(fake.light == BOOSTED(LIGHT_PULSE_OFF));
     send(EVT_BRAKE_STOP, 0U);
     CHECK(fake.light == LIGHT_PULSE_OFF);
     send(EVT_AMBIENT_DARK, 0U);
@@ -881,7 +894,7 @@ TEST(test_SMART1_flags_cleared_on_reentry_and_sampling_stops)
     start(LED_SMART, false);
     send(EVT_AMBIENT_DARK, 0U);
     send(EVT_BRAKE_START, 0U);
-    CHECK(fake.light == LIGHT_PULSE_PEAK);
+    CHECK(fake.light == BOOSTED(LIGHT_PULSE_BASE));
 
     send(EVT_BUTTON_SHORT, 0U); /* Steady (selection window is open from boot) */
     CHECK(sm_current_state() == LED_STEADY);
@@ -1071,10 +1084,54 @@ TEST(test_SMART_auto_off_variant_keeps_old_behaviour)
     send(EVT_AMBIENT_DARK, 0U);
     CHECK(fake.light == LIGHT_PULSE_BASE);
     send(EVT_BRAKE_START, 0U);
-    CHECK(fake.light == LIGHT_PULSE_PEAK);
+    CHECK(fake.light == BOOSTED(LIGHT_PULSE_BASE));
     send(EVT_STATIONARY_TIMEOUT, 0U);
     CHECK(sm_is_sleeping() && fake.parked_starts == 0U);
 }
+
+/* --- Variants (ADR-0009) ------------------------------------------------- */
+
+TEST(test_SYS2_ANT7_mode_outside_the_cycle_is_not_requestable)
+{
+    BEGIN();
+    start(LED_STEADY, false);
+    settle();
+    send(EVT_REMOTE_SET_STATE, OTHER_MODE); /* the other variant's mode */
+    CHECK(sm_current_state() == LED_STEADY);
+}
+
+TEST(test_LED1_LED5_variant_levels)
+{
+    BEGIN();
+    start(LED_STEADY, false); /* Steady (rear) or Standard (front): Base */
+    CHECK(fake.light == LIGHT_PULSE_BASE);
+#if LIGHT_FRONT
+    CHECK(LIGHT_PULSE_BASE == 300U); /* Standard: 30 % */
+    start(LED_BRIGHT, false);
+    CHECK(fake.light == LIGHT_PULSE_PEAK && LIGHT_PULSE_PEAK == 800U); /* Bright: 80 % */
+    CHECK(!fake.flash_running);
+    CHECK(fake.status_on);
+#else
+    CHECK(LIGHT_PULSE_BASE == 200U);
+#endif
+}
+
+#if LIGHT_FRONT
+TEST(test_SMART2_front_has_no_brake_boost)
+{
+    BEGIN();
+    start(LED_SMART, false);
+    send(EVT_BRAKE_START, 0U); /* daylight: stays off */
+    CHECK(fake.light == LIGHT_PULSE_OFF);
+    send(EVT_BRAKE_STOP, 0U);
+    send(EVT_AMBIENT_DARK, 0U);
+    CHECK(fake.light == LIGHT_PULSE_BASE);
+    send(EVT_BRAKE_START, 0U); /* dark: stays at Standard */
+    CHECK(fake.light == LIGHT_PULSE_BASE);
+    send(EVT_BRAKE_STOP, 0U);
+    CHECK(fake.light == LIGHT_PULSE_BASE);
+}
+#endif
 
 /* --- State machine: USB ----------------------------------------------------- */
 
@@ -1199,8 +1256,8 @@ TEST(test_ANT7_requests_validated)
     send(EVT_REMOTE_SET_STATE, 255U);
     CHECK(sm_current_state() == LED_STEADY);
 
-    send(EVT_REMOTE_SET_STATE, LED_FLASH);
-    CHECK(sm_current_state() == LED_FLASH);
+    send(EVT_REMOTE_SET_STATE, LAST_MODE);
+    CHECK(sm_current_state() == LAST_MODE);
     settle();
     send(EVT_REMOTE_SET_STATE, LED_SMART);
     CHECK(sm_current_state() == LED_SMART);
@@ -1219,11 +1276,11 @@ TEST(test_ANT8_equal_state_and_stable_window)
     /* boot counts as a state change: requests right after it are ignored */
     start(LED_STEADY, false);
     fake.now += REMOTE_STABLE_WINDOW_MS - 1U;
-    send(EVT_REMOTE_SET_STATE, LED_FLASH);
+    send(EVT_REMOTE_SET_STATE, LAST_MODE);
     CHECK(sm_current_state() == LED_STEADY);
     fake.now += 2U;
-    send(EVT_REMOTE_SET_STATE, LED_FLASH);
-    CHECK(sm_current_state() == LED_FLASH);
+    send(EVT_REMOTE_SET_STATE, LAST_MODE);
+    CHECK(sm_current_state() == LAST_MODE);
 
     /* a button press is a state change too */
     send(EVT_BUTTON_LONG, 0U);
@@ -1248,8 +1305,8 @@ TEST(test_ANT_publication_on_every_change)
     start(LED_STEADY, false);
     CHECK(fake.published == LED_STEADY);
     settle();
-    send(EVT_REMOTE_SET_STATE, LED_FLASH);
-    CHECK(fake.published == LED_FLASH);
+    send(EVT_REMOTE_SET_STATE, LAST_MODE);
+    CHECK(fake.published == LAST_MODE);
     send(EVT_BUTTON_LONG, 0U);
     CHECK(fake.published == LED_OFF); /* Deep Sleep is published as Off */
 }
@@ -1300,6 +1357,11 @@ int main(void)
     test_SMART18_parked_buttons_usb_battery();
     test_SMART16_leaving_parked_smart_by_request();
     test_SMART_auto_off_variant_keeps_old_behaviour();
+    test_SYS2_ANT7_mode_outside_the_cycle_is_not_requestable();
+    test_LED1_LED5_variant_levels();
+#if LIGHT_FRONT
+    test_SMART2_front_has_no_brake_boost();
+#endif
     test_USB2_USB3_USB4_usb_edges();
     test_STAT1_status_led_priority();
     test_STAT1_heartbeat_only_in_awake_off();

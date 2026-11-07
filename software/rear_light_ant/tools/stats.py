@@ -12,7 +12,7 @@ import tempfile
 LOG_LEN = 8
 FORMAT = "<13I8s8sBB2x66H3I" + "IB3x8s" * LOG_LEN + "4I8B3iiII"
 STATE_NAMES = {0: "Off", 1: "Steady", 2: "Flash", 3: "Smart", 4: "Idle Charging",
-               5: "Smart Auto-Off"}
+               5: "Smart Auto-Off", 6: "Bright"}
 EVENT_NAMES = {
     0x01: "RX_SEARCH_TIMEOUT", 0x02: "RX_FAIL", 0x03: "TX", 0x04: "TRANSFER_RX_FAILED",
     0x05: "TRANSFER_TX_COMPLETED", 0x06: "TRANSFER_TX_FAILED", 0x07: "CHANNEL_CLOSED",
@@ -29,7 +29,7 @@ FIELDS = [
     "rx_requests", "mode_changes", "battery_mv", "last_error",
     "last_error_site", "sd_fault_id", "sd_fault_pc", "sd_fault_info",
 ]
-MODES = {0: "Off", 1: "Steady", 2: "Flash", 3: "Smart"}
+MODES = {0: "Off", 1: "Steady (front: Standard)", 2: "Flash", 3: "Smart", 4: "Bright"}
 
 
 def symbol_address(elf, nm):

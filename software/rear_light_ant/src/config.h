@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#include "variant.h"
+
 /* --- System ------------------------------------------------------------ */
 
 #define APP_EVENT_QUEUE_DEPTH 16U
@@ -18,8 +20,7 @@
 
 #define LIGHT_PWM_PERIOD_USEC 1000U
 #define LIGHT_PULSE_OFF  0U
-#define LIGHT_PULSE_BASE 200U /* normal riding brightness, 20 % duty */
-#define LIGHT_PULSE_PEAK 800U /* brake / flash peak brightness */
+/* LIGHT_PULSE_BASE and LIGHT_PULSE_PEAK depend on the variant (variant.h) */
 
 /* Flash: double flash every cycle (peak, base, peak, base for the rest) */
 #define FLASH_CYCLE_MS 1500U

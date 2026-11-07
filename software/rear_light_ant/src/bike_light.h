@@ -35,12 +35,14 @@
 #define BL_LIGHT_INDEX_UNCONNECTED 0U
 #define BL_LIGHT_INDEX_MAIN 1U
 
-/* Light modes of this firmware (same numbering as SYS-1 for Off..Smart) */
+/* Light modes of this firmware as the ANT+ side sees them; main.c maps
+ * them to the system states */
 enum lamp_mode {
     LAMP_OFF = 0,
     LAMP_STEADY = 1,
     LAMP_FLASH = 2,
     LAMP_SMART = 3,
+    LAMP_BRIGHT = 4, /* front light */
     LAMP_MODE_COUNT
 };
 

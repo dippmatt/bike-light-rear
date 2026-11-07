@@ -300,7 +300,7 @@ The rear light is an **ANT+ bike light** (ANT+ Bike Lights profile). A bike comp
 - `LIGHT_BLANK_INTERVAL_MS` / `AMBIENT_BLANK_SETTLE_MS` / `AMBIENT_BLANK_TIMEOUT_MS`: 30000 / 2 / 250 ms (in `src/config.h`)
 - `STATIONARY_TIMEOUT_MS`: 150000 ms = 2.5 minutes (in `src/config.h`)
 - `BATTERY_CRITICAL_MV` / `BATTERY_LOW_MV`: 3000 / 3400 mV (in `src/config.h`)
-- `LIGHT_PULSE_BASE` / `LIGHT_PULSE_PEAK`: 200 / 800 µs (in `src/config.h`)
+- `LIGHT_PULSE_BASE` / `LIGHT_PULSE_PEAK`: 200 / 800 µs (rear light, in `src/variant.h`; the front light is described in `MANUAL_FRONT.md`)
 
 See `SPEC.md` for the full behavioural specification and `CONTEXT.md` for the terminology.
 

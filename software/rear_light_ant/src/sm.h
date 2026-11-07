@@ -24,6 +24,7 @@ enum system_state {
     LED_SMART = 3,       /* sensor-controlled brightness, parks when stationary */
     IDLE_CHARGING = 4,   /* light off, USB connected */
     LED_SMART_AUTO_OFF = 5, /* earlier Smart: powers off when stationary (not in the Mode Cycle) */
+    LED_BRIGHT = 6,      /* solid peak brightness (front light) */
     SYSTEM_STATE_COUNT
 };
 
