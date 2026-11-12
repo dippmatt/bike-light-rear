@@ -25,6 +25,18 @@
 #define FINDMY_MASTER_LEN  56U /* P0 uncompressed, x || y, big-endian */
 #define FINDMY_ADV_KEY_LEN 28U /* x(P_i), what haystack_adv_build() takes */
 
+/* The backup ("secondary") chain runs the same schedule from SKS instead of
+ * SKN, but steps once a day (at 4:00 local time on a real AirTag). Its index
+ * for main index i is i / 96 + 1, or + 2 depending on where 4:00 falls;
+ * FindMy.py looks up both (_secondary_keys_at). The lower one is used, so
+ * the light never runs ahead (ADR-0012). */
+#define FINDMY_KEYS_PER_DAY 96U
+
+static inline uint32_t findmy_secondary_index(uint32_t primary_index)
+{
+    return primary_index / FINDMY_KEYS_PER_DAY + 1U;
+}
+
 /* next = SK_{i+1} from sk = SK_i. next and sk may be the same buffer. */
 void findmy_next_sk(const uint8_t sk[FINDMY_SK_LEN], uint8_t next[FINDMY_SK_LEN]);
 

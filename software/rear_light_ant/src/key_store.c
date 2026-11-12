@@ -8,7 +8,7 @@
 
 #include "key_store.h"
 
-#define PROVISION_MAGIC 0x31504D46UL /* "FMP1" */
+#define PROVISION_MAGIC 0x32504D46UL /* "FMP2": with the backup chain */
 #define RECORD_MAGIC    0x31524D46UL /* "FMR1" */
 
 struct provision {
@@ -16,6 +16,7 @@ struct provision {
     uint32_t index;
     uint8_t master[FINDMY_MASTER_LEN];
     uint8_t sk[FINDMY_SK_LEN];
+    uint8_t sks[FINDMY_SK_LEN]; /* at findmy_secondary_index(index) */
     uint32_t crc;
 };
 
@@ -27,7 +28,7 @@ struct record {
     uint32_t crc;
 };
 
-_Static_assert(sizeof(struct provision) == 100U, "provision layout is shared with provision_airtag.py");
+_Static_assert(sizeof(struct provision) == 132U, "provision layout is shared with provision_airtag.py");
 _Static_assert(sizeof(struct record) % 4U == 0U, "records are written as words");
 
 #define RECORD_WORDS  (sizeof(struct record) / 4U)
@@ -134,6 +135,8 @@ bool key_store_init(const uint32_t *base, struct key_store_pos *pos)
     pos->index = prov.index;
     copy_bytes(pos->sk, prov.sk, FINDMY_SK_LEN);
     copy_bytes(pos->master, prov.master, FINDMY_MASTER_LEN);
+    pos->sks_index = findmy_secondary_index(prov.index);
+    copy_bytes(pos->sks, prov.sks, FINDMY_SK_LEN);
 
     for (page = 0U; page < 2U; page++) {
         for (slot = 0U; slot < SLOTS_PER_PAGE; slot++) {

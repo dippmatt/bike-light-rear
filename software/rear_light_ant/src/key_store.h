@@ -6,13 +6,15 @@
  *
  *   page 0  provision block, written by tools/haystack/provision_airtag.py
  *           and never by the firmware: master public key P0, start index,
- *           SK at that index
+ *           SK at that index, and SKS at the matching backup-chain index
  *   page 1  log of {index, SK}: one record per key rotation, appended
  *   page 2  the same; when one log page is full the other one is erased
  *           and the log continues there
  *
  * The newest valid record of this provision block wins; with none, the
- * provision block itself is the start. Records of an older provision block
+ * provision block itself is the start. The backup chain is not logged: it
+ * steps once a day, so the caller advances it from the provision block's
+ * SKS (a few hash steps per day since provisioning). Records of an older provision block
  * (re-provisioned light) carry a different tag and are ignored.
  *
  * Hardware-free except for the two flash functions at the bottom, which the
@@ -36,6 +38,8 @@ struct key_store_pos {
     uint32_t index;                   /* Apple key index (15-minute periods since pairing) */
     uint8_t sk[FINDMY_SK_LEN];        /* SK at that index */
     uint8_t master[FINDMY_MASTER_LEN];/* P0, constant */
+    uint32_t sks_index;               /* backup-chain index of sks: the provision block's */
+    uint8_t sks[FINDMY_SK_LEN];       /* SKS at sks_index; may be behind index's day */
 };
 
 /* Reads the store at base (KEY_STORE_PAGES pages). Returns false if there

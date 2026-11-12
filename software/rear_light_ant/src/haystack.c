@@ -6,10 +6,12 @@
  * signal callback runs in the SoftDevice's interrupt context, so it only
  * touches the RADIO and TIMER0 registers and no SoftDevice call.
  *
- * AIRTAG_ROLLING (ADR-0012): the key follows a cloned AirTag's schedule,
- * derived here from the provisioned key store. The main loop builds each new
- * packet into the spare half of pdu[] and then flips active_pdu; the
- * callback only ever reads pdu[active_pdu].
+ * There are two packets, one per key (main and backup chain), sent in turn.
+ * AIRTAG_ROLLING (ADR-0012): the keys follow a cloned AirTag's schedule,
+ * derived here from the provisioned key store. The main loop builds new
+ * packets into the spare half of pdu[] and then flips active_pdu; the
+ * callback only ever reads pdu[active_pdu]. Without AIRTAG_ROLLING both
+ * packets carry the one fixed key.
  */
 
 #include "haystack.h"
@@ -28,6 +30,10 @@
 
 #define PDU_HEADER_LEN 2U
 #define PDU_LEN        (PDU_HEADER_LEN + HAYSTACK_ADDR_LEN + HAYSTACK_PAYLOAD_LEN)
+#define PDU_SLOT       ((PDU_LEN + 3U) & ~3U) /* every packet word-aligned */
+
+#define KEY_MAIN   0U /* primary chain, 15-minute keys */
+#define KEY_BACKUP 1U /* secondary chain, daily keys */
 
 #define ADV_CHANNELS    3U
 #define BLE_ACCESS_ADDR 0x8E89BED6UL
@@ -49,12 +55,14 @@ static const uint8_t adv_key[HAYSTACK_KEY_LEN] = { HAYSTACK_KEY_BYTES };
 static const uint8_t channel_freq[ADV_CHANNELS] = { 2U, 26U, 80U };
 static const uint8_t channel_index[ADV_CHANNELS] = { 37U, 38U, 39U };
 
-static uint8_t pdu[2][PDU_LEN] __attribute__((aligned(4)));
+static uint8_t pdu[2][2][PDU_SLOT] __attribute__((aligned(4))); /* [half][KEY_*] */
 static volatile uint32_t active_pdu; /* written by the main loop, read in the callback */
+static uint32_t next_key;           /* KEY_* sent in the next timeslot (callback only) */
 static uint32_t channel;
 static uint32_t radio_was_powered; /* RADIO POWER at the slot start, restored at its end */
 #ifdef AIRTAG_ROLLING
-static struct key_store_pos pos;   /* key in use */
+static struct key_store_pos pos;   /* keys in use */
+static uint8_t backup_key[FINDMY_ADV_KEY_LEN]; /* derived once a day, kept for each rebuild */
 static uint32_t rotated_at_ms;     /* uptime of the last rotation (or boot) */
 static bool rolling;               /* key store valid, rotation running */
 #endif
@@ -105,7 +113,8 @@ static void radio_start(void)
                         (RADIO_CRCCNF_SKIPADDR_Skip << RADIO_CRCCNF_SKIPADDR_Pos);
     NRF_RADIO->CRCINIT = BLE_CRC_INIT;
     NRF_RADIO->CRCPOLY = BLE_CRC_POLY;
-    NRF_RADIO->PACKETPTR = (uint32_t)pdu[active_pdu];
+    NRF_RADIO->PACKETPTR = (uint32_t)pdu[active_pdu][next_key];
+    next_key ^= 1U; /* main, backup, main, ... (ADR-0012) */
     NRF_RADIO->SHORTS = RADIO_SHORTS_READY_START_Msk | RADIO_SHORTS_END_DISABLE_Msk;
 
     channel = 0U;
@@ -212,9 +221,24 @@ static uint32_t request_earliest(void)
 }
 
 #ifdef AIRTAG_ROLLING
-/* Builds the advert of pos into the spare packet buffer and makes it the
- * active one. False if the key store holds an invalid master key. */
-static bool load_key(void)
+/* Steps the backup chain up to the day of pos.index. True if it moved. */
+static bool advance_backup(void)
+{
+    uint32_t want = findmy_secondary_index(pos.index);
+    bool moved = false;
+
+    while (pos.sks_index < want) {
+        findmy_next_sk(pos.sks, pos.sks);
+        pos.sks_index++;
+        moved = true;
+    }
+    return moved;
+}
+
+/* Builds both adverts of pos into the spare packet half and makes it the
+ * active one; derives the backup key only if it changed. False if the key
+ * store holds an invalid master key. */
+static bool load_keys(bool new_backup)
 {
     uint8_t key[FINDMY_ADV_KEY_LEN];
     uint32_t spare = 1U - active_pdu;
@@ -223,10 +247,15 @@ static bool load_key(void)
     if (!findmy_adv_key(pos.master, pos.sk, key)) {
         return false;
     }
+    if (new_backup && !findmy_adv_key(pos.master, pos.sks, backup_key)) {
+        return false;
+    }
     haystack_stats.derive_ms = soft_timer_uptime_ms() - t0;
-    build_pdu(pdu[spare], key);
+    build_pdu(pdu[spare][KEY_MAIN], key);
+    build_pdu(pdu[spare][KEY_BACKUP], backup_key);
     active_pdu = spare; /* one aligned word: the callback sees old or new, never half */
     haystack_stats.index = pos.index;
+    haystack_stats.backup_index = pos.sks_index;
     return true;
 }
 
@@ -265,7 +294,7 @@ void haystack_poll(void)
         pos.index++;
     }
     key_store_save(pos.index, pos.sk);
-    if (!load_key()) {
+    if (!load_keys(advance_backup())) {
         haystack_stats.last_error = NRF_ERROR_INVALID_DATA;
     }
 #endif
@@ -281,14 +310,16 @@ uint32_t haystack_init(void)
         haystack_stats.last_error = NRF_ERROR_NOT_FOUND; /* not provisioned */
         return NRF_ERROR_NOT_FOUND;
     }
-    if (!load_key()) {
+    (void)advance_backup(); /* from the provisioning day to today's */
+    if (!load_keys(true)) {
         haystack_stats.last_error = NRF_ERROR_INVALID_DATA;
         return NRF_ERROR_INVALID_DATA;
     }
     rotated_at_ms = 0U; /* uptime starts with soft_timer_init(), right after this */
     rolling = true;
 #else
-    build_pdu(pdu[0], adv_key);
+    build_pdu(pdu[0][KEY_MAIN], adv_key);
+    build_pdu(pdu[0][KEY_BACKUP], adv_key);
 #endif
 
     err = sd_radio_session_open(signal_callback);

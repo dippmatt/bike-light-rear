@@ -1,5 +1,5 @@
 /*
- * Find My advertiser (ADR-0011): sends the advert of haystack_adv.h as a raw
+ * Find My advertiser (ADR-0011, ADR-0012): sends the advert of haystack_adv.h as a raw
  * BLE packet on channels 37/38/39 inside a Radio Timeslot of the S212
  * SoftDevice, next to the ANT channel. No BLE stack is involved.
  *
@@ -24,8 +24,9 @@ struct haystack_stats {
     uint32_t starts;    /* timeslots that started */
     /* AIRTAG_ROLLING only */
     uint32_t index;       /* Apple key index being sent */
-    uint32_t derive_ms;   /* time of the last key derivation (0 at boot: no clock yet) */
+    uint32_t derive_ms;   /* last key derivation; both keys on a day change (0 at boot: no clock yet) */
     uint32_t flash_errors;/* key store writes or erases the SoftDevice could not do */
+    uint32_t backup_index;/* backup (daily) chain index being sent, every other advert */
 };
 
 extern volatile struct haystack_stats haystack_stats;

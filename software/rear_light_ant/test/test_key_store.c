@@ -67,20 +67,21 @@ static uint32_t crc32(const uint8_t *p, uint32_t len)
     return ~crc;
 }
 
-/* Same layout as provision_airtag.py: magic, index, master[56], sk[32], crc */
+/* Same layout as provision_airtag.py: magic, index, master[56], sk[32], sks[32], crc */
 static void provision(uint32_t index, uint8_t fill)
 {
-    uint8_t b[100];
+    uint8_t b[132];
 
     memset(flash, 0xFF, sizeof(flash));
     memset(b, fill, sizeof(b));
     b[0] = 'F';
     b[1] = 'M';
     b[2] = 'P';
-    b[3] = '1';
+    b[3] = '2';
     memcpy(&b[4], &index, 4);
-    uint32_t crc = crc32(b, 96U);
-    memcpy(&b[96], &crc, 4);
+    memset(&b[96], fill ^ 0xFF, 32); /* sks: tell it apart from sk */
+    uint32_t crc = crc32(b, 128U);
+    memcpy(&b[128], &crc, 4);
     memcpy(flash, b, sizeof(b));
 }
 
@@ -132,6 +133,7 @@ int main(void)
     provision(1000U, 0x11U);
     CHECK(key_store_init(flash, &pos));
     CHECK(pos.index == 1000U && pos.sk[0] == 0x11U && pos.master[55] == 0x11U);
+    CHECK(pos.sks_index == 1000U / 96U + 1U && pos.sks[0] == 0xEEU && pos.sks[31] == 0xEEU);
 
     /* One rotation survives a reset */
     save_ok(1001U);
@@ -140,6 +142,7 @@ int main(void)
     sk_for(1001U, sk);
     CHECK(pos.index == 1001U && memcmp(pos.sk, sk, sizeof(sk)) == 0);
     CHECK(pos.master[0] == 0x11U); /* master comes from the provision block */
+    CHECK(pos.sks_index == 11U && pos.sks[0] == 0xEEU); /* SKS too: not logged */
 
     /* Many rotations: both log pages wrap at least once */
     erases = 0;
