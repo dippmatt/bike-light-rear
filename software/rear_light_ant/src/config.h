@@ -227,11 +227,24 @@ _Static_assert(MOTION_WAKE_THS >= 1U && MOTION_WAKE_THS <= 127U,
 #define PARKED_PULSE_ON_MS     30U
 #define PARKED_PULSE_PERIOD_MS 5000U
 
-/* --- Find My advert (ADR-0011) ----------------------------------------------
- * Only built with a key (HAYSTACK_KEY_<LIGHT> in keys.local.mk).
+/* --- Find My advert (ADR-0011, ADR-0012) ------------------------------------
+ * Only built with a key source (HAYSTACK_KEY_<LIGHT> or HAYSTACK_AIRTAG_<LIGHT>
+ * in keys.local.mk).
  */
 
 #define HAYSTACK_INTERVAL_MS 2000UL /* start of one advert to the start of the next */
 #define HAYSTACK_TX_POWER    0UL    /* RADIO TXPOWER value: 0 = 0 dBm (0x04 = +4 dBm) */
+#define HAYSTACK_POLL_MS     10000UL /* key rotation check; also retries key store writes */
+
+/* Apple rotates every 15 min. Ours is 0.1 % longer so that the RC clock
+ * (ADR-0006, a few hundred ppm) can only make the light lag Apple's
+ * schedule, never lead it: a lagging key is still found, a leading one not
+ * (ADR-0012). */
+#define HAYSTACK_ROTATE_MS (15UL * 60UL * 1000UL + 900UL)
+
+/* Key store: the last three 4 kB flash pages (provision block, two log
+ * pages). The linker script ends the application before this address, and
+ * tools/haystack/provision_airtag.py writes here. */
+#define KEY_STORE_ADDR 0x0007D000UL
 
 #endif /* CONFIG_H */

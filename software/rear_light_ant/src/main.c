@@ -14,6 +14,9 @@
 #include "bike_light.h"
 #include "button.h"
 #include "config.h"
+#ifdef HAYSTACK
+#include "haystack.h"
+#endif
 #include "light.h"
 #include "power.h"
 #include "sd_includes.h"
@@ -200,6 +203,11 @@ static void handle_event(const struct app_event *evt)
     case EVT_BLANK_STEP:
         sensors_on_blank_step();
         break;
+#ifdef HAYSTACK
+    case EVT_HAYSTACK_TICK:
+        haystack_poll();
+        break;
+#endif
     case EVT_BATTERY_TICK:
         sm_handle_event(evt);
         ant_link_on_battery_tick();
@@ -279,6 +287,10 @@ int main(void)
     sm_init(&ops, sm_boot_state(power_reset_is_power_on(reset_reason), usb), usb);
     battery_tick_start();
     power_usb_poll_start();
+#ifdef HAYSTACK
+    /* Not tied to SoftDevice events: those can be rare in Deep Sleep */
+    soft_timer_start(ST_HAYSTACK, HAYSTACK_POLL_MS, HAYSTACK_POLL_MS);
+#endif
     ant_link_open();
     report_battery();
 

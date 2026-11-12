@@ -78,6 +78,8 @@ To pass a key on the command line instead of the file: `make ANT_LICENSE_KEY=...
 
 To find a light through Apple's Find My network, set `HAYSTACK_KEY_REAR` and/or `HAYSTACK_KEY_FRONT` in `keys.local.mk` (base64 advertisement key, see `keys.example.mk`). Without a key for the variant being built the advert is left out. How to make the key and read the position (`track.py`, FindMy.py): [tools/haystack/README.md](./tools/haystack/README.md). Design: [ADR-0011](./docs/adr/0011-find-my-advert-in-a-radio-timeslot.md).
 
+Alternatively `HAYSTACK_AIRTAG_REAR` / `HAYSTACK_AIRTAG_FRONT` name a cloned AirTag's accessory JSON: the light then derives the AirTag's rotating keys itself from a flash key store. `make flash` provisions it; `make flash-keys` alone re-provisions (also the resync after a long flat battery), `make flash-app` keeps it. Design: [ADR-0012](./docs/adr/0012-rotating-airtag-keys-on-a-lagging-counter.md).
+
 ## Flash
 
 ```sh

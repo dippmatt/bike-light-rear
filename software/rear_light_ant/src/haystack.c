@@ -5,6 +5,11 @@
  * and 39, each started from the DISABLED event of the one before. The
  * signal callback runs in the SoftDevice's interrupt context, so it only
  * touches the RADIO and TIMER0 registers and no SoftDevice call.
+ *
+ * AIRTAG_ROLLING (ADR-0012): the key follows a cloned AirTag's schedule,
+ * derived here from the provisioned key store. The main loop builds each new
+ * packet into the spare half of pdu[] and then flips active_pdu; the
+ * callback only ever reads pdu[active_pdu].
  */
 
 #include "haystack.h"
@@ -14,7 +19,8 @@
 #include "sd_includes.h"
 
 #ifdef AIRTAG_ROLLING
-#include "airtag_table.h"
+#include "findmy_keys.h"
+#include "key_store.h"
 #include "soft_timer.h"
 #else
 #include "haystack_key.h"
@@ -33,12 +39,6 @@
 #define SLOT_GUARD_US   300UL /* safety timer fires this long before the slot ends */
 #define EARLIEST_TIMEOUT_US 200000UL
 
-#ifdef AIRTAG_ROLLING
-/* Apple's real rotation interval (ADR-0012); the light has no RTC, so this
- * counts from boot (soft_timer_uptime_ms()) instead of wall-clock time. */
-#define AIRTAG_ROTATE_MS (15UL * 60UL * 1000UL)
-#endif
-
 volatile struct haystack_stats haystack_stats;
 
 #ifndef AIRTAG_ROLLING
@@ -49,12 +49,14 @@ static const uint8_t adv_key[HAYSTACK_KEY_LEN] = { HAYSTACK_KEY_BYTES };
 static const uint8_t channel_freq[ADV_CHANNELS] = { 2U, 26U, 80U };
 static const uint8_t channel_index[ADV_CHANNELS] = { 37U, 38U, 39U };
 
-static uint8_t pdu[PDU_LEN] __attribute__((aligned(4)));
+static uint8_t pdu[2][PDU_LEN] __attribute__((aligned(4)));
+static volatile uint32_t active_pdu; /* written by the main loop, read in the callback */
 static uint32_t channel;
 static uint32_t radio_was_powered; /* RADIO POWER at the slot start, restored at its end */
 #ifdef AIRTAG_ROLLING
-static uint32_t active_slot;
-static volatile uint32_t wanted_slot; /* written by haystack_poll(), read in the callback */
+static struct key_store_pos pos;   /* key in use */
+static uint32_t rotated_at_ms;     /* uptime of the last rotation (or boot) */
+static bool rolling;               /* key store valid, rotation running */
 #endif
 
 static nrf_radio_request_t earliest_request; /* used from the main loop */
@@ -67,33 +69,18 @@ static void select_channel(uint32_t i)
     NRF_RADIO->DATAWHITEIV = channel_index[i];
 }
 
-#ifdef AIRTAG_ROLLING
-/* Apple's real schedule advances by wall-clock time; ours by uptime, since
- * there is no RTC. Only rebuilds the packet when the 15-minute slot has
- * actually changed (called at the start of every ~2 s advert cycle). */
-static void airtag_refresh_if_needed(void)
+/* Header, address and payload of the advert for one 28-byte key */
+static void build_pdu(uint8_t *buf, const uint8_t key[HAYSTACK_KEY_LEN])
 {
-    uint32_t slot = wanted_slot; /* no SoftDevice call here: this runs in its interrupt */
-    uint8_t addr[HAYSTACK_ADDR_LEN];
-    uint32_t i;
-
-    if (slot == active_slot) {
-        return;
-    }
-    active_slot = slot;
-    haystack_stats.slot = slot;
-    haystack_adv_build(airtag_table[slot], addr, &pdu[PDU_HEADER_LEN + HAYSTACK_ADDR_LEN]);
-    for (i = 0U; i < HAYSTACK_ADDR_LEN; i++) {
-        pdu[PDU_HEADER_LEN + i] = addr[i];
-    }
+    /* Header: PDU type ADV_NONCONN_IND (2), TxAdd = 1 (random address); then
+     * the length of address plus data */
+    buf[0] = 0x42U;
+    buf[1] = (uint8_t)(HAYSTACK_ADDR_LEN + HAYSTACK_PAYLOAD_LEN);
+    haystack_adv_build(key, &buf[PDU_HEADER_LEN], &buf[PDU_HEADER_LEN + HAYSTACK_ADDR_LEN]);
 }
-#endif
 
 static void radio_start(void)
 {
-#ifdef AIRTAG_ROLLING
-    airtag_refresh_if_needed();
-#endif
     /* The ANT stack leaves the RADIO powered down between its events and the
      * SoftDevice does not power it up for a timeslot: without this every
      * register write below is lost (found on the bench). Power-cycling also
@@ -118,7 +105,7 @@ static void radio_start(void)
                         (RADIO_CRCCNF_SKIPADDR_Skip << RADIO_CRCCNF_SKIPADDR_Pos);
     NRF_RADIO->CRCINIT = BLE_CRC_INIT;
     NRF_RADIO->CRCPOLY = BLE_CRC_POLY;
-    NRF_RADIO->PACKETPTR = (uint32_t)pdu;
+    NRF_RADIO->PACKETPTR = (uint32_t)pdu[active_pdu];
     NRF_RADIO->SHORTS = RADIO_SHORTS_READY_START_Msk | RADIO_SHORTS_END_DISABLE_Msk;
 
     channel = 0U;
@@ -224,10 +211,63 @@ static uint32_t request_earliest(void)
     return err;
 }
 
+#ifdef AIRTAG_ROLLING
+/* Builds the advert of pos into the spare packet buffer and makes it the
+ * active one. False if the key store holds an invalid master key. */
+static bool load_key(void)
+{
+    uint8_t key[FINDMY_ADV_KEY_LEN];
+    uint32_t spare = 1U - active_pdu;
+    uint32_t t0 = soft_timer_uptime_ms();
+
+    if (!findmy_adv_key(pos.master, pos.sk, key)) {
+        return false;
+    }
+    haystack_stats.derive_ms = soft_timer_uptime_ms() - t0;
+    build_pdu(pdu[spare], key);
+    active_pdu = spare; /* one aligned word: the callback sees old or new, never half */
+    haystack_stats.index = pos.index;
+    return true;
+}
+
+/* Key store flash access through the SoftDevice, which owns the NVMC */
+uint32_t key_store_flash_write(const uint32_t *dst, const uint32_t *src, uint32_t words)
+{
+    return sd_flash_write((uint32_t *)(uintptr_t)dst, src, words);
+}
+
+uint32_t key_store_flash_erase(const uint32_t *page)
+{
+    return sd_flash_page_erase((uint32_t)(uintptr_t)page / NRF_FICR->CODEPAGESIZE);
+}
+#endif
+
 void haystack_poll(void)
 {
 #ifdef AIRTAG_ROLLING
-    wanted_slot = (soft_timer_uptime_ms() / AIRTAG_ROTATE_MS) % AIRTAG_TABLE_COUNT;
+    uint32_t steps;
+
+    if (!rolling) {
+        return;
+    }
+    key_store_poll();
+
+    /* Never ahead of Apple's schedule, only behind (ADR-0012): rotate after
+     * HAYSTACK_ROTATE_MS of uptime, a bit longer than 15 min, and catch up
+     * every whole interval missed. */
+    steps = (soft_timer_uptime_ms() - rotated_at_ms) / HAYSTACK_ROTATE_MS;
+    if (steps == 0U) {
+        return;
+    }
+    rotated_at_ms += steps * HAYSTACK_ROTATE_MS;
+    while (steps-- > 0U) {
+        findmy_next_sk(pos.sk, pos.sk); /* the old SK is gone from RAM */
+        pos.index++;
+    }
+    key_store_save(pos.index, pos.sk);
+    if (!load_key()) {
+        haystack_stats.last_error = NRF_ERROR_INVALID_DATA;
+    }
 #endif
 }
 
@@ -235,22 +275,20 @@ uint32_t haystack_init(void)
 {
     uint32_t err;
 
-    /* Header: PDU type ADV_NONCONN_IND (2), TxAdd = 1 (random address); then
-     * the length of address plus data */
-    pdu[0] = 0x42U;
-    pdu[1] = (uint8_t)(HAYSTACK_ADDR_LEN + HAYSTACK_PAYLOAD_LEN);
+    active_pdu = 0U;
 #ifdef AIRTAG_ROLLING
-    active_slot = 0xFFFFFFFFUL; /* forces airtag_refresh_if_needed() to build slot 0 */
-#else
-    {
-        uint8_t addr[HAYSTACK_ADDR_LEN];
-        uint32_t i;
-
-        haystack_adv_build(adv_key, addr, &pdu[PDU_HEADER_LEN + HAYSTACK_ADDR_LEN]);
-        for (i = 0U; i < HAYSTACK_ADDR_LEN; i++) {
-            pdu[PDU_HEADER_LEN + i] = addr[i];
-        }
+    if (!key_store_init((const uint32_t *)KEY_STORE_ADDR, &pos)) {
+        haystack_stats.last_error = NRF_ERROR_NOT_FOUND; /* not provisioned */
+        return NRF_ERROR_NOT_FOUND;
     }
+    if (!load_key()) {
+        haystack_stats.last_error = NRF_ERROR_INVALID_DATA;
+        return NRF_ERROR_INVALID_DATA;
+    }
+    rotated_at_ms = 0U; /* uptime starts with soft_timer_init(), right after this */
+    rolling = true;
+#else
+    build_pdu(pdu[0], adv_key);
 #endif
 
     err = sd_radio_session_open(signal_callback);
@@ -279,6 +317,15 @@ void haystack_on_soc_event(uint32_t evt)
     case NRF_EVT_RADIO_SESSION_IDLE:
         (void)request_earliest();
         break;
+#ifdef AIRTAG_ROLLING
+    case NRF_EVT_FLASH_OPERATION_SUCCESS:
+        key_store_on_flash_done(true);
+        break;
+    case NRF_EVT_FLASH_OPERATION_ERROR:
+        haystack_stats.flash_errors++;
+        key_store_on_flash_done(false);
+        break;
+#endif
     default:
         break;
     }

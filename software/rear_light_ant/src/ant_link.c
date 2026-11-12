@@ -482,11 +482,8 @@ void ant_link_process(void)
         return;
     }
 
-    /* SoC events: only the radio timeslot ones matter (Find My advert), but
-     * the queue must not fill up */
-#ifdef HAYSTACK
-    haystack_poll();
-#endif
+    /* SoC events: only the radio timeslot and flash ones matter (Find My
+     * advert), but the queue must not fill up */
     while (sd_evt_get(&soc_event) == NRF_SUCCESS) {
 #ifdef HAYSTACK
         haystack_on_soc_event(soc_event);

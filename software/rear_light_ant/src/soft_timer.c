@@ -29,6 +29,7 @@ static const uint8_t timer_event[ST_COUNT] = {
     [ST_USB] = EVT_USB_POLL,
     [ST_SENSOR] = EVT_SENSOR_TICK,
     [ST_BLANK] = EVT_BLANK_STEP,
+    [ST_HAYSTACK] = EVT_HAYSTACK_TICK,
 };
 
 /* The 24-bit counter wraps every 2^24 / 1024 s (4.5 h): count the wraps */

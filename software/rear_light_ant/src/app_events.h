@@ -41,6 +41,7 @@ enum app_event_type {
     EVT_USB_POLL,           /* VBUS poll timer */
     EVT_SENSOR_TICK,        /* sensor sampling timer */
     EVT_BLANK_STEP,         /* next step of the ambient light blank */
+    EVT_HAYSTACK_TICK,      /* Find My key rotation check (HAYSTACK builds only) */
 
     EVT_TYPE_COUNT
 };

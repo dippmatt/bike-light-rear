@@ -60,17 +60,25 @@ ANT_PLUS_NETWORK_KEY_BYTES := $(shell echo '$(ANT_PLUS_NETWORK_KEY)' | grep -E '
 
 # Find My advert (ADR-0011/0012), optional. Two mutually exclusive sources,
 # checked in this order:
-#   1. src/airtag_table.c (tools/haystack/gen_airtag_table.py): a precomputed
-#      run of a real AirTag's rotating keys. Takes over whenever present,
-#      ignoring HAYSTACK_KEY_<LIGHT> below.
+#   1. HAYSTACK_AIRTAG_REAR / HAYSTACK_AIRTAG_FRONT in keys.local.mk: path of
+#      a cloned AirTag's accessory JSON. The light derives the AirTag's
+#      rotating keys itself from a key store that `make flash-keys` writes
+#      (ADR-0012). Takes over from HAYSTACK_KEY_<LIGHT>.
 #   2. HAYSTACK_KEY_REAR / HAYSTACK_KEY_FRONT in keys.local.mk: our own fixed
 #      OpenHaystack key (base64, 28 bytes).
 # Without either, the advert is compiled out.
-AIRTAG_TABLE := $(wildcard src/airtag_table.c)
+HAYSTACK_AIRTAG := $(HAYSTACK_AIRTAG_$(shell echo $(LIGHT) | tr a-z A-Z))
 HAYSTACK_KEY := $(HAYSTACK_KEY_$(shell echo $(LIGHT) | tr a-z A-Z))
-ifneq ($(AIRTAG_TABLE),)
-EXTRA_DEFS += -DHAYSTACK=1 -DAIRTAG_ROLLING=1
-HAYSTACK_SRCS := src/haystack_adv.c src/haystack.c src/airtag_table.c
+# micro-ecc with only P-224 and its bignum API (findmy_keys.c); same for host tests
+UECC_DEFS := -DuECC_ENABLE_VLI_API=1 -DuECC_SUPPORT_COMPRESSED_POINT=0 \
+             -DuECC_SUPPORTS_secp160r1=0 -DuECC_SUPPORTS_secp192r1=0 \
+             -DuECC_SUPPORTS_secp256r1=0 -DuECC_SUPPORTS_secp256k1=0
+CRYPTO_INC := -Isrc/ext/tinycrypt/include
+CRYPTO_SRCS := src/ext/micro-ecc/uECC.c src/ext/tinycrypt/source/sha256.c \
+               src/ext/tinycrypt/source/utils.c
+ifneq ($(HAYSTACK_AIRTAG),)
+EXTRA_DEFS += -DHAYSTACK=1 -DAIRTAG_ROLLING=1 $(UECC_DEFS) $(CRYPTO_INC)
+HAYSTACK_SRCS := src/haystack_adv.c src/haystack.c src/findmy_keys.c src/key_store.c $(CRYPTO_SRCS)
 KEY_HEADERS := $(B)/ant_keys.h
 else ifneq ($(HAYSTACK_KEY),)
 HAYSTACK_KEY_LEN_BYTES := $(shell echo '$(HAYSTACK_KEY)' | base64 -d 2>/dev/null | wc -c)
@@ -116,7 +124,7 @@ SRCS := src/startup.c src/main.c src/ant_link.c src/bike_light.c src/app_events.
         src/sensors.c src/twim.c src/rear_link.c $(HAYSTACK_SRCS)
 OBJS := $(SRCS:src/%.c=$(B)/%.o) $(B)/system_nrf52833.o
 
-.PHONY: all clean test flash flash-app stats rate watch inject size sd
+.PHONY: all clean test flash flash-app flash-keys stats rate watch inject size sd
 
 all: $(APP).hex size check-vectors
 
@@ -139,14 +147,23 @@ $(B)/ant_keys.h: FORCE | $(B)
 	@test -n '$(ANT_PLUS_NETWORK_KEY_BYTES)' || { echo 'ANT_PLUS_NETWORK_KEY must be 16 hex digits: see README.md, "Keys"'; exit 1; }
 	@echo '#define ANT_PLUS_NETWORK_KEY_BYTES $(ANT_PLUS_NETWORK_KEY_BYTES)' | cmp -s - $@ || echo '#define ANT_PLUS_NETWORK_KEY_BYTES $(ANT_PLUS_NETWORK_KEY_BYTES)' > $@
 
-# Same for the Find My key (only when the variant has one)
+# Same for the Find My key (only when the variant has one; otherwise a stale
+# dependency on it from an earlier fixed-key build must not run the check)
+ifneq ($(filter $(B)/haystack_key.h,$(KEY_HEADERS)),)
 $(B)/haystack_key.h: FORCE | $(B)
 	@test '$(HAYSTACK_KEY_LEN_BYTES)' = 28 || { echo 'HAYSTACK_KEY_$(shell echo $(LIGHT) | tr a-z A-Z) must be base64 of 28 bytes: see README.md, "Keys"'; exit 1; }
 	@echo '#define HAYSTACK_KEY_BYTES $(HAYSTACK_KEY_BYTES)' | cmp -s - $@ || echo '#define HAYSTACK_KEY_BYTES $(HAYSTACK_KEY_BYTES)' > $@
+endif
 
 $(B)/%.o: src/%.c $(SD_HEX) $(B)/.flags $(KEY_HEADERS) | $(B)
 	@echo "  CC      $<"
 	$(Q)$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+
+# Vendored libraries (src/ext): compiled as shipped, without our -Werror set
+$(B)/ext/%.o: src/ext/%.c $(SD_HEX) $(B)/.flags | $(B)
+	@echo "  CC      $<"
+	@mkdir -p $(@D)
+	$(Q)$(CC) $(filter-out -Wall -Wextra -Werror -Wshadow,$(CFLAGS)) -w -MMD -MP -c $< -o $@
 
 # The MDK's system file is third-party code: no -Werror/-Wshadow for it
 $(B)/system_nrf52833.o: $(MDK)/system_nrf52833.c $(B)/.flags | $(B)
@@ -178,7 +195,8 @@ size: $(APP).elf
 
 # Both variants, so a change for one light cannot break the other unnoticed
 TEST_BINS := $(foreach v,rear front,build/test/test_bike_light_$(v) build/test/test_core_$(v)) \
-             build/test/test_rear_link build/test/test_haystack_adv
+             build/test/test_rear_link build/test/test_haystack_adv \
+             build/test/test_findmy_keys build/test/test_key_store
 
 test: $(TEST_BINS)
 	@for t in $(TEST_BINS); do echo "  RUN     $$t"; $$t || exit 1; done
@@ -198,15 +216,38 @@ build/test/test_rear_link: test/test_rear_link.c src/rear_link.c src/bike_light.
 build/test/test_haystack_adv: test/test_haystack_adv.c src/haystack_adv.c $(wildcard src/*.h) | build/test
 	gcc $(HOST_CFLAGS) -o $@ test/test_haystack_adv.c src/haystack_adv.c
 
+# The vendored crypto is built without -Werror here too (third-party code)
+build/test/test_findmy_keys: test/test_findmy_keys.c src/findmy_keys.c $(CRYPTO_SRCS) $(wildcard src/*.h) | build/test
+	gcc $(HOST_CFLAGS) $(UECC_DEFS) $(CRYPTO_INC) -Isrc -c -o $@.o src/findmy_keys.c
+	gcc $(filter-out -Wall -Wextra -Werror -Wshadow,$(HOST_CFLAGS)) -w $(UECC_DEFS) $(CRYPTO_INC) \
+	    -o $@ test/test_findmy_keys.c $@.o $(CRYPTO_SRCS)
+
+build/test/test_key_store: test/test_key_store.c src/key_store.c $(wildcard src/*.h) | build/test
+	gcc $(HOST_CFLAGS) -o $@ test/test_key_store.c src/key_store.c
+
 CORE_SRCS := src/sm.c src/app_events.c src/battery_logic.c src/detectors.c src/bike_light.c
 
 build/test/test_core_%: test/test_core.c test/test_platform.c $(CORE_SRCS) $(wildcard src/*.h) | build/test
 	gcc $(HOST_CFLAGS) $(call variant_def,$*) -o $@ test/test_core.c test/test_platform.c $(CORE_SRCS)
 
-# Chip erase also clears UICR; the application hex restores NFCPINS = GPIO
+# Chip erase also clears UICR; the application hex restores NFCPINS = GPIO.
+# It also clears the Find My key store, so an AirTag build re-provisions it.
 flash: $(APP).hex $(SD_HEX)
 	nrfjprog --family NRF52 --program $(SD_HEX) --chiperase --verify
 	nrfjprog --family NRF52 --program $(APP).hex --sectoranduicrerase --verify
+	$(if $(HAYSTACK_AIRTAG),$(MAKE) --no-print-directory flash-keys)
+	nrfjprog --family NRF52 --reset
+
+# Find My key store (ADR-0012): the AirTag's key position for "now", from
+# the accessory JSON in HAYSTACK_AIRTAG_<LIGHT>. Also the way to resync a
+# light that lags too far behind. The hex holds key material: deleted after.
+HAYSTACK_PY ?= tools/haystack/.venv/bin/python
+flash-keys:
+	@test -n '$(HAYSTACK_AIRTAG)' || { echo 'HAYSTACK_AIRTAG_$(shell echo $(LIGHT) | tr a-z A-Z) is not set: see keys.example.mk'; exit 1; }
+	@mkdir -p $(B)
+	$(HAYSTACK_PY) tools/haystack/provision_airtag.py '$(HAYSTACK_AIRTAG)' $(B)/key_store.hex
+	nrfjprog --family NRF52 --program $(B)/key_store.hex --sectorerase --verify; \
+	    status=$$?; rm -f $(B)/key_store.hex; exit $$status
 	nrfjprog --family NRF52 --reset
 
 flash-app: $(APP).hex

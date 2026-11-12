@@ -19,3 +19,10 @@ ANT_LICENSE_KEY := ENTER-LICENSE-KEY
 # Leave unset to build without the advert. Never commit the private key.
 # HAYSTACK_KEY_REAR  := ENTER-BASE64
 # HAYSTACK_KEY_FRONT := ENTER-BASE64
+#
+# Or: send a cloned AirTag's rotating keys instead (ADR-0012), shown in the
+# Find My app. Path of the accessory JSON (keep it in tools/haystack/data/,
+# git-ignored); `make flash` / `make flash-keys` provision the light from it.
+# Takes over from HAYSTACK_KEY_<LIGHT>.
+# HAYSTACK_AIRTAG_REAR  := tools/haystack/data/ENTER-NAME.json
+# HAYSTACK_AIRTAG_FRONT := tools/haystack/data/ENTER-NAME.json

@@ -4,6 +4,9 @@
  *
  *   0x00000000 MBR (4 kB) + SoftDevice (68 kB), flashed separately
  *   0x00012000 application: its vector table must be the first thing here
+ *   0x0007D000 Find My key store, 3 pages (KEY_STORE_ADDR in config.h,
+ *              ADR-0012): never part of the image, so `make flash-app`
+ *              keeps it (`make flash` erases the chip, see `make flash-keys`)
  *
  * RAM: the SoftDevice owns the first 0xB80 bytes (2.94 kB); a little margin
  * is kept. The ANT stack's own buffer is a normal static array in .bss.
@@ -11,7 +14,7 @@
 
 MEMORY
 {
-    FLASH (rx)  : ORIGIN = 0x00012000, LENGTH = 0x0006E000
+    FLASH (rx)  : ORIGIN = 0x00012000, LENGTH = 0x0006B000
     RAM   (rwx) : ORIGIN = 0x20000C00, LENGTH = 0x0001F400
     UICR_NFCPINS (r) : ORIGIN = 0x1000120C, LENGTH = 4
 }

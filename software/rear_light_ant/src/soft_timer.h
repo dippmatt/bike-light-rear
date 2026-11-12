@@ -20,6 +20,7 @@ enum soft_timer_id {
     ST_USB,         /* EVT_USB_POLL */
     ST_SENSOR,      /* EVT_SENSOR_TICK */
     ST_BLANK,       /* EVT_BLANK_STEP */
+    ST_HAYSTACK,    /* EVT_HAYSTACK_TICK */
     ST_COUNT
 };
 

@@ -54,6 +54,19 @@ python3 track.py fetch     # as often as you like
 
 Needs `findmy` 0.10.2 or newer. If sign-in fails with an Apple error code (for example `-80045`), Apple is rejecting this client or account; try a different spare Apple ID, wait, or check the [FindMy.py issues](https://github.com/malmeloo/FindMy.py/issues).
 
+## Alternative: send a cloned AirTag's rotating keys (ADR-0012)
+
+Instead of a fixed key, the light can send the keys of an AirTag from your Apple account. It then shows up in the Find My app as that AirTag, and the key changes every 15 minutes like a real one. You need the AirTag's accessory JSON (one `FindMyAccessory`, for example from `sacca97/os-findmy-e`'s `tag_keys.py --tags-save`); keep it in `data/`.
+
+```make
+# keys.local.mk
+HAYSTACK_AIRTAG_REAR := tools/haystack/data/<name>.json
+```
+
+`make flash` builds the firmware with the on-device key schedule and runs `make flash-keys`: `provision_airtag.py` computes the key index for the current time and writes a key store (public master key, index, shared secret; never the private key) to the last three flash pages. The light counts on from there with its own clock and keeps its place across resets in that flash. It never runs ahead of Apple's schedule, only behind (after a reset or a flat battery); Apple's side catches up when it sees a report. If the light lagged for a long time, `make flash-keys` resyncs it. `make flash-app` keeps the key store.
+
+The script uses FindMy.py's private `_primary_gen._get_sk`, tested with findmy 0.10.2: check it after an upgrade (`make test` covers the firmware side with FindMy.py vectors, `test/test_findmy_keys.c`).
+
 ## Privacy and risks
 
 - The key never changes, so anyone who reads the advert can recognise this light and, with the public key, ask Apple for its reports. They cannot decrypt them. iPhones may also show an unknown-tracker alert if the light travels with someone else.

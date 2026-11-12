@@ -22,7 +22,10 @@ struct haystack_stats {
     uint32_t invalid;   /* signal callback returns the SoftDevice rejected */
     uint32_t last_error;/* last non-zero return code of a radio API call */
     uint32_t starts;    /* timeslots that started */
-    uint32_t slot;      /* AIRTAG_ROLLING only: current index into airtag_table */
+    /* AIRTAG_ROLLING only */
+    uint32_t index;       /* Apple key index being sent */
+    uint32_t derive_ms;   /* time of the last key derivation (0 at boot: no clock yet) */
+    uint32_t flash_errors;/* key store writes or erases the SoftDevice could not do */
 };
 
 extern volatile struct haystack_stats haystack_stats;
@@ -30,11 +33,13 @@ extern volatile struct haystack_stats haystack_stats;
 /* After sd_softdevice_enable. Returns an NRF_ error code. */
 uint32_t haystack_init(void);
 
-/* Call from the main loop: reads the clock for the key slot (the timeslot
- * callback may not call the SoftDevice). */
+/* Call from the main loop every HAYSTACK_POLL_MS: rotates the key when due
+ * and retries key store writes (AIRTAG_ROLLING; no-op otherwise). The key
+ * derivation takes tens of milliseconds, so it may not run in the timeslot
+ * callback. */
 void haystack_poll(void);
 
-/* Feed every SoC event from sd_evt_get(); handles the timeslot ones */
+/* Feed every SoC event from sd_evt_get(); handles the timeslot and flash ones */
 void haystack_on_soc_event(uint32_t evt);
 
 #endif /* HAYSTACK_H */
