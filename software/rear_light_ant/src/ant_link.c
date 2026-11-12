@@ -8,6 +8,9 @@
 
 #include "app_events.h"
 #include "config.h"
+#ifdef HAYSTACK
+#include "haystack.h"
+#endif
 #include "rear_link.h"
 #include "sd_includes.h"
 #include "soft_timer.h"
@@ -338,6 +341,11 @@ uint32_t ant_link_init(ant_mode_request_cb on_mode_request)
         return err;
     }
 
+#ifdef HAYSTACK
+    /* Not fatal: the light works without the Find My advert (ADR-0011) */
+    record_error(0x34U, haystack_init());
+#endif
+
 #if REAR_CONTROL
     rear_link_init(&rear);
     (void)configure_rear_channel(); /* not fatal: the light works without rear control */
@@ -474,8 +482,15 @@ void ant_link_process(void)
         return;
     }
 
-    /* SoC events are not used, but the queue must not fill up */
+    /* SoC events: only the radio timeslot ones matter (Find My advert), but
+     * the queue must not fill up */
+#ifdef HAYSTACK
+    haystack_poll();
+#endif
     while (sd_evt_get(&soc_event) == NRF_SUCCESS) {
+#ifdef HAYSTACK
+        haystack_on_soc_event(soc_event);
+#endif
     }
 
     while (sd_ant_event_get(&channel, &event, msg.ANT_MESSAGE_aucMessage) == NRF_SUCCESS) {

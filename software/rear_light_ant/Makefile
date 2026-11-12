@@ -58,6 +58,30 @@ APP := $(B)/light_$(LIGHT)
 # ANT+ network key as a C byte list, e.g. 0x01,0x23,... (written to $(B)/ant_keys.h)
 ANT_PLUS_NETWORK_KEY_BYTES := $(shell echo '$(ANT_PLUS_NETWORK_KEY)' | grep -E '^[0-9A-Fa-f]{16}$$' | sed 's/../0x&,/g; s/,$$//')
 
+# Find My advert (ADR-0011/0012), optional. Two mutually exclusive sources,
+# checked in this order:
+#   1. src/airtag_table.c (tools/haystack/gen_airtag_table.py): a precomputed
+#      run of a real AirTag's rotating keys. Takes over whenever present,
+#      ignoring HAYSTACK_KEY_<LIGHT> below.
+#   2. HAYSTACK_KEY_REAR / HAYSTACK_KEY_FRONT in keys.local.mk: our own fixed
+#      OpenHaystack key (base64, 28 bytes).
+# Without either, the advert is compiled out.
+AIRTAG_TABLE := $(wildcard src/airtag_table.c)
+HAYSTACK_KEY := $(HAYSTACK_KEY_$(shell echo $(LIGHT) | tr a-z A-Z))
+ifneq ($(AIRTAG_TABLE),)
+EXTRA_DEFS += -DHAYSTACK=1 -DAIRTAG_ROLLING=1
+HAYSTACK_SRCS := src/haystack_adv.c src/haystack.c src/airtag_table.c
+KEY_HEADERS := $(B)/ant_keys.h
+else ifneq ($(HAYSTACK_KEY),)
+HAYSTACK_KEY_LEN_BYTES := $(shell echo '$(HAYSTACK_KEY)' | base64 -d 2>/dev/null | wc -c)
+HAYSTACK_KEY_BYTES := $(shell echo '$(HAYSTACK_KEY)' | base64 -d 2>/dev/null | od -An -v -tx1 | tr -s ' \n' ' ' | sed 's/^ //; s/ $$//; s/ /,0x/g; s/^/0x/')
+EXTRA_DEFS += -DHAYSTACK=1
+HAYSTACK_SRCS := src/haystack_adv.c src/haystack.c
+KEY_HEADERS := $(B)/ant_keys.h $(B)/haystack_key.h
+else
+KEY_HEADERS := $(B)/ant_keys.h
+endif
+
 # Low-frequency clock source: rc (default, no crystal on this board),
 # synth (derived from the 32 MHz crystal, costs current) or xtal (32.768 kHz
 # crystal on XL1/XL2, needs a board change)
@@ -89,7 +113,7 @@ LDFLAGS := -mcpu=cortex-m4 -mthumb -mfloat-abi=soft -nostartfiles -nostdlib \
 SRCS := src/startup.c src/main.c src/ant_link.c src/bike_light.c src/app_events.c \
         src/sm.c src/detectors.c src/battery_logic.c src/platform.c src/light.c \
         src/status_led.c src/soft_timer.c src/button.c src/battery.c src/power.c \
-        src/sensors.c src/twim.c src/rear_link.c
+        src/sensors.c src/twim.c src/rear_link.c $(HAYSTACK_SRCS)
 OBJS := $(SRCS:src/%.c=$(B)/%.o) $(B)/system_nrf52833.o
 
 .PHONY: all clean test flash flash-app stats rate watch inject size sd
@@ -115,7 +139,12 @@ $(B)/ant_keys.h: FORCE | $(B)
 	@test -n '$(ANT_PLUS_NETWORK_KEY_BYTES)' || { echo 'ANT_PLUS_NETWORK_KEY must be 16 hex digits: see README.md, "Keys"'; exit 1; }
 	@echo '#define ANT_PLUS_NETWORK_KEY_BYTES $(ANT_PLUS_NETWORK_KEY_BYTES)' | cmp -s - $@ || echo '#define ANT_PLUS_NETWORK_KEY_BYTES $(ANT_PLUS_NETWORK_KEY_BYTES)' > $@
 
-$(B)/%.o: src/%.c $(SD_HEX) $(B)/.flags $(B)/ant_keys.h | $(B)
+# Same for the Find My key (only when the variant has one)
+$(B)/haystack_key.h: FORCE | $(B)
+	@test '$(HAYSTACK_KEY_LEN_BYTES)' = 28 || { echo 'HAYSTACK_KEY_$(shell echo $(LIGHT) | tr a-z A-Z) must be base64 of 28 bytes: see README.md, "Keys"'; exit 1; }
+	@echo '#define HAYSTACK_KEY_BYTES $(HAYSTACK_KEY_BYTES)' | cmp -s - $@ || echo '#define HAYSTACK_KEY_BYTES $(HAYSTACK_KEY_BYTES)' > $@
+
+$(B)/%.o: src/%.c $(SD_HEX) $(B)/.flags $(KEY_HEADERS) | $(B)
 	@echo "  CC      $<"
 	$(Q)$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
 
@@ -149,7 +178,7 @@ size: $(APP).elf
 
 # Both variants, so a change for one light cannot break the other unnoticed
 TEST_BINS := $(foreach v,rear front,build/test/test_bike_light_$(v) build/test/test_core_$(v)) \
-             build/test/test_rear_link
+             build/test/test_rear_link build/test/test_haystack_adv
 
 test: $(TEST_BINS)
 	@for t in $(TEST_BINS); do echo "  RUN     $$t"; $$t || exit 1; done
@@ -165,6 +194,9 @@ build/test/test_bike_light_%: test/test_bike_light.c src/bike_light.c $(wildcard
 # handler (rear variant of bike_light.c), see test/test_rear_link.c
 build/test/test_rear_link: test/test_rear_link.c src/rear_link.c src/bike_light.c $(wildcard src/*.h) | build/test
 	gcc $(HOST_CFLAGS) -o $@ test/test_rear_link.c src/rear_link.c src/bike_light.c
+
+build/test/test_haystack_adv: test/test_haystack_adv.c src/haystack_adv.c $(wildcard src/*.h) | build/test
+	gcc $(HOST_CFLAGS) -o $@ test/test_haystack_adv.c src/haystack_adv.c
 
 CORE_SRCS := src/sm.c src/app_events.c src/battery_logic.c src/detectors.c src/bike_light.c
 

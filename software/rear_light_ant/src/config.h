@@ -227,4 +227,11 @@ _Static_assert(MOTION_WAKE_THS >= 1U && MOTION_WAKE_THS <= 127U,
 #define PARKED_PULSE_ON_MS     30U
 #define PARKED_PULSE_PERIOD_MS 5000U
 
+/* --- Find My advert (ADR-0011) ----------------------------------------------
+ * Only built with a key (HAYSTACK_KEY_<LIGHT> in keys.local.mk).
+ */
+
+#define HAYSTACK_INTERVAL_MS 2000UL /* start of one advert to the start of the next */
+#define HAYSTACK_TX_POWER    0UL    /* RADIO TXPOWER value: 0 = 0 dBm (0x04 = +4 dBm) */
+
 #endif /* CONFIG_H */

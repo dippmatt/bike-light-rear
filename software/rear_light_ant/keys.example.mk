@@ -12,3 +12,10 @@ ANT_PLUS_NETWORK_KEY := ENTER-16-HEX-DIGITS
 # non-commercial evaluation only. A commercial product needs its own licence:
 # https://developer.garmin.com/ant-program/licensing/
 ANT_LICENSE_KEY := ENTER-LICENSE-KEY
+
+# Optional: Find My advert so the light can be found through Apple's network
+# (ADR-0011, tools/haystack/README.md). One key per light, the "Advertisement
+# key" line of the .keys file from generate_keys.py: base64 of 28 bytes.
+# Leave unset to build without the advert. Never commit the private key.
+# HAYSTACK_KEY_REAR  := ENTER-BASE64
+# HAYSTACK_KEY_FRONT := ENTER-BASE64

@@ -74,6 +74,10 @@ The firmware needs two keys. They are **not in this repository** and must not be
 
 To pass a key on the command line instead of the file: `make ANT_LICENSE_KEY=...`.
 
+### Find My key (optional)
+
+To find a light through Apple's Find My network, set `HAYSTACK_KEY_REAR` and/or `HAYSTACK_KEY_FRONT` in `keys.local.mk` (base64 advertisement key, see `keys.example.mk`). Without a key for the variant being built the advert is left out. How to make the key and read the position (`track.py`, FindMy.py): [tools/haystack/README.md](./tools/haystack/README.md). Design: [ADR-0011](./docs/adr/0011-find-my-advert-in-a-radio-timeslot.md).
+
 ## Flash
 
 ```sh

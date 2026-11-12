@@ -10,4 +10,5 @@ software/ant_source/
 software/nrf_connect_prj/.git_backup/
 software/rear_light_ant/build/
 software/rear_light_ant/keys.local.mk
+software/rear_light_ant/src/airtag_table.*
 software/ant_docs/

@@ -1,0 +1,5 @@
+# Private keys, login token, certificates and the downloaded key generator
+data/
+output/
+generate_keys.py
+.venv/
